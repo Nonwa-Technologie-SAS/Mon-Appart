@@ -11,3 +11,205 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  VISITOR
+  TENANT
+  OWNER
+  AGENCY
+  ADMIN
+  SUPERADMIN
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  STUDIO
+  LAND
+  OFFICE
+  COMMERCIAL
+  OTHER
+}
+
+enum PropertyStatus {
+  DRAFT
+  AVAILABLE
+  RESERVED
+  RENTED
+  SOLD
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  VIRTUAL_TOUR
+  FLOOR_PLAN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(VISITOR)
+  profile   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agencyId String?
+  agency   Agency? @relation("AgencyAgents", fields: [agencyId], references: [id], onDelete: SetNull)
+
+  properties Property[]
+  favorites  PropertyFavorite[]
+  reviews    PropertyReview[]
+}
+
+model Agency {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agents     User[]     @relation("AgencyAgents")
+  properties Property[]
+}
+
+model Property {
+  id          String         @id @default(uuid())
+  title       String
+  description String
+  price       Int
+  type        PropertyType
+  status      PropertyStatus @default(DRAFT)
+  location    String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  features  PropertyFeature[]
+  amenities PropertyAmenity[]
+  media     PropertyMedia[]
+  documents PropertyDocument[]
+  reviews   PropertyReview[]
+  views     PropertyView[]
+  favorites PropertyFavorite[]
+  visits    PropertyVisit[]
+}
+
+model PropertyFeature {
+  id         String   @id @default(uuid())
+  name       String
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model Amenity {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  properties PropertyAmenity[]
+}
+
+model PropertyAmenity {
+  id         String   @id @default(uuid())
+  propertyId String
+  amenityId  String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity    Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, amenityId])
+}
+
+model PropertyMedia {
+  id         String    @id @default(uuid())
+  url        String
+  type       MediaType @default(IMAGE)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  propertyId String
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model PropertyDocument {
+  id         String   @id @default(uuid())
+  url        String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model PropertyReview {
+  id         String   @id @default(uuid())
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, userId])
+  @@index([propertyId])
+}
+
+model PropertyView {
+  id         String   @id @default(uuid())
+  ipAddress  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model PropertyFavorite {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([propertyId])
+}
+
+model PropertyVisit {
+  id           String    @id @default(uuid())
+  visitorName  String?
+  visitorEmail String?
+  visitDate    DateTime?
+  ipAddress    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  propertyId   String
+  property     Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
