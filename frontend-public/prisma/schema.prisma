@@ -135,6 +135,8 @@ model Property {
   type        PropertyType
   status      PropertyStatus @default(DRAFT)
   location    String
+  latitude    Float?
+  longitude   Float?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 

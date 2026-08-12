@@ -1,36 +1,32 @@
-import Link from "next/link"
+import { SearchResultsLayout } from "@/components/site/search-results-layout"
+import { searchAvailableProperties } from "@/lib/properties"
 
-import { HomeHero } from "@/components/site/home-hero"
-import { PropertyGrid } from "@/components/site/property-grid"
-import { Button } from "@/components/ui/button"
-import { getFeaturedProperties } from "@/lib/properties"
-
-export default async function HomePage() {
-  const properties = await getFeaturedProperties()
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string
+    type?: string
+    maxPrice?: string
+    lat?: string
+    lng?: string
+  }>
+}) {
+  const params = await searchParams
+  const properties = await searchAvailableProperties(params)
+  const hasFilters = Boolean(params.q || params.type || params.maxPrice)
 
   return (
-    <>
-      <HomeHero />
-      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="font-heading text-3xl font-semibold tracking-tight">
-              À découvrir
-            </h2>
-            <p className="mt-2 text-muted-foreground">
-              Une sélection de biens disponibles dès maintenant.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href="/recherche" />}
-          >
-            Voir toutes les annonces
-          </Button>
-        </div>
-        <PropertyGrid properties={properties} />
-      </section>
-    </>
+    <main className="flex flex-1 flex-col bg-[#f8f9fa]">
+      <SearchResultsLayout
+        properties={properties}
+        hasFilters={hasFilters}
+        initialQ={params.q}
+        initialType={params.type}
+        initialMaxPrice={params.maxPrice}
+        initialLat={params.lat}
+        initialLng={params.lng}
+      />
+    </main>
   )
 }

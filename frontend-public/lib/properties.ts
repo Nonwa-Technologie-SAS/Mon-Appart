@@ -3,6 +3,7 @@ import { cache } from "react"
 import { MediaType, PropertyStatus, PropertyType } from "@/prisma/generated/client/enums"
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/prisma/generated/client/client"
+import { haversineKm, parseCoordinate } from "@/lib/geo"
 
 export type PropertyListItem = {
   id: string
@@ -11,14 +12,23 @@ export type PropertyListItem = {
   price: number
   type: PropertyType
   location: string
+  latitude: number | null
+  longitude: number | null
   imageUrl: string | null
   agencyName: string | null
+  createdAt: Date | string
+  beds: string | null
+  baths: string | null
+  surface: string | null
+  distanceKm: number | null
 }
 
 export type PropertySearchParams = {
   q?: string
   type?: string
   maxPrice?: string
+  lat?: string
+  lng?: string
 }
 
 const listSelect = {
@@ -28,7 +38,11 @@ const listSelect = {
   price: true,
   type: true,
   location: true,
+  latitude: true,
+  longitude: true,
+  createdAt: true,
   agency: { select: { name: true } },
+  features: { select: { name: true, value: true } },
   media: {
     where: { type: MediaType.IMAGE },
     orderBy: { createdAt: "asc" as const },
@@ -36,6 +50,18 @@ const listSelect = {
     select: { url: true },
   },
 } satisfies Prisma.PropertySelect
+
+function featureValue(
+  features: { name: string; value: string }[],
+  ...names: string[]
+) {
+  const normalized = names.map((name) => name.toLowerCase())
+  return (
+    features.find((feature) =>
+      normalized.includes(feature.name.toLowerCase())
+    )?.value ?? null
+  )
+}
 
 function mapProperty(
   property: Prisma.PropertyGetPayload<{ select: typeof listSelect }>
@@ -47,8 +73,15 @@ function mapProperty(
     price: property.price,
     type: property.type,
     location: property.location,
+    latitude: property.latitude,
+    longitude: property.longitude,
     imageUrl: property.media[0]?.url ?? null,
     agencyName: property.agency?.name ?? null,
+    createdAt: property.createdAt,
+    beds: featureValue(property.features, "Chambres", "Pièces"),
+    baths: featureValue(property.features, "Salles de bain"),
+    surface: featureValue(property.features, "Surface"),
+    distanceKm: null,
   }
 }
 
@@ -83,14 +116,46 @@ function buildWhere(params: PropertySearchParams): Prisma.PropertyWhereInput {
 
 export const searchAvailableProperties = cache(
   async (params: PropertySearchParams = {}) => {
+    const originLat = parseCoordinate(params.lat)
+    const originLng = parseCoordinate(params.lng)
+    const origin =
+      originLat != null && originLng != null
+        ? { lat: originLat, lng: originLng }
+        : null
+
     const properties = await prisma.property.findMany({
       where: buildWhere(params),
       select: listSelect,
       orderBy: { createdAt: "desc" },
-      take: 48,
+      take: 80,
     })
 
-    return properties.map(mapProperty)
+    const mapped = properties.map((property) => {
+      const item = mapProperty(property)
+      if (
+        !origin ||
+        property.latitude == null ||
+        property.longitude == null
+      ) {
+        return item
+      }
+
+      return {
+        ...item,
+        distanceKm: haversineKm(origin, {
+          lat: property.latitude,
+          lng: property.longitude,
+        }),
+      }
+    })
+
+    if (!origin) return mapped
+
+    return mapped.toSorted((a, b) => {
+      if (a.distanceKm == null) return 1
+      if (b.distanceKm == null) return -1
+      return a.distanceKm - b.distanceKm
+    })
   }
 )
 

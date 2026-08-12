@@ -14,7 +14,7 @@ Prérequis runtime : **Node.js ≥ 20.9.0**.
 Si vous découvrez une faille de sécurité :
 
 1. **Ne l’ouvrez pas en issue publique** (ni PR détaillant l’exploit).
-2. Contactez les mainteneurs du dépôt **en privé** (message direct aux owners GitHub, ou canal interne Appatam / équipe produit).
+2. Contactez les mainteneurs du dépôt **en privé** (message direct aux owners GitHub, ou canal interne Mon Appart / équipe produit).
 3. Incluez : description, impact, étapes de reproduction, environnement (navigateur, rôle utilisateur).
 
 Réponse attendue sous **5 jours ouvrés**. Un correctif ou un plan d’atténuation sera communiqué avant toute divulgation publique.

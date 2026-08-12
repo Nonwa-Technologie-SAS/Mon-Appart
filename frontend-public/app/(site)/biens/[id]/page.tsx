@@ -3,8 +3,10 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import { VirtualTourButton } from "@/components/site/virtual-tour-button"
 import { formatPrice, formatPropertyType } from "@/lib/format"
 import { getAvailablePropertyById } from "@/lib/properties"
+import { MediaType } from "@/prisma/generated/client/enums"
 
 export default async function PropertyDetailPage({
   params,
@@ -18,14 +20,18 @@ export default async function PropertyDetailPage({
     notFound()
   }
 
-  const mainImage = property.media[0]?.url
+  const images = property.media.filter((media) => media.type === MediaType.IMAGE)
+  const virtualTour = property.media.find(
+    (media) => media.type === MediaType.VIRTUAL_TOUR
+  )
+  const mainImage = images[0]?.url
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
       <Button
         variant="ghost"
         nativeButton={false}
-        render={<Link href="/recherche" />}
+        render={<Link href="/" />}
         className="mb-6 -ml-2"
       >
         ← Retour aux annonces
@@ -44,10 +50,17 @@ export default async function PropertyDetailPage({
                 className="object-cover"
               />
             ) : null}
+            {virtualTour ? (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 sm:p-5">
+                <p className="text-sm font-medium text-white">
+                  Visite virtuelle 360° disponible
+                </p>
+              </div>
+            ) : null}
           </div>
-          {property.media.length > 1 ? (
+          {images.length > 1 ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {property.media.slice(1, 5).map((media) => (
+              {images.slice(1, 5).map((media) => (
                 <div
                   key={media.id}
                   className="relative aspect-square overflow-hidden rounded-lg bg-muted"
@@ -104,9 +117,23 @@ export default async function PropertyDetailPage({
             </div>
           ) : null}
 
-          <Button size="lg" className="w-full" nativeButton={false} render={<Link href="/connexion" />}>
-            Demander une visite
-          </Button>
+          <div className="flex flex-col gap-3">
+            {virtualTour ? (
+              <VirtualTourButton
+                propertyId={property.id}
+                panoramaUrl={virtualTour.url}
+                propertyTitle={property.title}
+              />
+            ) : null}
+            <Button
+              size="lg"
+              className="w-full"
+              nativeButton={false}
+              render={<Link href="/connexion" />}
+            >
+              Demander une visite
+            </Button>
+          </div>
         </aside>
       </div>
     </main>

@@ -28,10 +28,14 @@ export type AggregateProperty = {
 
 export type PropertyAvgAggregateOutputType = {
   price: number | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export type PropertySumAggregateOutputType = {
   price: number | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export type PropertyMinAggregateOutputType = {
@@ -42,6 +46,8 @@ export type PropertyMinAggregateOutputType = {
   type: $Enums.PropertyType | null
   status: $Enums.PropertyStatus | null
   location: string | null
+  latitude: number | null
+  longitude: number | null
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
@@ -56,6 +62,8 @@ export type PropertyMaxAggregateOutputType = {
   type: $Enums.PropertyType | null
   status: $Enums.PropertyStatus | null
   location: string | null
+  latitude: number | null
+  longitude: number | null
   createdAt: Date | null
   updatedAt: Date | null
   userId: string | null
@@ -70,6 +78,8 @@ export type PropertyCountAggregateOutputType = {
   type: number
   status: number
   location: number
+  latitude: number
+  longitude: number
   createdAt: number
   updatedAt: number
   userId: number
@@ -80,10 +90,14 @@ export type PropertyCountAggregateOutputType = {
 
 export type PropertyAvgAggregateInputType = {
   price?: true
+  latitude?: true
+  longitude?: true
 }
 
 export type PropertySumAggregateInputType = {
   price?: true
+  latitude?: true
+  longitude?: true
 }
 
 export type PropertyMinAggregateInputType = {
@@ -94,6 +108,8 @@ export type PropertyMinAggregateInputType = {
   type?: true
   status?: true
   location?: true
+  latitude?: true
+  longitude?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -108,6 +124,8 @@ export type PropertyMaxAggregateInputType = {
   type?: true
   status?: true
   location?: true
+  latitude?: true
+  longitude?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -122,6 +140,8 @@ export type PropertyCountAggregateInputType = {
   type?: true
   status?: true
   location?: true
+  latitude?: true
+  longitude?: true
   createdAt?: true
   updatedAt?: true
   userId?: true
@@ -223,6 +243,8 @@ export type PropertyGroupByOutputType = {
   type: $Enums.PropertyType
   status: $Enums.PropertyStatus
   location: string
+  latitude: number | null
+  longitude: number | null
   createdAt: Date
   updatedAt: Date
   userId: string
@@ -260,6 +282,8 @@ export type PropertyWhereInput = {
   type?: Prisma.EnumPropertyTypeFilter<"Property"> | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFilter<"Property"> | $Enums.PropertyStatus
   location?: Prisma.StringFilter<"Property"> | string
+  latitude?: Prisma.FloatNullableFilter<"Property"> | number | null
+  longitude?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   userId?: Prisma.StringFilter<"Property"> | string
@@ -284,6 +308,8 @@ export type PropertyOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   location?: Prisma.SortOrder
+  latitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  longitude?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -311,6 +337,8 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.EnumPropertyTypeFilter<"Property"> | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFilter<"Property"> | $Enums.PropertyStatus
   location?: Prisma.StringFilter<"Property"> | string
+  latitude?: Prisma.FloatNullableFilter<"Property"> | number | null
+  longitude?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   userId?: Prisma.StringFilter<"Property"> | string
@@ -335,6 +363,8 @@ export type PropertyOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   location?: Prisma.SortOrder
+  latitude?: Prisma.SortOrderInput | Prisma.SortOrder
+  longitude?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -357,6 +387,8 @@ export type PropertyScalarWhereWithAggregatesInput = {
   type?: Prisma.EnumPropertyTypeWithAggregatesFilter<"Property"> | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusWithAggregatesFilter<"Property"> | $Enums.PropertyStatus
   location?: Prisma.StringWithAggregatesFilter<"Property"> | string
+  latitude?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
+  longitude?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   userId?: Prisma.StringWithAggregatesFilter<"Property"> | string
@@ -371,6 +403,8 @@ export type PropertyCreateInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -393,6 +427,8 @@ export type PropertyUncheckedCreateInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -415,6 +451,8 @@ export type PropertyUpdateInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -437,6 +475,8 @@ export type PropertyUncheckedUpdateInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -459,6 +499,8 @@ export type PropertyCreateManyInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -473,6 +515,8 @@ export type PropertyUpdateManyMutationInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -485,6 +529,8 @@ export type PropertyUncheckedUpdateManyInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -509,6 +555,8 @@ export type PropertyCountOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   location?: Prisma.SortOrder
+  latitude?: Prisma.SortOrder
+  longitude?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -517,6 +565,8 @@ export type PropertyCountOrderByAggregateInput = {
 
 export type PropertyAvgOrderByAggregateInput = {
   price?: Prisma.SortOrder
+  latitude?: Prisma.SortOrder
+  longitude?: Prisma.SortOrder
 }
 
 export type PropertyMaxOrderByAggregateInput = {
@@ -527,6 +577,8 @@ export type PropertyMaxOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   location?: Prisma.SortOrder
+  latitude?: Prisma.SortOrder
+  longitude?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -541,6 +593,8 @@ export type PropertyMinOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   location?: Prisma.SortOrder
+  latitude?: Prisma.SortOrder
+  longitude?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -549,6 +603,8 @@ export type PropertyMinOrderByAggregateInput = {
 
 export type PropertySumOrderByAggregateInput = {
   price?: Prisma.SortOrder
+  latitude?: Prisma.SortOrder
+  longitude?: Prisma.SortOrder
 }
 
 export type PropertyScalarRelationFilter = {
@@ -654,6 +710,14 @@ export type EnumPropertyTypeFieldUpdateOperationsInput = {
 
 export type EnumPropertyStatusFieldUpdateOperationsInput = {
   set?: $Enums.PropertyStatus
+}
+
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type PropertyCreateNestedOneWithoutFeaturesInput = {
@@ -776,6 +840,8 @@ export type PropertyCreateWithoutUserInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   agency?: Prisma.AgencyCreateNestedOneWithoutPropertiesInput
@@ -797,6 +863,8 @@ export type PropertyUncheckedCreateWithoutUserInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   agencyId?: string | null
@@ -847,6 +915,8 @@ export type PropertyScalarWhereInput = {
   type?: Prisma.EnumPropertyTypeFilter<"Property"> | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFilter<"Property"> | $Enums.PropertyStatus
   location?: Prisma.StringFilter<"Property"> | string
+  latitude?: Prisma.FloatNullableFilter<"Property"> | number | null
+  longitude?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   userId?: Prisma.StringFilter<"Property"> | string
@@ -861,6 +931,8 @@ export type PropertyCreateWithoutAgencyInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -882,6 +954,8 @@ export type PropertyUncheckedCreateWithoutAgencyInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -929,6 +1003,8 @@ export type PropertyCreateWithoutFeaturesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -950,6 +1026,8 @@ export type PropertyUncheckedCreateWithoutFeaturesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -987,6 +1065,8 @@ export type PropertyUpdateWithoutFeaturesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1008,6 +1088,8 @@ export type PropertyUncheckedUpdateWithoutFeaturesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1029,6 +1111,8 @@ export type PropertyCreateWithoutAmenitiesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1050,6 +1134,8 @@ export type PropertyUncheckedCreateWithoutAmenitiesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1087,6 +1173,8 @@ export type PropertyUpdateWithoutAmenitiesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1108,6 +1196,8 @@ export type PropertyUncheckedUpdateWithoutAmenitiesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1129,6 +1219,8 @@ export type PropertyCreateWithoutMediaInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1150,6 +1242,8 @@ export type PropertyUncheckedCreateWithoutMediaInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1187,6 +1281,8 @@ export type PropertyUpdateWithoutMediaInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1208,6 +1304,8 @@ export type PropertyUncheckedUpdateWithoutMediaInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1229,6 +1327,8 @@ export type PropertyCreateWithoutDocumentsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1250,6 +1350,8 @@ export type PropertyUncheckedCreateWithoutDocumentsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1287,6 +1389,8 @@ export type PropertyUpdateWithoutDocumentsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1308,6 +1412,8 @@ export type PropertyUncheckedUpdateWithoutDocumentsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1329,6 +1435,8 @@ export type PropertyCreateWithoutReviewsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1350,6 +1458,8 @@ export type PropertyUncheckedCreateWithoutReviewsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1387,6 +1497,8 @@ export type PropertyUpdateWithoutReviewsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1408,6 +1520,8 @@ export type PropertyUncheckedUpdateWithoutReviewsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1429,6 +1543,8 @@ export type PropertyCreateWithoutViewsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1450,6 +1566,8 @@ export type PropertyUncheckedCreateWithoutViewsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1487,6 +1605,8 @@ export type PropertyUpdateWithoutViewsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1508,6 +1628,8 @@ export type PropertyUncheckedUpdateWithoutViewsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1529,6 +1651,8 @@ export type PropertyCreateWithoutFavoritesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1550,6 +1674,8 @@ export type PropertyUncheckedCreateWithoutFavoritesInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1587,6 +1713,8 @@ export type PropertyUpdateWithoutFavoritesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1608,6 +1736,8 @@ export type PropertyUncheckedUpdateWithoutFavoritesInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1629,6 +1759,8 @@ export type PropertyCreateWithoutVisitsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutPropertiesInput
@@ -1650,6 +1782,8 @@ export type PropertyUncheckedCreateWithoutVisitsInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1687,6 +1821,8 @@ export type PropertyUpdateWithoutVisitsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1708,6 +1844,8 @@ export type PropertyUncheckedUpdateWithoutVisitsInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1729,6 +1867,8 @@ export type PropertyCreateManyUserInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   agencyId?: string | null
@@ -1742,6 +1882,8 @@ export type PropertyUpdateWithoutUserInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   agency?: Prisma.AgencyUpdateOneWithoutPropertiesNestedInput
@@ -1763,6 +1905,8 @@ export type PropertyUncheckedUpdateWithoutUserInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   agencyId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1784,6 +1928,8 @@ export type PropertyUncheckedUpdateManyWithoutUserInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   agencyId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1797,6 +1943,8 @@ export type PropertyCreateManyAgencyInput = {
   type: $Enums.PropertyType
   status?: $Enums.PropertyStatus
   location: string
+  latitude?: number | null
+  longitude?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
@@ -1810,6 +1958,8 @@ export type PropertyUpdateWithoutAgencyInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutPropertiesNestedInput
@@ -1831,6 +1981,8 @@ export type PropertyUncheckedUpdateWithoutAgencyInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1852,6 +2004,8 @@ export type PropertyUncheckedUpdateManyWithoutAgencyInput = {
   type?: Prisma.EnumPropertyTypeFieldUpdateOperationsInput | $Enums.PropertyType
   status?: Prisma.EnumPropertyStatusFieldUpdateOperationsInput | $Enums.PropertyStatus
   location?: Prisma.StringFieldUpdateOperationsInput | string
+  latitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  longitude?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1959,6 +2113,8 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   type?: boolean
   status?: boolean
   location?: boolean
+  latitude?: boolean
+  longitude?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -1984,6 +2140,8 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   type?: boolean
   status?: boolean
   location?: boolean
+  latitude?: boolean
+  longitude?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -2000,6 +2158,8 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   type?: boolean
   status?: boolean
   location?: boolean
+  latitude?: boolean
+  longitude?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
@@ -2016,13 +2176,15 @@ export type PropertySelectScalar = {
   type?: boolean
   status?: boolean
   location?: boolean
+  latitude?: boolean
+  longitude?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   userId?: boolean
   agencyId?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "price" | "type" | "status" | "location" | "createdAt" | "updatedAt" | "userId" | "agencyId", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "price" | "type" | "status" | "location" | "latitude" | "longitude" | "createdAt" | "updatedAt" | "userId" | "agencyId", ExtArgs["result"]["property"]>
 export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   agency?: boolean | Prisma.Property$agencyArgs<ExtArgs>
@@ -2067,6 +2229,8 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     type: $Enums.PropertyType
     status: $Enums.PropertyStatus
     location: string
+    latitude: number | null
+    longitude: number | null
     createdAt: Date
     updatedAt: Date
     userId: string
@@ -2511,6 +2675,8 @@ export interface PropertyFieldRefs {
   readonly type: Prisma.FieldRef<"Property", 'PropertyType'>
   readonly status: Prisma.FieldRef<"Property", 'PropertyStatus'>
   readonly location: Prisma.FieldRef<"Property", 'String'>
+  readonly latitude: Prisma.FieldRef<"Property", 'Float'>
+  readonly longitude: Prisma.FieldRef<"Property", 'Float'>
   readonly createdAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly userId: Prisma.FieldRef<"Property", 'String'>

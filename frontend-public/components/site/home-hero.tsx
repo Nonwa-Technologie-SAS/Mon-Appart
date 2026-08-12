@@ -21,7 +21,7 @@ export function HomeHero() {
       <div className="relative z-10 mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-6xl flex-col justify-center px-4 py-16 sm:px-6">
         <div className="max-w-2xl">
           <p className="animate-hero-fade font-heading text-5xl font-semibold tracking-tight text-white sm:text-6xl md:text-7xl">
-            Appatam
+            Mon Appart
           </p>
           <h1 className="animate-hero-fade-delay mt-4 max-w-xl text-2xl font-medium text-white/95 sm:text-3xl">
             Trouvez la maison qui vous ressemble

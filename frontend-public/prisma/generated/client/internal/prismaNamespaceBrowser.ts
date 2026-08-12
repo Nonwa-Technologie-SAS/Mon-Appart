@@ -166,6 +166,8 @@ export const PropertyScalarFieldEnum = {
   type: 'type',
   status: 'status',
   location: 'location',
+  latitude: 'latitude',
+  longitude: 'longitude',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   userId: 'userId',

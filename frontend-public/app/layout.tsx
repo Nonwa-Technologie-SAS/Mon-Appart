@@ -15,8 +15,8 @@ const syne = Syne({
 
 export const metadata: Metadata = {
   title: {
-    default: "Appatam — Trouvez votre prochain chez-vous",
-    template: "%s · Appatam",
+    default: "Mon Appart — Trouvez votre prochain chez-vous",
+    template: "%s · Mon Appart",
   },
   description:
     "Recherchez des maisons, appartements et villas disponibles. Réservez une visite en quelques clics.",

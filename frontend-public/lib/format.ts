@@ -12,11 +12,20 @@ const typeLabels: Record<PropertyType, string> = {
 }
 
 export function formatPrice(price: number) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
+  return `${new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 0,
-  }).format(price)
+  }).format(price)} F CFA`
+}
+
+export function formatRelativeTime(date: Date | string) {
+  const value = typeof date === "string" ? new Date(date) : date
+  const diffMs = Date.now() - value.getTime()
+  const hours = Math.max(1, Math.round(diffMs / 3_600_000))
+
+  if (hours < 24) return `Il y a ${hours} h`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `Il y a ${days} j`
+  return value.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
 }
 
 export function formatPropertyType(type: PropertyType) {

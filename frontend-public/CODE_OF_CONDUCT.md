@@ -68,7 +68,7 @@ Ce code s’applique :
 
 Les comportements abusifs, le harcèlement ou toute conduite inacceptable
 peuvent être signalés **en privé** aux mainteneurs du dépôt (owners GitHub /
-responsables Appatam — même canal confidentiel que pour les alertes décrites
+responsables Mon Appart — même canal confidentiel que pour les alertes décrites
 dans [SECURITY.md](./SECURITY.md)).
 
 Toute plainte sera examinée rapidement et équitablement. Les responsables
