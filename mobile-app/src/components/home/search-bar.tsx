@@ -26,7 +26,7 @@ export function SearchBar({
           borderColor: theme.border,
         },
       ]}>
-      <Ionicons name="search" size={18} color={theme.textSecondary} />
+      <Ionicons name="search" size={18} color={theme.secondary} />
       <TextInput
         value={value}
         onChangeText={onChangeText}

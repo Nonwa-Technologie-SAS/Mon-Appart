@@ -1,9 +1,12 @@
 import { cache } from "react"
+import { connection } from "next/server"
 
 import { MediaType, PropertyStatus, PropertyType } from "@/prisma/generated/client/enums"
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@/prisma/generated/client/client"
+import { geocodeLocation, hasCoordinates } from "@/lib/geocode"
 import { haversineKm, parseCoordinate } from "@/lib/geo"
+import type { VisitLayoutItem } from "@/lib/visit-rooms"
 
 export type PropertyListItem = {
   id: string
@@ -45,7 +48,7 @@ const listSelect = {
   features: { select: { name: true, value: true } },
   media: {
     where: { type: MediaType.IMAGE },
-    orderBy: { createdAt: "asc" as const },
+    orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
     take: 1,
     select: { url: true },
   },
@@ -170,11 +173,173 @@ export const getFeaturedProperties = cache(async () => {
   return properties.map(mapProperty)
 })
 
-export const getAvailablePropertyById = cache(async (id: string) => {
+export type OwnerPropertyListItem = PropertyListItem & {
+  status: PropertyStatus
+}
+
+export async function listPropertiesByUserId(userId: string) {
+  const properties = await prisma.property.findMany({
+    where: { userId },
+    select: {
+      ...listSelect,
+      status: true,
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  return properties.map((property) => ({
+    ...mapProperty(property),
+    status: property.status,
+  }))
+}
+
+export async function createPropertyForUser(
+  userId: string,
+  agencyId: string | null | undefined,
+  input: {
+    title: string
+    description: string
+    price: number
+    type: PropertyType
+    location: string
+    latitude?: number | null
+    longitude?: number | null
+    imageUrl?: string
+    imageUrls?: string[]
+    imageLayout?: VisitLayoutItem[]
+    beds?: string
+    baths?: string
+    surface?: string
+    publish?: boolean
+    status?: PropertyStatus
+  },
+  propertyId?: string
+) {
+  const features = [
+    input.beds
+      ? { name: "Chambres", value: input.beds }
+      : null,
+    input.baths
+      ? { name: "Salles de bain", value: input.baths }
+      : null,
+    input.surface
+      ? { name: "Surface", value: input.surface }
+      : null,
+  ].filter((feature): feature is { name: string; value: string } =>
+    Boolean(feature)
+  )
+
+  const imageLayout: VisitLayoutItem[] =
+    input.imageLayout && input.imageLayout.length > 0
+      ? input.imageLayout
+      : [
+          ...(input.imageUrls ?? []),
+          ...(input.imageUrl ? [input.imageUrl] : []),
+        ].map((url, index) => ({
+          url,
+          room: "OTHER" as const,
+          sortOrder: index,
+        }))
+
+  let latitude = input.latitude ?? null
+  let longitude = input.longitude ?? null
+  if (!hasCoordinates(latitude, longitude)) {
+    const coords = await geocodeLocation(input.location)
+    latitude = coords.lat
+    longitude = coords.lng
+  }
+
+  const property = await prisma.property.create({
+    data: {
+      ...(propertyId ? { id: propertyId } : {}),
+      title: input.title,
+      description: input.description,
+      price: input.price,
+      type: input.type,
+      location: input.location,
+      latitude,
+      longitude,
+      status:
+        input.status ??
+        (input.publish === false
+          ? PropertyStatus.ARCHIVED
+          : PropertyStatus.AVAILABLE),
+      userId,
+      agencyId: agencyId ?? null,
+      ...(features.length > 0 ? { features: { create: features } } : {}),
+      ...(imageLayout.length > 0
+        ? {
+            media: {
+              create: imageLayout.map((item) => ({
+                url: item.url,
+                type: MediaType.IMAGE,
+                room: item.room,
+                sortOrder: item.sortOrder,
+              })),
+            },
+          }
+        : {}),
+    },
+    select: {
+      ...listSelect,
+      status: true,
+    },
+  })
+
+  return {
+    ...mapProperty(property),
+    status: property.status,
+  }
+}
+
+export async function updateOwnedPropertyStatus(
+  propertyId: string,
+  userId: string,
+  status: PropertyStatus,
+  asStaff = false
+) {
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, userId: true },
+  })
+
+  if (!property) return null
+  if (!asStaff && property.userId !== userId) {
+    throw new Error("Forbidden")
+  }
+
+  const updated = await prisma.property.update({
+    where: { id: propertyId },
+    data: { status },
+    select: {
+      ...listSelect,
+      status: true,
+    },
+  })
+
+  return {
+    ...mapProperty(updated),
+    status: updated.status,
+  }
+}
+
+export const getAvailablePropertyById = cache(async (
+  id: string,
+  viewerUserId?: string
+) => {
+  await connection()
   return prisma.property.findFirst({
-    where: { id, status: PropertyStatus.AVAILABLE },
+    where: viewerUserId
+      ? {
+          id,
+          OR: [
+            { status: PropertyStatus.AVAILABLE },
+            { userId: viewerUserId },
+          ],
+        }
+      : { id, status: PropertyStatus.AVAILABLE },
     include: {
-      media: { orderBy: { createdAt: "asc" } },
+      media: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       features: true,
       amenities: { include: { amenity: true } },
       agency: { select: { name: true, phone: true, email: true } },

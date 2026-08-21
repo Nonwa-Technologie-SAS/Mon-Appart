@@ -80,11 +80,11 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.9.0
+ * Prisma Client JS version: 7.9.1
  * Query Engine version: e922089b7d7502aff4249d5da3420f6fa55fc6ad
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.9.0",
+  client: "7.9.1",
   engine: "e922089b7d7502aff4249d5da3420f6fa55fc6ad"
 }
 
@@ -1706,6 +1706,8 @@ export const PropertyMediaScalarFieldEnum = {
   id: 'id',
   url: 'url',
   type: 'type',
+  room: 'room',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   propertyId: 'propertyId'
@@ -1764,7 +1766,9 @@ export const PropertyVisitScalarFieldEnum = {
   id: 'id',
   visitorName: 'visitorName',
   visitorEmail: 'visitorEmail',
+  visitorWhatsapp: 'visitorWhatsapp',
   visitDate: 'visitDate',
+  status: 'status',
   ipAddress: 'ipAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -1951,6 +1955,34 @@ export type EnumMediaTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
  * Reference to a field of type 'MediaType[]'
  */
 export type ListEnumMediaTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MediaType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VisitRoom'
+ */
+export type EnumVisitRoomFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VisitRoom'>
+    
+
+
+/**
+ * Reference to a field of type 'VisitRoom[]'
+ */
+export type ListEnumVisitRoomFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VisitRoom[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VisitStatus'
+ */
+export type EnumVisitStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VisitStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'VisitStatus[]'
+ */
+export type ListEnumVisitStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VisitStatus[]'>
     
 
 /**

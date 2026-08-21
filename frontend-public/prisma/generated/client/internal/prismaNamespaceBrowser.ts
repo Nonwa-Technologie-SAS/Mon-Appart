@@ -210,6 +210,8 @@ export const PropertyMediaScalarFieldEnum = {
   id: 'id',
   url: 'url',
   type: 'type',
+  room: 'room',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   propertyId: 'propertyId'
@@ -268,7 +270,9 @@ export const PropertyVisitScalarFieldEnum = {
   id: 'id',
   visitorName: 'visitorName',
   visitorEmail: 'visitorEmail',
+  visitorWhatsapp: 'visitorWhatsapp',
   visitDate: 'visitDate',
+  status: 'status',
   ipAddress: 'ipAddress',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',

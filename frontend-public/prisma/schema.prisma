@@ -48,6 +48,22 @@ enum MediaType {
   FLOOR_PLAN
 }
 
+enum VisitRoom {
+  ENTRANCE
+  LIVING
+  KITCHEN
+  BEDROOM
+  BATHROOM
+  EXTERIOR
+  OTHER
+}
+
+enum VisitStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String
@@ -188,12 +204,15 @@ model PropertyMedia {
   id         String    @id @default(uuid())
   url        String
   type       MediaType @default(IMAGE)
+  room       VisitRoom @default(OTHER)
+  sortOrder  Int       @default(0)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   propertyId String
   property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
+  @@index([propertyId, sortOrder])
 }
 
 model PropertyDocument {
@@ -251,15 +270,18 @@ model PropertyFavorite {
 }
 
 model PropertyVisit {
-  id           String    @id @default(uuid())
-  visitorName  String?
-  visitorEmail String?
-  visitDate    DateTime?
-  ipAddress    String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  propertyId   String
-  property     Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id              String      @id @default(uuid())
+  visitorName     String?
+  visitorEmail    String?
+  visitorWhatsapp String
+  visitDate       DateTime
+  status          VisitStatus @default(PENDING)
+  ipAddress       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  propertyId      String
+  property        Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
+  @@index([status])
 }

@@ -17,7 +17,7 @@ export default async function HomePage({
   const hasFilters = Boolean(params.q || params.type || params.maxPrice)
 
   return (
-    <main className="flex flex-1 flex-col bg-[#f8f9fa]">
+    <main className="flex flex-1 flex-col bg-background">
       <SearchResultsLayout
         properties={properties}
         hasFilters={hasFilters}

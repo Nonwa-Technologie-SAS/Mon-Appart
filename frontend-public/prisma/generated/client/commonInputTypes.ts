@@ -311,6 +311,13 @@ export type EnumMediaTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel> | $Enums.MediaType
 }
 
+export type EnumVisitRoomFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitRoom | Prisma.EnumVisitRoomFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel> | $Enums.VisitRoom
+}
+
 export type EnumMediaTypeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.MediaType | Prisma.EnumMediaTypeFieldRefInput<$PrismaModel>
   in?: $Enums.MediaType[] | Prisma.ListEnumMediaTypeFieldRefInput<$PrismaModel>
@@ -319,6 +326,33 @@ export type EnumMediaTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel>
+}
+
+export type EnumVisitRoomWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitRoom | Prisma.EnumVisitRoomFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitRoomWithAggregatesFilter<$PrismaModel> | $Enums.VisitRoom
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel>
+}
+
+export type EnumVisitStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitStatus | Prisma.EnumVisitStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel> | $Enums.VisitStatus
+}
+
+export type EnumVisitStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitStatus | Prisma.EnumVisitStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitStatusWithAggregatesFilter<$PrismaModel> | $Enums.VisitStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -604,6 +638,13 @@ export type NestedEnumMediaTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel> | $Enums.MediaType
 }
 
+export type NestedEnumVisitRoomFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitRoom | Prisma.EnumVisitRoomFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel> | $Enums.VisitRoom
+}
+
 export type NestedEnumMediaTypeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.MediaType | Prisma.EnumMediaTypeFieldRefInput<$PrismaModel>
   in?: $Enums.MediaType[] | Prisma.ListEnumMediaTypeFieldRefInput<$PrismaModel>
@@ -612,6 +653,33 @@ export type NestedEnumMediaTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMediaTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumVisitRoomWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitRoom | Prisma.EnumVisitRoomFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitRoom[] | Prisma.ListEnumVisitRoomFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitRoomWithAggregatesFilter<$PrismaModel> | $Enums.VisitRoom
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVisitRoomFilter<$PrismaModel>
+}
+
+export type NestedEnumVisitStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitStatus | Prisma.EnumVisitStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel> | $Enums.VisitStatus
+}
+
+export type NestedEnumVisitStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VisitStatus | Prisma.EnumVisitStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VisitStatus[] | Prisma.ListEnumVisitStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVisitStatusWithAggregatesFilter<$PrismaModel> | $Enums.VisitStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVisitStatusFilter<$PrismaModel>
 }
 
 

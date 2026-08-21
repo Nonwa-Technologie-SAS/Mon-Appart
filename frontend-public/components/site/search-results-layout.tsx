@@ -6,9 +6,8 @@ import { InfoIcon, LocateFixedIcon } from "lucide-react"
 
 import type { PropertyListItem } from "@/lib/properties"
 import { PropertyCard } from "@/components/site/property-card"
-import { HeroSearch } from "@/components/site/hero-search"
+import { HeroSearch, PillSelect } from "@/components/site/hero-search"
 import { useVisitorLocation } from "@/components/site/use-visitor-location"
-import { NativeSelect } from "@/components/ui/native-select"
 import { Button } from "@/components/ui/button"
 import { AROUND_RADIUS_KM, NEARBY_RADIUS_KM, haversineKm } from "@/lib/geo"
 import { cn } from "@/lib/utils"
@@ -124,28 +123,40 @@ export function SearchResultsLayout({
       ? location.city
       : location.status === "ready"
         ? "votre position"
-        : "toute la France"
+        : "Côte d’Ivoire"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border/70 bg-white">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <p className="shrink-0 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {sortedProperties.length} résultat
-                {sortedProperties.length > 1 ? "s" : ""}
-              </span>
-              {hasFilters ? " pour votre recherche" : ` autour de ${locationLabel}`}
+      <div className="border-b border-border bg-white">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 sm:gap-6 sm:px-6 sm:py-8">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[1.75rem] leading-tight font-bold sm:text-4xl lg:text-5xl">
+              Trouvez votre chez-vous.
+            </h1>
+            <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+              Annonces vérifiées, visites simples, en toute confiance.
             </p>
-            <HeroSearch
-              key={`${initialQ ?? ""}-${initialType ?? ""}-${initialMaxPrice ?? ""}`}
-              compact
-              initialQ={initialQ}
-              initialType={initialType}
-              initialMaxPrice={initialMaxPrice}
-            />
           </div>
+          <HeroSearch
+            key={`${initialQ ?? ""}-${initialType ?? ""}-${initialMaxPrice ?? ""}`}
+            compact
+            initialQ={initialQ}
+            initialType={initialType}
+            initialMaxPrice={initialMaxPrice}
+            leading={
+              <p className="shrink-0 text-sm">
+                <span className="font-semibold text-foreground">
+                  {sortedProperties.length} résultat
+                  {sortedProperties.length > 1 ? "s" : ""}
+                </span>
+                <span className="text-muted-foreground">
+                  {hasFilters
+                    ? " pour votre recherche"
+                    : ` autour de ${locationLabel}`}
+                </span>
+              </p>
+            }
+          />
 
           {geoEnabled && location.status === "prompting" ? (
             <p className="text-sm text-muted-foreground">
@@ -154,14 +165,13 @@ export function SearchResultsLayout({
           ) : null}
 
           {geoEnabled && (location.status === "denied" || location.status === "unavailable") ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-muted/70 px-4 py-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm">
               <p className="text-muted-foreground">
                 Activez la localisation pour voir les maisons disponibles dans votre zone.
               </p>
               <Button
                 type="button"
                 size="sm"
-                className="rounded-full"
                 onClick={location.requestLocation}
               >
                 <LocateFixedIcon data-icon="inline-start" />
@@ -170,69 +180,45 @@ export function SearchResultsLayout({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <label className="inline-flex items-center gap-2 text-muted-foreground">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={familyMode}
-                onClick={() => setFamilyMode((current) => !current)}
-                className={cn(
-                  "relative h-6 w-11 rounded-full transition-colors",
-                  familyMode ? "bg-primary" : "bg-muted"
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform",
-                    familyMode && "translate-x-5"
-                  )}
+          <div className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <label className="inline-flex items-center gap-2 text-muted-foreground">
+                <FilterSwitch
+                  checked={familyMode}
+                  onCheckedChange={setFamilyMode}
+                  label="Mode famille"
                 />
-              </button>
-              Mode famille
-              <InfoIcon className="size-3.5" />
-            </label>
+                Mode famille
+                <InfoIcon className="size-3.5" />
+              </label>
 
-            <label className="inline-flex items-center gap-2 text-muted-foreground">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showMap}
-                onClick={() => setShowMap((current) => !current)}
-                className={cn(
-                  "relative h-6 w-11 rounded-full transition-colors",
-                  showMap ? "bg-primary" : "bg-muted"
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform",
-                    showMap && "translate-x-5"
-                  )}
+              <label className="inline-flex items-center gap-2 text-muted-foreground">
+                <FilterSwitch
+                  checked={showMap}
+                  onCheckedChange={setShowMap}
+                  label="Vue carte"
                 />
-              </button>
-              Vue carte
-            </label>
+                Vue carte
+              </label>
 
-            {location.status === "ready" ? (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="rounded-full"
+                className="h-9 rounded-full bg-muted px-3.5 text-foreground hover:bg-muted/80"
                 onClick={location.requestLocation}
               >
                 <LocateFixedIcon data-icon="inline-start" />
                 Ma position
               </Button>
-            ) : null}
+            </div>
 
-            <label className="ml-auto inline-flex items-center gap-2 text-muted-foreground">
-              Trier par
-              <NativeSelect
+            <label className="inline-flex w-full min-w-0 items-center gap-2 text-muted-foreground sm:ml-auto sm:w-auto">
+              <span className="shrink-0">Trier par</span>
+              <PillSelect
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="h-9 w-40 rounded-full border-border bg-white px-3"
+                className="w-full sm:w-36"
               >
                 {location.status === "ready" ? (
                   <option value="distance">Distance</option>
@@ -240,15 +226,22 @@ export function SearchResultsLayout({
                 <option value="newest">Plus récents</option>
                 <option value="price-asc">Prix croissant</option>
                 <option value="price-desc">Prix décroissant</option>
-              </NativeSelect>
+              </PillSelect>
             </label>
           </div>
         </div>
       </div>
 
       {showMap ? (
-        <div className="relative flex min-h-[70vh] flex-1">
-          <section className="flex w-full flex-col border-border lg:w-[42%] lg:max-w-xl lg:border-r xl:w-[38%]">
+        <div className="relative flex min-h-0 flex-1 flex-col lg:min-h-[70vh] lg:flex-row">
+          <section className="relative h-[min(50dvh,420px)] w-full shrink-0 overflow-hidden lg:order-2 lg:h-auto lg:min-h-0 lg:flex-1">
+            <PropertyMap
+              properties={sortedProperties}
+              highlightedId={highlightedId}
+              onMarkerHover={setHighlightedId}
+            />
+          </section>
+          <section className="flex min-h-0 w-full flex-col border-border lg:order-1 lg:w-[42%] lg:max-w-xl lg:border-r xl:w-[38%]">
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
               <PropertyList
                 properties={sortedProperties}
@@ -258,16 +251,9 @@ export function SearchResultsLayout({
               />
             </div>
           </section>
-          <section className="relative hidden min-h-0 flex-1 lg:block">
-            <PropertyMap
-              properties={sortedProperties}
-              highlightedId={highlightedId}
-              onMarkerHover={setHighlightedId}
-            />
-          </section>
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-10 px-4 py-8 sm:px-6">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 sm:py-8">
           {showGeoGroups ? (
             <>
               <PropertySection
@@ -328,11 +314,11 @@ function PropertySection({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-heading text-xl font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-xl font-semibold sm:text-2xl">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
       </div>
       {properties.length === 0 ? (
-        <p className="rounded-3xl border border-dashed border-border bg-white px-6 py-10 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border bg-white px-6 py-10 text-center text-sm text-muted-foreground">
           {emptyMessage}
         </p>
       ) : (
@@ -359,7 +345,7 @@ function PropertyList({
 }) {
   if (properties.length === 0) {
     return (
-      <p className="rounded-3xl border border-dashed border-border bg-white px-6 py-16 text-center text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-border bg-white px-6 py-16 text-center text-muted-foreground">
         Aucun bien disponible pour ces critères.
       </p>
     )
@@ -370,10 +356,10 @@ function PropertyList({
       className={
         compact
           ? "flex flex-col gap-4"
-          : "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+          : "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3"
       }
     >
-      {properties.map((property) => (
+      {properties.map((property, index) => (
         <li
           key={property.id}
           onMouseEnter={() => onHighlight(property.id)}
@@ -383,9 +369,41 @@ function PropertyList({
             property={property}
             compact={compact}
             highlighted={highlightedId === property.id}
+            priority={index === 0}
           />
         </li>
       ))}
     </ul>
+  )
+}
+
+function FilterSwitch({
+  checked,
+  onCheckedChange,
+  label,
+}: {
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-label={label}
+      aria-checked={checked}
+      onClick={() => onCheckedChange(!checked)}
+      className={cn(
+        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+        checked ? "bg-primary" : "bg-muted"
+      )}
+    >
+      <span
+        className={cn(
+          "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform",
+          checked && "translate-x-5"
+        )}
+      />
+    </button>
   )
 }

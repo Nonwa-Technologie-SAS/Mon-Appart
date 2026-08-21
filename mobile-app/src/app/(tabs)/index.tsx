@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 
 import { CategoryChips } from '@/components/home/category-chips';
 import { FeaturedDestination } from '@/components/home/featured-destination';
 import { PropertyCard } from '@/components/home/property-card';
 import { SearchBar } from '@/components/home/search-bar';
+import { AppHeader } from '@/components/app-header';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchProperties } from '@/lib/api';
@@ -74,28 +73,14 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <AppHeader />
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          <View style={styles.topBar}>
-            <View style={styles.locationBlock}>
-              <View style={styles.locationRow}>
-                <Ionicons name="location" size={16} color={theme.primary} />
-                <Text style={[styles.locationLabel, { color: theme.primary }]}>
-                  Mon Appart
-                </Text>
-              </View>
-              <Text style={[styles.headline, { color: theme.text }]}>
-                Où voulez-vous{'\n'}habiter ?
-              </Text>
-            </View>
-            <Pressable
-              style={[styles.iconBtn, { backgroundColor: theme.backgroundElement }]}
-              accessibilityLabel="Notifications">
-              <Ionicons name="notifications-outline" size={18} color={theme.text} />
-            </Pressable>
-          </View>
+          <Text style={[styles.headline, { color: theme.text }]}>
+            Où voulez-vous{'\n'}habiter ?
+          </Text>
 
           <SearchBar value={query} onChangeText={setQuery} />
 
@@ -179,41 +164,15 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
+    paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.five,
     gap: Spacing.four,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: Spacing.three,
-  },
-  locationBlock: {
-    flex: 1,
-    gap: Spacing.two,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  locationLabel: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   headline: {
     fontSize: 32,
     fontWeight: '800',
     lineHeight: 38,
     letterSpacing: -0.5,
-  },
-  iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   section: {
     gap: Spacing.three,

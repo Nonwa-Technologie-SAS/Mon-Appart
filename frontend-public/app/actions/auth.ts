@@ -5,82 +5,27 @@ import { randomUUID } from "node:crypto"
 import { hashPassword } from "better-auth/crypto"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { z } from "zod"
 
 import { auth } from "@/lib/auth"
-import { requireRole } from "@/lib/auth-session"
+import {
+  agencySchema,
+  credentialsSchema,
+  firstZodError,
+  signInSchema,
+  staffSchema,
+} from "@/lib/auth-schemas"
+import {
+  isPublisherRole,
+  requireRole,
+  safeInternalPath,
+} from "@/lib/auth-session"
+import { createUserWithPassword } from "@/lib/create-user"
 import { prisma } from "@/lib/prisma"
 import { Role } from "@/prisma/generated/client/enums"
 
 export type AuthActionState = {
   error?: string
   success?: boolean
-}
-
-const credentialsSchema = z.object({
-  name: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.email("Email invalide"),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
-})
-
-const agencySchema = credentialsSchema.extend({
-  agencyName: z.string().trim().min(2, "Le nom de l'agence est requis"),
-  phone: z.string().trim().optional(),
-  address: z.string().trim().optional(),
-})
-
-const staffSchema = credentialsSchema.extend({
-  role: z.enum([Role.ADMIN, Role.SUPERADMIN]),
-})
-
-const signInSchema = z.object({
-  email: z.email("Email invalide"),
-  password: z.string().min(1, "Mot de passe requis"),
-})
-
-function firstZodError(error: z.ZodError) {
-  return error.issues[0]?.message ?? "Données invalides"
-}
-
-async function createUserWithPassword(
-  data: z.infer<typeof credentialsSchema>,
-  role: Role,
-  agencyId?: string
-) {
-  const existing = await prisma.user.findUnique({
-    where: { email: data.email },
-  })
-  if (existing) {
-    throw new Error("Un compte existe déjà avec cet email")
-  }
-
-  const userId = randomUUID()
-  const hashedPassword = await hashPassword(data.password)
-
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        id: userId,
-        name: data.name,
-        email: data.email,
-        emailVerified: false,
-        role,
-        agencyId,
-      },
-    })
-
-    await tx.account.create({
-      data: {
-        id: randomUUID(),
-        accountId: userId,
-        providerId: "credential",
-        userId,
-        password: hashedPassword,
-      },
-    })
-
-    return user
-  })
 }
 
 export async function registerOwner(
@@ -233,6 +178,18 @@ export async function signIn(
     const message =
       error instanceof Error ? error.message : "Identifiants invalides"
     return { error: message }
+  }
+
+  const nextPath = safeInternalPath(formData.get("next"))
+  if (nextPath) {
+    redirect(nextPath)
+  }
+
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+  if (isPublisherRole(session?.user.role)) {
+    redirect("/espace")
   }
 
   redirect("/")

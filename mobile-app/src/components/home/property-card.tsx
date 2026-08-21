@@ -9,9 +9,10 @@ import { formatPrice, formatPropertyType, type PropertyListItem } from '@/lib/ty
 type PropertyCardProps = {
   property: PropertyListItem;
   onPress?: (property: PropertyListItem) => void;
+  badge?: string;
 };
 
-export function PropertyCard({ property, onPress }: PropertyCardProps) {
+export function PropertyCard({ property, onPress, badge }: PropertyCardProps) {
   const theme = useTheme();
 
   return (
@@ -43,8 +44,13 @@ export function PropertyCard({ property, onPress }: PropertyCardProps) {
           </View>
         )}
         <View style={styles.favBtn}>
-          <Ionicons name="heart-outline" size={16} color={theme.primary} />
+          <Ionicons name="heart-outline" size={16} color={theme.secondary} />
         </View>
+        {badge ? (
+          <View style={styles.statusPill}>
+            <Text style={styles.statusPillText}>{badge}</Text>
+          </View>
+        ) : null}
         <View style={styles.locationPill}>
           <Ionicons name="location" size={12} color="#fff" />
           <Text style={styles.locationPillText} numberOfLines={1}>
@@ -106,6 +112,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  statusPill: {
+    position: 'absolute',
+    top: Spacing.three,
+    left: Spacing.three,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 193, 7, 0.95)',
+  },
+  statusPillText: {
+    color: '#212121',
+    fontSize: 12,
+    fontWeight: '700',
   },
   locationPill: {
     position: 'absolute',

@@ -33,9 +33,9 @@ export function OwnerRegisterForm() {
   )
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Inscription propriétaire</CardTitle>
+        <CardTitle className="text-xl">Inscription propriétaire</CardTitle>
         <CardDescription>
           Créez un compte pour publier et gérer vos biens.
         </CardDescription>
@@ -83,7 +83,7 @@ export function OwnerRegisterForm() {
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter className="justify-center text-sm text-muted-foreground">
+      <CardFooter className="flex-wrap justify-center text-sm text-muted-foreground">
         Déjà un compte ?{" "}
         <Link href="/connexion" className="ml-1 text-foreground underline">
           Se connecter

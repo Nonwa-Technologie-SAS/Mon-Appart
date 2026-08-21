@@ -1,56 +1,54 @@
 import Link from "next/link"
-import {
-  BellIcon,
-  HeartIcon,
-  MenuIcon,
-  UserRoundIcon,
-} from "lucide-react"
+import { HeartIcon, UserRoundIcon } from "lucide-react"
 
-import { getSession } from "@/lib/auth-session"
+import { BrandMark } from "@/components/site/brand-mark"
+import { SiteMobileNav } from "@/components/site/site-mobile-nav"
+import { getSession, isPublisherRole } from "@/lib/auth-session"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-const NAV_ITEMS = [
-  { href: "/", label: "Acheter" },
+const PUBLIC_NAV_ITEMS: { href: string; label: string; active?: boolean }[] = [
   { href: "/", label: "Louer", active: true },
-  { href: "/inscription/proprietaire", label: "Vendre" },
-  { href: "/inscription/agence", label: "Trouver un agent" },
-] as const
+  { href: "/", label: "Acheter" },
+  { href: "/inscription/agence", label: "Agences" },
+]
+
+const PUBLISHER_NAV_ITEMS: { href: string; label: string; active?: boolean }[] =
+  [
+    { href: "/", label: "Annonces" },
+    { href: "/espace", label: "Mon espace", active: true },
+    { href: "/espace/publier", label: "Publier" },
+  ]
 
 export async function SiteHeader() {
   const session = await getSession()
+  const publisher = isPublisherRole(session?.user.role)
+  const navItems = publisher ? PUBLISHER_NAV_ITEMS : PUBLIC_NAV_ITEMS
+  const accountHref = publisher ? "/espace" : "/connexion"
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/80 bg-white">
-      <div className="mx-auto flex h-[4.25rem] w-full max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-foreground"
-            aria-label="Menu"
-          >
-            <MenuIcon />
-          </Button>
-          <Link
-            href="/"
-            className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-          >
-            Mon Appart
-          </Link>
+    <header className="sticky top-0 z-30 border-b border-border bg-white pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+          <SiteMobileNav
+            items={navItems}
+            publisher={publisher}
+            signedIn={Boolean(session)}
+            accountHref={accountHref}
+          />
+          <BrandMark compact />
         </div>
 
-        <nav className="hidden rounded-full border border-border bg-white p-1 shadow-sm md:flex">
-          {NAV_ITEMS.map((item) => (
+        <nav className="hidden items-center gap-1 md:flex">
+          {navItems.map((item) => (
             <Link
               key={item.label}
               href={item.href}
               className={cn(
-                "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 item.active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-accent text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {item.label}
@@ -58,11 +56,30 @@ export async function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+          {publisher ? (
+            <Button
+              variant="outline"
+              className="hidden lg:inline-flex"
+              nativeButton={false}
+              render={<Link href="/espace" />}
+            >
+              Mon espace
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              className="hidden lg:inline-flex"
+              nativeButton={false}
+              render={<Link href="/inscription/proprietaire" />}
+            >
+              Publier un bien
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full text-foreground"
+            className="hidden text-secondary sm:inline-flex"
             aria-label="Favoris"
             nativeButton={false}
             render={<Link href="/" />}
@@ -72,43 +89,19 @@ export async function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full text-foreground"
-            aria-label="Notifications"
-          >
-            <BellIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative rounded-full text-foreground"
-            aria-label={session ? "Mon compte" : "Connexion"}
+            className="relative"
+            aria-label={publisher ? "Mon espace" : "Connexion"}
             nativeButton={false}
-            render={<Link href="/connexion" />}
+            render={<Link href={accountHref} />}
           >
-            <span className="flex size-9 items-center justify-center rounded-full bg-muted">
-              <UserRoundIcon className="size-4" />
+            <span className="flex size-8 items-center justify-center rounded-full bg-accent text-primary sm:size-9">
+              <UserRoundIcon />
             </span>
-            <span className="absolute right-1 bottom-1 size-2.5 rounded-full border-2 border-white bg-primary" />
+            {session ? (
+              <span className="absolute right-1 bottom-1 size-2.5 rounded-full border-2 border-white bg-success" />
+            ) : null}
           </Button>
         </div>
-      </div>
-      <div className="border-t border-border/70 px-4 py-2 md:hidden">
-        <nav className="flex gap-2 overflow-x-auto">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-sm font-medium",
-                item.active
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
       </div>
     </header>
   )

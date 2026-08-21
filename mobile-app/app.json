@@ -33,7 +33,17 @@
           "imageWidth": 76
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mon Appart accède à vos photos pour publier les images de votre bien.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

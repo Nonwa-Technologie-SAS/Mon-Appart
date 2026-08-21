@@ -3,9 +3,18 @@ import { Pool } from "pg"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@/prisma/generated/client/client"
 
+/** Bump after `prisma generate` so the dev singleton is not reused with a stale schema. */
+const PRISMA_GENERATION = "visit-room-layout"
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
   pgPool: Pool | undefined
+  prismaGeneration: string | undefined
+}
+
+if (globalForPrisma.prismaGeneration !== PRISMA_GENERATION) {
+  globalForPrisma.prisma = undefined
+  globalForPrisma.prismaGeneration = PRISMA_GENERATION
 }
 
 function createPrismaClient() {

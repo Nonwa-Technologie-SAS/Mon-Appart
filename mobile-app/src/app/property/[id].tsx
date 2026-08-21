@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -16,12 +17,14 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPropertyById } from '@/lib/api';
 import { formatPrice, formatPropertyType, type PropertyListItem } from '@/lib/types';
+import { VisitRequestForm } from '@/components/visit-request-form';
 
 type PropertyDetail = PropertyListItem & {
   images?: { id: string; url: string }[];
   virtualTourUrl?: string | null;
   features?: { id: string; name: string; value: string }[];
   agency?: { name: string; phone: string | null; email: string | null } | null;
+  isOwner?: boolean;
 };
 
 export default function PropertyDetailScreen() {
@@ -29,6 +32,7 @@ export default function PropertyDetailScreen() {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,24 +83,44 @@ export default function PropertyDetailScreen() {
     );
   }
 
+  const gallery =
+    property.images && property.images.length > 0
+      ? property.images
+      : property.imageUrl
+        ? [{ id: 'cover', url: property.imageUrl }]
+        : [];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{
         paddingBottom: insets.bottom + Spacing.five,
       }}>
-      <View style={styles.hero}>
-        {property.imageUrl ? (
-          <Image source={{ uri: property.imageUrl }} style={styles.heroImage} contentFit="cover" />
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        style={styles.hero}>
+        {gallery.length > 0 ? (
+          gallery.map((image) => (
+            <Image
+              key={image.id}
+              source={{ uri: image.url }}
+              style={[styles.heroImage, { width }]}
+              contentFit="cover"
+            />
+          ))
         ) : (
-          <View style={[styles.heroImage, { backgroundColor: theme.backgroundSelected }]} />
+          <View style={[styles.heroImage, { width, backgroundColor: theme.backgroundSelected }]} />
         )}
-      </View>
+      </ScrollView>
 
       <View style={styles.body}>
-        <Text style={[styles.type, { color: theme.primary }]}>
-          {formatPropertyType(property.type)}
-        </Text>
+        <View style={[styles.typePill, { backgroundColor: theme.secondary }]}>
+          <Text style={[styles.type, { color: theme.secondaryForeground }]}>
+            {formatPropertyType(property.type)}
+          </Text>
+        </View>
         <Text style={[styles.title, { color: theme.text }]}>{property.title}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location" size={14} color={theme.textSecondary} />
@@ -148,13 +172,25 @@ export default function PropertyDetailScreen() {
           </View>
         ) : null}
 
-        <Pressable
-          style={[styles.cta, { backgroundColor: theme.primary }]}
-          onPress={() => router.back()}>
-          <Text style={{ color: theme.primaryForeground, fontWeight: '700', fontSize: 16 }}>
-            Retour aux annonces
-          </Text>
-        </Pressable>
+        {property.isOwner ? (
+          <View
+            style={[
+              styles.agency,
+              {
+                backgroundColor: theme.backgroundSelected,
+                borderColor: theme.secondary,
+              },
+            ]}>
+            <Text style={{ color: theme.text, fontWeight: '700' }}>
+              C’est votre annonce
+            </Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 14 }}>
+              Les demandes de visite apparaîtront dans Notifications.
+            </Text>
+          </View>
+        ) : (
+          <VisitRequestForm propertyId={property.id} />
+        )}
       </View>
     </ScrollView>
   );
@@ -177,8 +213,15 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.two,
   },
+  typePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginBottom: 4,
+  },
   type: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -223,11 +266,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: Spacing.three,
     gap: 4,
-  },
-  cta: {
-    marginTop: Spacing.four,
-    borderRadius: 999,
-    alignItems: 'center',
-    paddingVertical: Spacing.three,
   },
 });

@@ -1,25 +1,31 @@
-import type { Metadata } from "next"
-import { DM_Sans, Syne } from "next/font/google"
-import "./globals.css"
+import type { Metadata, Viewport } from "next"
+import { Poppins } from "next/font/google"
+
+import { NavigationProgress } from "@/components/site/navigation-progress"
 import { cn } from "@/lib/utils"
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
+import "./globals.css"
 
-const syne = Syne({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-heading",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
 })
 
 export const metadata: Metadata = {
   title: {
-    default: "Mon Appart — Trouvez votre prochain chez-vous",
+    default: "Mon Appart — Logements de confiance en Côte d’Ivoire",
     template: "%s · Mon Appart",
   },
   description:
-    "Recherchez des maisons, appartements et villas disponibles. Réservez une visite en quelques clics.",
+    "Recherchez, découvrez et louez un logement facilement en Côte d’Ivoire. Annonces vérifiées, visites simples, en toute confiance.",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1565C0",
 }
 
 export default function RootLayout({
@@ -30,10 +36,12 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={cn("h-full antialiased", dmSans.variable, syne.variable, "font-sans")}
+      className={cn("h-full antialiased", poppins.variable, "font-sans")}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <NavigationProgress />
+        {children}
+      </body>
     </html>
   )
 }
-

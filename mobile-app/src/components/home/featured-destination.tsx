@@ -43,8 +43,8 @@ export function FeaturedDestination({ property }: FeaturedDestinationProps) {
           </Text>
         </View>
       </View>
-      <View style={[styles.action, { backgroundColor: theme.primary }]}>
-        <Ionicons name="arrow-up" size={16} color={theme.primaryForeground} />
+      <View style={[styles.action, { backgroundColor: theme.secondary }]}>
+        <Ionicons name="arrow-up" size={16} color={theme.secondaryForeground} />
       </View>
     </View>
   );

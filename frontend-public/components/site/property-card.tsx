@@ -15,30 +15,34 @@ export function PropertyCard({
   property,
   compact = false,
   highlighted = false,
+  priority = false,
 }: {
   property: PropertyListItem
   compact?: boolean
   highlighted?: boolean
+  priority?: boolean
 }) {
   if (compact) {
     return (
       <Link
         href={`/biens/${property.id}`}
         className={cn(
-          "group property-card flex overflow-hidden rounded-2xl border bg-card transition-[transform,box-shadow,border-color] duration-300",
+          "group flex overflow-hidden rounded-xl border bg-card transition-colors",
           highlighted
-            ? "border-primary shadow-md"
-            : "border-border hover:-translate-y-0.5 hover:shadow-md"
+            ? "border-primary"
+            : "border-border hover:border-primary/40"
         )}
       >
-        <div className="relative aspect-square w-28 shrink-0 overflow-hidden bg-muted sm:w-36">
+        <div className="relative aspect-square w-24 shrink-0 overflow-hidden bg-muted sm:w-36">
           {property.imageUrl ? (
             <Image
               src={property.imageUrl}
               alt={property.title}
               fill
               sizes="144px"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              quality={85}
+              loading={priority ? "eager" : "lazy"}
+              className="object-cover"
             />
           ) : (
             <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
@@ -46,11 +50,11 @@ export function PropertyCard({
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
-          <p className="text-xs font-medium tracking-wide text-primary uppercase">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:p-4">
+          <p className="text-xs font-medium text-primary">
             {formatPropertyType(property.type)}
           </p>
-          <h3 className="line-clamp-2 font-heading text-base leading-snug font-semibold">
+          <h3 className="line-clamp-2 text-sm leading-snug font-semibold sm:text-base">
             {property.title}
           </h3>
           <p className="text-sm text-muted-foreground">{property.location}</p>
@@ -61,7 +65,10 @@ export function PropertyCard({
           ) : null}
           <p className="mt-auto pt-1 text-sm font-semibold">
             {formatPrice(property.price)}
-            <span className="text-sm font-normal text-muted-foreground"> / mois</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              {" "}
+              / mois
+            </span>
           </p>
         </div>
       </Link>
@@ -84,8 +91,8 @@ export function PropertyCard({
     <Link
       href={`/biens/${property.id}`}
       className={cn(
-        "group property-card flex flex-col overflow-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgb(0,0,0,0.1)]",
-        highlighted && "ring-2 ring-primary/40"
+        "group flex flex-col overflow-hidden rounded-xl border bg-card transition-colors",
+        highlighted ? "border-primary" : "border-border hover:border-primary/40"
       )}
     >
       <div className="relative aspect-16/10 overflow-hidden bg-muted">
@@ -94,8 +101,10 @@ export function PropertyCard({
             src={property.imageUrl}
             alt={property.title}
             fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            quality={85}
+            loading={priority ? "eager" : "lazy"}
+            className="object-cover"
           />
         ) : (
           <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
@@ -103,14 +112,14 @@ export function PropertyCard({
           </div>
         )}
         <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          <span className="rounded-lg border border-white/70 bg-white/95 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm">
+          <span className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
             {formatPropertyType(property.type)}
           </span>
-          <span className="rounded-lg border border-white/70 bg-white/95 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+          <span className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground">
             {formatRelativeTime(property.createdAt)}
           </span>
           {property.distanceKm != null ? (
-            <span className="rounded-lg border border-white/70 bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm">
+            <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
               {formatDistanceKm(property.distanceKm)}
             </span>
           ) : null}
@@ -118,29 +127,27 @@ export function PropertyCard({
       </div>
 
       {specs.length > 0 ? (
-        <div className="flex items-center gap-4 bg-muted/70 px-4 py-2.5 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-3 py-2.5 text-sm text-muted-foreground sm:px-4">
           {specs.map((spec) => (
             <span key={spec.label} className="inline-flex items-center gap-1.5">
-              <spec.icon className="size-3.5" />
+              <spec.icon className="size-3.5 text-primary" />
               {spec.label}
             </span>
           ))}
         </div>
       ) : null}
 
-      <div className="flex items-end justify-between gap-3 px-4 py-4">
-        <p className="text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-1 px-3 py-3 sm:px-4 sm:py-4">
+        <p className="truncate font-semibold">{property.title}</p>
+        <p className="truncate text-sm text-muted-foreground">
+          {property.location}
+        </p>
+        <p className="mt-2 text-lg font-bold text-primary sm:text-xl">
           {formatPrice(property.price)}
           <span className="ml-1 text-sm font-normal text-muted-foreground">
             / mois
           </span>
         </p>
-        <div className="min-w-0 text-right">
-          <p className="truncate text-sm font-medium">{property.title}</p>
-          <p className="truncate text-sm text-muted-foreground">
-            {property.location}
-          </p>
-        </div>
       </div>
     </Link>
   )

@@ -3,6 +3,10 @@ const DEFAULT_ORIGINS = [
   "http://127.0.0.1:8081",
   "http://localhost:19006",
   "http://127.0.0.1:19006",
+  "http://localhost:3000",
+  "http://10.0.2.2:3000",
+  "http://10.0.2.2:8081",
+  "mobileapp://",
 ]
 
 function allowedOrigins() {
@@ -25,8 +29,10 @@ export function corsHeaders(request: Request): HeadersInit {
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, Cookie, Expo-Origin, X-Requested-With",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   }

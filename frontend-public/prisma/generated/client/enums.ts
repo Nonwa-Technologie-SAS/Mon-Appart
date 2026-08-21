@@ -55,3 +55,25 @@ export const MediaType = {
 } as const
 
 export type MediaType = (typeof MediaType)[keyof typeof MediaType]
+
+
+export const VisitRoom = {
+  ENTRANCE: 'ENTRANCE',
+  LIVING: 'LIVING',
+  KITCHEN: 'KITCHEN',
+  BEDROOM: 'BEDROOM',
+  BATHROOM: 'BATHROOM',
+  EXTERIOR: 'EXTERIOR',
+  OTHER: 'OTHER'
+} as const
+
+export type VisitRoom = (typeof VisitRoom)[keyof typeof VisitRoom]
+
+
+export const VisitStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  DECLINED: 'DECLINED'
+} as const
+
+export type VisitStatus = (typeof VisitStatus)[keyof typeof VisitStatus]

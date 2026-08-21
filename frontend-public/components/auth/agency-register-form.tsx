@@ -33,9 +33,9 @@ export function AgencyRegisterForm() {
   )
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Inscription agence</CardTitle>
+        <CardTitle className="text-xl">Inscription agence</CardTitle>
         <CardDescription>
           Créez le compte de votre agence immobilière.
         </CardDescription>
@@ -111,7 +111,7 @@ export function AgencyRegisterForm() {
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter className="justify-center text-sm text-muted-foreground">
+      <CardFooter className="flex-wrap justify-center text-sm text-muted-foreground">
         Déjà un compte ?{" "}
         <Link href="/connexion" className="ml-1 text-foreground underline">
           Se connecter

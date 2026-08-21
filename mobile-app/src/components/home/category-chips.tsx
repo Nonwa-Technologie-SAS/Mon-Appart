@@ -26,14 +26,14 @@ export function CategoryChips({ options, selected, onSelect }: CategoryChipsProp
             style={[
               styles.chip,
               {
-                backgroundColor: isActive ? theme.primary : theme.backgroundElement,
-                borderColor: isActive ? theme.primary : theme.border,
+                backgroundColor: isActive ? theme.secondary : theme.backgroundElement,
+                borderColor: isActive ? theme.secondary : theme.border,
               },
             ]}>
             <Text
               style={[
                 styles.chipText,
-                { color: isActive ? theme.primaryForeground : theme.text },
+                { color: isActive ? theme.secondaryForeground : theme.text },
               ]}>
               {option.label}
             </Text>

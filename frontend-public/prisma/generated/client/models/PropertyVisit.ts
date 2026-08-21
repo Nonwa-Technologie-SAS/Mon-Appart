@@ -28,7 +28,9 @@ export type PropertyVisitMinAggregateOutputType = {
   id: string | null
   visitorName: string | null
   visitorEmail: string | null
+  visitorWhatsapp: string | null
   visitDate: Date | null
+  status: $Enums.VisitStatus | null
   ipAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -39,7 +41,9 @@ export type PropertyVisitMaxAggregateOutputType = {
   id: string | null
   visitorName: string | null
   visitorEmail: string | null
+  visitorWhatsapp: string | null
   visitDate: Date | null
+  status: $Enums.VisitStatus | null
   ipAddress: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -50,7 +54,9 @@ export type PropertyVisitCountAggregateOutputType = {
   id: number
   visitorName: number
   visitorEmail: number
+  visitorWhatsapp: number
   visitDate: number
+  status: number
   ipAddress: number
   createdAt: number
   updatedAt: number
@@ -63,7 +69,9 @@ export type PropertyVisitMinAggregateInputType = {
   id?: true
   visitorName?: true
   visitorEmail?: true
+  visitorWhatsapp?: true
   visitDate?: true
+  status?: true
   ipAddress?: true
   createdAt?: true
   updatedAt?: true
@@ -74,7 +82,9 @@ export type PropertyVisitMaxAggregateInputType = {
   id?: true
   visitorName?: true
   visitorEmail?: true
+  visitorWhatsapp?: true
   visitDate?: true
+  status?: true
   ipAddress?: true
   createdAt?: true
   updatedAt?: true
@@ -85,7 +95,9 @@ export type PropertyVisitCountAggregateInputType = {
   id?: true
   visitorName?: true
   visitorEmail?: true
+  visitorWhatsapp?: true
   visitDate?: true
+  status?: true
   ipAddress?: true
   createdAt?: true
   updatedAt?: true
@@ -169,7 +181,9 @@ export type PropertyVisitGroupByOutputType = {
   id: string
   visitorName: string | null
   visitorEmail: string | null
-  visitDate: Date | null
+  visitorWhatsapp: string
+  visitDate: Date
+  status: $Enums.VisitStatus
   ipAddress: string | null
   createdAt: Date
   updatedAt: Date
@@ -201,7 +215,9 @@ export type PropertyVisitWhereInput = {
   id?: Prisma.StringFilter<"PropertyVisit"> | string
   visitorName?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   visitorEmail?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
-  visitDate?: Prisma.DateTimeNullableFilter<"PropertyVisit"> | Date | string | null
+  visitorWhatsapp?: Prisma.StringFilter<"PropertyVisit"> | string
+  visitDate?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
+  status?: Prisma.EnumVisitStatusFilter<"PropertyVisit"> | $Enums.VisitStatus
   ipAddress?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
@@ -213,7 +229,9 @@ export type PropertyVisitOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   visitorName?: Prisma.SortOrderInput | Prisma.SortOrder
   visitorEmail?: Prisma.SortOrderInput | Prisma.SortOrder
-  visitDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  visitorWhatsapp?: Prisma.SortOrder
+  visitDate?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -228,7 +246,9 @@ export type PropertyVisitWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.PropertyVisitWhereInput | Prisma.PropertyVisitWhereInput[]
   visitorName?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   visitorEmail?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
-  visitDate?: Prisma.DateTimeNullableFilter<"PropertyVisit"> | Date | string | null
+  visitorWhatsapp?: Prisma.StringFilter<"PropertyVisit"> | string
+  visitDate?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
+  status?: Prisma.EnumVisitStatusFilter<"PropertyVisit"> | $Enums.VisitStatus
   ipAddress?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
@@ -240,7 +260,9 @@ export type PropertyVisitOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   visitorName?: Prisma.SortOrderInput | Prisma.SortOrder
   visitorEmail?: Prisma.SortOrderInput | Prisma.SortOrder
-  visitDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  visitorWhatsapp?: Prisma.SortOrder
+  visitDate?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -257,7 +279,9 @@ export type PropertyVisitScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"PropertyVisit"> | string
   visitorName?: Prisma.StringNullableWithAggregatesFilter<"PropertyVisit"> | string | null
   visitorEmail?: Prisma.StringNullableWithAggregatesFilter<"PropertyVisit"> | string | null
-  visitDate?: Prisma.DateTimeNullableWithAggregatesFilter<"PropertyVisit"> | Date | string | null
+  visitorWhatsapp?: Prisma.StringWithAggregatesFilter<"PropertyVisit"> | string
+  visitDate?: Prisma.DateTimeWithAggregatesFilter<"PropertyVisit"> | Date | string
+  status?: Prisma.EnumVisitStatusWithAggregatesFilter<"PropertyVisit"> | $Enums.VisitStatus
   ipAddress?: Prisma.StringNullableWithAggregatesFilter<"PropertyVisit"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PropertyVisit"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PropertyVisit"> | Date | string
@@ -268,7 +292,9 @@ export type PropertyVisitCreateInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -279,7 +305,9 @@ export type PropertyVisitUncheckedCreateInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -290,7 +318,9 @@ export type PropertyVisitUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -301,7 +331,9 @@ export type PropertyVisitUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -312,7 +344,9 @@ export type PropertyVisitCreateManyInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -323,7 +357,9 @@ export type PropertyVisitUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,7 +369,9 @@ export type PropertyVisitUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -354,7 +392,9 @@ export type PropertyVisitCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   visitorName?: Prisma.SortOrder
   visitorEmail?: Prisma.SortOrder
+  visitorWhatsapp?: Prisma.SortOrder
   visitDate?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -365,7 +405,9 @@ export type PropertyVisitMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   visitorName?: Prisma.SortOrder
   visitorEmail?: Prisma.SortOrder
+  visitorWhatsapp?: Prisma.SortOrder
   visitDate?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -376,7 +418,9 @@ export type PropertyVisitMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   visitorName?: Prisma.SortOrder
   visitorEmail?: Prisma.SortOrder
+  visitorWhatsapp?: Prisma.SortOrder
   visitDate?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   ipAddress?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -425,11 +469,17 @@ export type PropertyVisitUncheckedUpdateManyWithoutPropertyNestedInput = {
   deleteMany?: Prisma.PropertyVisitScalarWhereInput | Prisma.PropertyVisitScalarWhereInput[]
 }
 
+export type EnumVisitStatusFieldUpdateOperationsInput = {
+  set?: $Enums.VisitStatus
+}
+
 export type PropertyVisitCreateWithoutPropertyInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -439,7 +489,9 @@ export type PropertyVisitUncheckedCreateWithoutPropertyInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -478,7 +530,9 @@ export type PropertyVisitScalarWhereInput = {
   id?: Prisma.StringFilter<"PropertyVisit"> | string
   visitorName?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   visitorEmail?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
-  visitDate?: Prisma.DateTimeNullableFilter<"PropertyVisit"> | Date | string | null
+  visitorWhatsapp?: Prisma.StringFilter<"PropertyVisit"> | string
+  visitDate?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
+  status?: Prisma.EnumVisitStatusFilter<"PropertyVisit"> | $Enums.VisitStatus
   ipAddress?: Prisma.StringNullableFilter<"PropertyVisit"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyVisit"> | Date | string
@@ -489,7 +543,9 @@ export type PropertyVisitCreateManyPropertyInput = {
   id?: string
   visitorName?: string | null
   visitorEmail?: string | null
-  visitDate?: Date | string | null
+  visitorWhatsapp: string
+  visitDate: Date | string
+  status?: $Enums.VisitStatus
   ipAddress?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -499,7 +555,9 @@ export type PropertyVisitUpdateWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -509,7 +567,9 @@ export type PropertyVisitUncheckedUpdateWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -519,7 +579,9 @@ export type PropertyVisitUncheckedUpdateManyWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   visitorName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   visitorEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  visitDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  visitorWhatsapp?: Prisma.StringFieldUpdateOperationsInput | string
+  visitDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumVisitStatusFieldUpdateOperationsInput | $Enums.VisitStatus
   ipAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -531,7 +593,9 @@ export type PropertyVisitSelect<ExtArgs extends runtime.Types.Extensions.Interna
   id?: boolean
   visitorName?: boolean
   visitorEmail?: boolean
+  visitorWhatsapp?: boolean
   visitDate?: boolean
+  status?: boolean
   ipAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -543,7 +607,9 @@ export type PropertyVisitSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   visitorName?: boolean
   visitorEmail?: boolean
+  visitorWhatsapp?: boolean
   visitDate?: boolean
+  status?: boolean
   ipAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -555,7 +621,9 @@ export type PropertyVisitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   visitorName?: boolean
   visitorEmail?: boolean
+  visitorWhatsapp?: boolean
   visitDate?: boolean
+  status?: boolean
   ipAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -567,14 +635,16 @@ export type PropertyVisitSelectScalar = {
   id?: boolean
   visitorName?: boolean
   visitorEmail?: boolean
+  visitorWhatsapp?: boolean
   visitDate?: boolean
+  status?: boolean
   ipAddress?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   propertyId?: boolean
 }
 
-export type PropertyVisitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "visitorName" | "visitorEmail" | "visitDate" | "ipAddress" | "createdAt" | "updatedAt" | "propertyId", ExtArgs["result"]["propertyVisit"]>
+export type PropertyVisitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "visitorName" | "visitorEmail" | "visitorWhatsapp" | "visitDate" | "status" | "ipAddress" | "createdAt" | "updatedAt" | "propertyId", ExtArgs["result"]["propertyVisit"]>
 export type PropertyVisitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   property?: boolean | Prisma.PropertyDefaultArgs<ExtArgs>
 }
@@ -594,7 +664,9 @@ export type $PropertyVisitPayload<ExtArgs extends runtime.Types.Extensions.Inter
     id: string
     visitorName: string | null
     visitorEmail: string | null
-    visitDate: Date | null
+    visitorWhatsapp: string
+    visitDate: Date
+    status: $Enums.VisitStatus
     ipAddress: string | null
     createdAt: Date
     updatedAt: Date
@@ -1026,7 +1098,9 @@ export interface PropertyVisitFieldRefs {
   readonly id: Prisma.FieldRef<"PropertyVisit", 'String'>
   readonly visitorName: Prisma.FieldRef<"PropertyVisit", 'String'>
   readonly visitorEmail: Prisma.FieldRef<"PropertyVisit", 'String'>
+  readonly visitorWhatsapp: Prisma.FieldRef<"PropertyVisit", 'String'>
   readonly visitDate: Prisma.FieldRef<"PropertyVisit", 'DateTime'>
+  readonly status: Prisma.FieldRef<"PropertyVisit", 'VisitStatus'>
   readonly ipAddress: Prisma.FieldRef<"PropertyVisit", 'String'>
   readonly createdAt: Prisma.FieldRef<"PropertyVisit", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PropertyVisit", 'DateTime'>

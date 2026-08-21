@@ -1,4 +1,4 @@
-import { PropertyType } from "@/prisma/generated/client/enums"
+import { PropertyStatus, PropertyType } from "@/prisma/generated/client/enums"
 
 const typeLabels: Record<PropertyType, string> = {
   APARTMENT: "Appartement",
@@ -30,6 +30,19 @@ export function formatRelativeTime(date: Date | string) {
 
 export function formatPropertyType(type: PropertyType) {
   return typeLabels[type] ?? type
+}
+
+const statusLabels: Record<PropertyStatus, string> = {
+  DRAFT: "Brouillon",
+  AVAILABLE: "Disponible",
+  RESERVED: "Non disponible",
+  RENTED: "Non disponible",
+  SOLD: "Non disponible",
+  ARCHIVED: "Non disponible",
+}
+
+export function formatPropertyStatus(status: PropertyStatus) {
+  return statusLabels[status] ?? status
 }
 
 export const PROPERTY_TYPE_OPTIONS = (

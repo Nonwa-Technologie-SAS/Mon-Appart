@@ -23,19 +23,26 @@ import { Input } from "@/components/ui/input"
 
 const initialState: AuthActionState = {}
 
-export function SignInForm({ registered }: { registered?: boolean }) {
+export function SignInForm({
+  registered,
+  next,
+}: {
+  registered?: boolean
+  next?: string | null
+}) {
   const [state, formAction, pending] = useActionState(signIn, initialState)
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Connexion</CardTitle>
+        <CardTitle className="text-xl">Connexion</CardTitle>
         <CardDescription>
-          Accédez à votre espace immobilier.
+          Accédez à votre espace pour publier et gérer vos biens.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction}>
+          {next ? <input type="hidden" name="next" value={next} /> : null}
           <FieldGroup>
             {registered ? (
               <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">

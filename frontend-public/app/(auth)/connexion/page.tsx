@@ -1,15 +1,35 @@
+import { redirect } from "next/navigation"
+
+import { AuthShell } from "@/components/auth/auth-shell"
 import { SignInForm } from "@/components/auth/sign-in-form"
+import {
+  getSession,
+  isPublisherRole,
+  safeInternalPath,
+} from "@/lib/auth-session"
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>
+  searchParams: Promise<{ registered?: string; next?: string }>
 }) {
   const params = await searchParams
+  const session = await getSession()
+  const nextPath = safeInternalPath(params.next)
+
+  if (session && isPublisherRole(session.user.role)) {
+    redirect(nextPath ?? "/espace")
+  }
+  if (session) {
+    redirect(nextPath ?? "/")
+  }
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background p-6">
-      <SignInForm registered={params.registered === "1"} />
-    </main>
+    <AuthShell>
+      <SignInForm
+        registered={params.registered === "1"}
+        next={nextPath}
+      />
+    </AuthShell>
   )
 }

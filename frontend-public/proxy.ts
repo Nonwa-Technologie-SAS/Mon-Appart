@@ -4,8 +4,10 @@ import { getSessionCookie } from "better-auth/cookies"
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionCookie = getSessionCookie(request)
+  const needsAuth =
+    pathname.startsWith("/admin") || pathname.startsWith("/espace")
 
-  if (pathname.startsWith("/admin") && !sessionCookie) {
+  if (needsAuth && !sessionCookie) {
     const loginUrl = new URL("/connexion", request.url)
     loginUrl.searchParams.set("next", pathname)
     return NextResponse.redirect(loginUrl)
@@ -15,5 +17,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/espace", "/espace/:path*"],
 }

@@ -16,7 +16,7 @@ export default async function CreateStaffPage() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background p-6">
+    <main className="flex min-h-svh items-center justify-center bg-background px-4 py-8 sm:p-6">
       <CreateStaffForm />
     </main>
   )

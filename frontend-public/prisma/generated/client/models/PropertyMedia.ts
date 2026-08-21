@@ -20,14 +20,26 @@ export type PropertyMediaModel = runtime.Types.Result.DefaultSelection<Prisma.$P
 
 export type AggregatePropertyMedia = {
   _count: PropertyMediaCountAggregateOutputType | null
+  _avg: PropertyMediaAvgAggregateOutputType | null
+  _sum: PropertyMediaSumAggregateOutputType | null
   _min: PropertyMediaMinAggregateOutputType | null
   _max: PropertyMediaMaxAggregateOutputType | null
+}
+
+export type PropertyMediaAvgAggregateOutputType = {
+  sortOrder: number | null
+}
+
+export type PropertyMediaSumAggregateOutputType = {
+  sortOrder: number | null
 }
 
 export type PropertyMediaMinAggregateOutputType = {
   id: string | null
   url: string | null
   type: $Enums.MediaType | null
+  room: $Enums.VisitRoom | null
+  sortOrder: number | null
   createdAt: Date | null
   updatedAt: Date | null
   propertyId: string | null
@@ -37,6 +49,8 @@ export type PropertyMediaMaxAggregateOutputType = {
   id: string | null
   url: string | null
   type: $Enums.MediaType | null
+  room: $Enums.VisitRoom | null
+  sortOrder: number | null
   createdAt: Date | null
   updatedAt: Date | null
   propertyId: string | null
@@ -46,6 +60,8 @@ export type PropertyMediaCountAggregateOutputType = {
   id: number
   url: number
   type: number
+  room: number
+  sortOrder: number
   createdAt: number
   updatedAt: number
   propertyId: number
@@ -53,10 +69,20 @@ export type PropertyMediaCountAggregateOutputType = {
 }
 
 
+export type PropertyMediaAvgAggregateInputType = {
+  sortOrder?: true
+}
+
+export type PropertyMediaSumAggregateInputType = {
+  sortOrder?: true
+}
+
 export type PropertyMediaMinAggregateInputType = {
   id?: true
   url?: true
   type?: true
+  room?: true
+  sortOrder?: true
   createdAt?: true
   updatedAt?: true
   propertyId?: true
@@ -66,6 +92,8 @@ export type PropertyMediaMaxAggregateInputType = {
   id?: true
   url?: true
   type?: true
+  room?: true
+  sortOrder?: true
   createdAt?: true
   updatedAt?: true
   propertyId?: true
@@ -75,6 +103,8 @@ export type PropertyMediaCountAggregateInputType = {
   id?: true
   url?: true
   type?: true
+  room?: true
+  sortOrder?: true
   createdAt?: true
   updatedAt?: true
   propertyId?: true
@@ -119,6 +149,18 @@ export type PropertyMediaAggregateArgs<ExtArgs extends runtime.Types.Extensions.
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: PropertyMediaAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: PropertyMediaSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: PropertyMediaMinAggregateInputType
@@ -149,6 +191,8 @@ export type PropertyMediaGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   _count?: PropertyMediaCountAggregateInputType | true
+  _avg?: PropertyMediaAvgAggregateInputType
+  _sum?: PropertyMediaSumAggregateInputType
   _min?: PropertyMediaMinAggregateInputType
   _max?: PropertyMediaMaxAggregateInputType
 }
@@ -157,10 +201,14 @@ export type PropertyMediaGroupByOutputType = {
   id: string
   url: string
   type: $Enums.MediaType
+  room: $Enums.VisitRoom
+  sortOrder: number
   createdAt: Date
   updatedAt: Date
   propertyId: string
   _count: PropertyMediaCountAggregateOutputType | null
+  _avg: PropertyMediaAvgAggregateOutputType | null
+  _sum: PropertyMediaSumAggregateOutputType | null
   _min: PropertyMediaMinAggregateOutputType | null
   _max: PropertyMediaMaxAggregateOutputType | null
 }
@@ -187,6 +235,8 @@ export type PropertyMediaWhereInput = {
   id?: Prisma.StringFilter<"PropertyMedia"> | string
   url?: Prisma.StringFilter<"PropertyMedia"> | string
   type?: Prisma.EnumMediaTypeFilter<"PropertyMedia"> | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFilter<"PropertyMedia"> | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFilter<"PropertyMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   propertyId?: Prisma.StringFilter<"PropertyMedia"> | string
@@ -197,6 +247,8 @@ export type PropertyMediaOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  room?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
@@ -210,6 +262,8 @@ export type PropertyMediaWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.PropertyMediaWhereInput | Prisma.PropertyMediaWhereInput[]
   url?: Prisma.StringFilter<"PropertyMedia"> | string
   type?: Prisma.EnumMediaTypeFilter<"PropertyMedia"> | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFilter<"PropertyMedia"> | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFilter<"PropertyMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   propertyId?: Prisma.StringFilter<"PropertyMedia"> | string
@@ -220,12 +274,16 @@ export type PropertyMediaOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  room?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
   _count?: Prisma.PropertyMediaCountOrderByAggregateInput
+  _avg?: Prisma.PropertyMediaAvgOrderByAggregateInput
   _max?: Prisma.PropertyMediaMaxOrderByAggregateInput
   _min?: Prisma.PropertyMediaMinOrderByAggregateInput
+  _sum?: Prisma.PropertyMediaSumOrderByAggregateInput
 }
 
 export type PropertyMediaScalarWhereWithAggregatesInput = {
@@ -235,6 +293,8 @@ export type PropertyMediaScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"PropertyMedia"> | string
   url?: Prisma.StringWithAggregatesFilter<"PropertyMedia"> | string
   type?: Prisma.EnumMediaTypeWithAggregatesFilter<"PropertyMedia"> | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomWithAggregatesFilter<"PropertyMedia"> | $Enums.VisitRoom
+  sortOrder?: Prisma.IntWithAggregatesFilter<"PropertyMedia"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PropertyMedia"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PropertyMedia"> | Date | string
   propertyId?: Prisma.StringWithAggregatesFilter<"PropertyMedia"> | string
@@ -244,6 +304,8 @@ export type PropertyMediaCreateInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   property: Prisma.PropertyCreateNestedOneWithoutMediaInput
@@ -253,6 +315,8 @@ export type PropertyMediaUncheckedCreateInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   propertyId: string
@@ -262,6 +326,8 @@ export type PropertyMediaUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   property?: Prisma.PropertyUpdateOneRequiredWithoutMediaNestedInput
@@ -271,6 +337,8 @@ export type PropertyMediaUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   propertyId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -280,6 +348,8 @@ export type PropertyMediaCreateManyInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   propertyId: string
@@ -289,6 +359,8 @@ export type PropertyMediaUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -297,6 +369,8 @@ export type PropertyMediaUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   propertyId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -316,15 +390,23 @@ export type PropertyMediaCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  room?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
+}
+
+export type PropertyMediaAvgOrderByAggregateInput = {
+  sortOrder?: Prisma.SortOrder
 }
 
 export type PropertyMediaMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  room?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
@@ -334,9 +416,15 @@ export type PropertyMediaMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  room?: Prisma.SortOrder
+  sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
+}
+
+export type PropertyMediaSumOrderByAggregateInput = {
+  sortOrder?: Prisma.SortOrder
 }
 
 export type PropertyMediaCreateNestedManyWithoutPropertyInput = {
@@ -385,10 +473,16 @@ export type EnumMediaTypeFieldUpdateOperationsInput = {
   set?: $Enums.MediaType
 }
 
+export type EnumVisitRoomFieldUpdateOperationsInput = {
+  set?: $Enums.VisitRoom
+}
+
 export type PropertyMediaCreateWithoutPropertyInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -397,6 +491,8 @@ export type PropertyMediaUncheckedCreateWithoutPropertyInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -434,6 +530,8 @@ export type PropertyMediaScalarWhereInput = {
   id?: Prisma.StringFilter<"PropertyMedia"> | string
   url?: Prisma.StringFilter<"PropertyMedia"> | string
   type?: Prisma.EnumMediaTypeFilter<"PropertyMedia"> | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFilter<"PropertyMedia"> | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFilter<"PropertyMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PropertyMedia"> | Date | string
   propertyId?: Prisma.StringFilter<"PropertyMedia"> | string
@@ -443,6 +541,8 @@ export type PropertyMediaCreateManyPropertyInput = {
   id?: string
   url: string
   type?: $Enums.MediaType
+  room?: $Enums.VisitRoom
+  sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -451,6 +551,8 @@ export type PropertyMediaUpdateWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -459,6 +561,8 @@ export type PropertyMediaUncheckedUpdateWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -467,6 +571,8 @@ export type PropertyMediaUncheckedUpdateManyWithoutPropertyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
+  room?: Prisma.EnumVisitRoomFieldUpdateOperationsInput | $Enums.VisitRoom
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -477,6 +583,8 @@ export type PropertyMediaSelect<ExtArgs extends runtime.Types.Extensions.Interna
   id?: boolean
   url?: boolean
   type?: boolean
+  room?: boolean
+  sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   propertyId?: boolean
@@ -487,6 +595,8 @@ export type PropertyMediaSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   url?: boolean
   type?: boolean
+  room?: boolean
+  sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   propertyId?: boolean
@@ -497,6 +607,8 @@ export type PropertyMediaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   url?: boolean
   type?: boolean
+  room?: boolean
+  sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   propertyId?: boolean
@@ -507,12 +619,14 @@ export type PropertyMediaSelectScalar = {
   id?: boolean
   url?: boolean
   type?: boolean
+  room?: boolean
+  sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   propertyId?: boolean
 }
 
-export type PropertyMediaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "url" | "type" | "createdAt" | "updatedAt" | "propertyId", ExtArgs["result"]["propertyMedia"]>
+export type PropertyMediaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "url" | "type" | "room" | "sortOrder" | "createdAt" | "updatedAt" | "propertyId", ExtArgs["result"]["propertyMedia"]>
 export type PropertyMediaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   property?: boolean | Prisma.PropertyDefaultArgs<ExtArgs>
 }
@@ -532,6 +646,8 @@ export type $PropertyMediaPayload<ExtArgs extends runtime.Types.Extensions.Inter
     id: string
     url: string
     type: $Enums.MediaType
+    room: $Enums.VisitRoom
+    sortOrder: number
     createdAt: Date
     updatedAt: Date
     propertyId: string
@@ -962,6 +1078,8 @@ export interface PropertyMediaFieldRefs {
   readonly id: Prisma.FieldRef<"PropertyMedia", 'String'>
   readonly url: Prisma.FieldRef<"PropertyMedia", 'String'>
   readonly type: Prisma.FieldRef<"PropertyMedia", 'MediaType'>
+  readonly room: Prisma.FieldRef<"PropertyMedia", 'VisitRoom'>
+  readonly sortOrder: Prisma.FieldRef<"PropertyMedia", 'Int'>
   readonly createdAt: Prisma.FieldRef<"PropertyMedia", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PropertyMedia", 'DateTime'>
   readonly propertyId: Prisma.FieldRef<"PropertyMedia", 'String'>
