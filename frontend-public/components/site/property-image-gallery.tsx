@@ -1,14 +1,9 @@
 "use client"
 
-import Image from "next/image"
 import { useEffect, useState, type ReactNode } from "react"
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ExpandIcon,
-  XIcon,
-} from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon, XIcon } from "lucide-react"
 
+import { PropertyPhoto } from "@/components/site/property-photo"
 import { cn } from "@/lib/utils"
 
 export type GalleryImage = {
@@ -88,7 +83,7 @@ export function PropertyImageGallery({
           className="absolute inset-0 cursor-zoom-in"
           aria-label="Agrandir la photo"
         >
-          <Image
+          <PropertyPhoto
             src={current.url}
             alt={`${title} — photo ${index + 1} sur ${count}`}
             fill
@@ -160,7 +155,7 @@ export function PropertyImageGallery({
                     : "opacity-80 hover:opacity-100"
                 )}
               >
-                <Image
+                <PropertyPhoto
                   src={image.url}
                   alt=""
                   fill
@@ -196,7 +191,7 @@ export function PropertyImageGallery({
           </div>
 
           <div className="relative min-h-0 flex-1">
-            <Image
+            <PropertyPhoto
               src={current.url}
               alt={`${title} — photo ${index + 1} sur ${count}`}
               fill
@@ -243,7 +238,7 @@ export function PropertyImageGallery({
                         : "opacity-60 hover:opacity-100"
                     )}
                   >
-                    <Image
+                    <PropertyPhoto
                       src={image.url}
                       alt=""
                       fill

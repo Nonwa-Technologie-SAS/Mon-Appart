@@ -1,8 +1,7 @@
 import { cache } from "react"
-import { connection } from "next/server"
 
 import { MediaType, PropertyStatus, PropertyType } from "@/prisma/generated/client/enums"
-import { prisma } from "@/lib/prisma"
+import { prisma, withPrismaRetry } from "@/lib/prisma"
 import type { Prisma } from "@/prisma/generated/client/client"
 import { geocodeLocation, hasCoordinates } from "@/lib/geocode"
 import { haversineKm, parseCoordinate } from "@/lib/geo"
@@ -126,12 +125,14 @@ export const searchAvailableProperties = cache(
         ? { lat: originLat, lng: originLng }
         : null
 
-    const properties = await prisma.property.findMany({
-      where: buildWhere(params),
-      select: listSelect,
-      orderBy: { createdAt: "desc" },
-      take: 80,
-    })
+    const properties = await withPrismaRetry(() =>
+      prisma.property.findMany({
+        where: buildWhere(params),
+        select: listSelect,
+        orderBy: { createdAt: "desc" },
+        take: 80,
+      })
+    )
 
     const mapped = properties.map((property) => {
       const item = mapProperty(property)
@@ -163,12 +164,14 @@ export const searchAvailableProperties = cache(
 )
 
 export const getFeaturedProperties = cache(async () => {
-  const properties = await prisma.property.findMany({
-    where: { status: PropertyStatus.AVAILABLE },
-    select: listSelect,
-    orderBy: { createdAt: "desc" },
-    take: 6,
-  })
+  const properties = await withPrismaRetry(() =>
+    prisma.property.findMany({
+      where: { status: PropertyStatus.AVAILABLE },
+      select: listSelect,
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    })
+  )
 
   return properties.map(mapProperty)
 })
@@ -323,31 +326,29 @@ export async function updateOwnedPropertyStatus(
   }
 }
 
-export const getAvailablePropertyById = cache(async (
+export async function getAvailablePropertyById(
   id: string,
   viewerUserId?: string
-) => {
-  await connection()
-  return prisma.property.findFirst({
-    where: viewerUserId
-      ? {
-          id,
-          OR: [
-            { status: PropertyStatus.AVAILABLE },
-            { userId: viewerUserId },
-          ],
-        }
-      : { id, status: PropertyStatus.AVAILABLE },
-    include: {
-      media: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-      features: true,
-      amenities: { include: { amenity: true } },
-      agency: { select: { name: true, phone: true, email: true } },
-      reviews: {
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        include: { user: { select: { name: true } } },
+) {
+  const property = await withPrismaRetry(() =>
+    prisma.property.findUnique({
+      where: { id },
+      include: {
+        media: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        features: true,
+        amenities: { include: { amenity: true } },
+        agency: { select: { name: true, phone: true, email: true } },
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          include: { user: { select: { name: true } } },
+        },
       },
-    },
-  })
-})
+    })
+  )
+
+  if (!property) return null
+  if (property.status === PropertyStatus.AVAILABLE) return property
+  if (viewerUserId && property.userId === viewerUserId) return property
+  return null
+}

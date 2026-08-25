@@ -1,14 +1,17 @@
 "use client"
 
-import { useEffect, useRef } from "react"
 import { Viewer } from "@photo-sphere-viewer/core"
+import { useEffect, useRef } from "react"
 import "@photo-sphere-viewer/core/index.css"
+
+import { cn } from "@/lib/utils"
 
 type PanoramaViewerProps = {
   panoramaUrl: string
+  className?: string
 }
 
-export function PanoramaViewer({ panoramaUrl }: PanoramaViewerProps) {
+export function PanoramaViewer({ panoramaUrl, className }: PanoramaViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -18,7 +21,7 @@ export function PanoramaViewer({ panoramaUrl }: PanoramaViewerProps) {
     const viewer = new Viewer({
       container,
       panorama: panoramaUrl,
-      navbar: ["zoom", "move", "fullscreen"],
+      navbar: ["zoom", "move"],
       defaultZoomLvl: 50,
       mousewheel: true,
       touchmoveTwoFingers: true,
@@ -31,6 +34,9 @@ export function PanoramaViewer({ panoramaUrl }: PanoramaViewerProps) {
   }, [panoramaUrl])
 
   return (
-    <div ref={containerRef} className="size-full min-h-60 sm:min-h-80" />
+    <div
+      ref={containerRef}
+      className={cn("size-full min-h-60 sm:min-h-80", className)}
+    />
   )
 }

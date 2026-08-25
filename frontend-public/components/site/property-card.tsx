@@ -1,8 +1,8 @@
-import Image from "next/image"
 import Link from "next/link"
 import { BathIcon, BedDoubleIcon, RulerIcon } from "lucide-react"
 
 import type { PropertyListItem } from "@/lib/properties"
+import { PropertyPhoto } from "@/components/site/property-photo"
 import {
   formatPrice,
   formatPropertyType,
@@ -34,21 +34,15 @@ export function PropertyCard({
         )}
       >
         <div className="relative aspect-square w-24 shrink-0 overflow-hidden bg-muted sm:w-36">
-          {property.imageUrl ? (
-            <Image
-              src={property.imageUrl}
-              alt={property.title}
-              fill
-              sizes="144px"
-              quality={85}
-              loading={priority ? "eager" : "lazy"}
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
-              Photo à venir
-            </div>
-          )}
+          <PropertyPhoto
+            src={property.imageUrl}
+            alt={property.title}
+            fill
+            sizes="144px"
+            quality={85}
+            loading={priority ? "eager" : "lazy"}
+            className="object-cover"
+          />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:p-4">
           <p className="text-xs font-medium text-primary">
@@ -96,21 +90,15 @@ export function PropertyCard({
       )}
     >
       <div className="relative aspect-16/10 overflow-hidden bg-muted">
-        {property.imageUrl ? (
-          <Image
-            src={property.imageUrl}
-            alt={property.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-            quality={85}
-            loading={priority ? "eager" : "lazy"}
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
-            Photo à venir
-          </div>
-        )}
+        <PropertyPhoto
+          src={property.imageUrl}
+          alt={property.title}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          quality={85}
+          loading={priority ? "eager" : "lazy"}
+          className="object-cover"
+        />
         <div className="absolute top-3 left-3 flex flex-wrap gap-2">
           <span className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
             {formatPropertyType(property.type)}
