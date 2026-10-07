@@ -1,0 +1,10 @@
+{
+  "extends": "@mon-appart/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "incremental": true
+  },
+  "include": ["src/**/*"]
+}

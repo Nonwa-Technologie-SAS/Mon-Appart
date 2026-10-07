@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+  NODE_ENV: test
+  APP_ENV: test
+  JWT_SECRET: test-only-jwt-secret-not-for-production-use
+  JWT_REFRESH_SECRET: test-only-refresh-secret-not-for-production
+  DATABASE_URL: postgresql://mon_appart:mon_appart_dev@127.0.0.1:5432/mon_appart
+  REDIS_URL: redis://127.0.0.1:6379
+
+jobs:
+  verify:
+    name: Lint, types, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @mon-appart/api test:e2e
+      - run: pnpm build
+
+  recommendation:
+    name: Recommendation service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r services/recommendation/requirements.txt
+      - run: pytest
+        working-directory: services/recommendation

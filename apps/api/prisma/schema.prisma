@@ -1,0 +1,14 @@
+// Schéma de fondation. Aucun modèle métier pour l'instant.
+// PROPERTY (bien physique) et LISTING (offre) seront introduits séparément.
+// Les coordonnées utiliseront plus tard GEOGRAPHY(Point, 4326).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}

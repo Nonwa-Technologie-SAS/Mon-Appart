@@ -1,0 +1,67 @@
+{
+  "name": "mon-appart",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@mon-appart/api --filter=@mon-appart/web --filter=@mon-appart/admin",
+    "dev:api": "pnpm --filter @mon-appart/api dev",
+    "dev:web": "pnpm --filter @mon-appart/web dev",
+    "dev:admin": "pnpm --filter @mon-appart/admin dev",
+    "dev:workers": "pnpm --filter @mon-appart/workers dev",
+    "dev:recommendation": "py -3 -m uvicorn app.main:app --reload --port 8000 --app-dir services/recommendation",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @mon-appart/api test:e2e",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @mon-appart/api db:migrate",
+    "db:generate": "pnpm --filter @mon-appart/api db:generate",
+    "db:seed": "pnpm --filter @mon-appart/api db:seed",
+    "docker:up": "docker compose -f infrastructure/docker/compose.yaml up -d",
+    "docker:down": "docker compose -f infrastructure/docker/compose.yaml down",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.0",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/engines",
+      "@swc/core",
+      "esbuild",
+      "msgpackr-extract",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "lint-staged": {
+    "apps/api/**/*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "apps/admin/**/*.{ts,tsx,css}": [
+      "prettier --write"
+    ],
+    "packages/**/*.{ts,tsx,js,mjs,json}": [
+      "prettier --write"
+    ],
+    "services/workers/**/*.ts": [
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}
