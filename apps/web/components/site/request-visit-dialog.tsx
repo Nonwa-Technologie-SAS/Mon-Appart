@@ -6,6 +6,7 @@ import {
   requestPropertyVisit,
   type VisitRequestState,
 } from "@/app/actions/visits"
+import { AuthRequiredCta } from "@/components/site/auth-required-cta"
 import { Button } from "@/components/ui/button"
 import { trackWebEvent } from "@/lib/analytics/tracker"
 import {
@@ -29,6 +30,7 @@ import { Input } from "@/components/ui/input"
 type RequestVisitDialogProps = {
   propertyId: string
   propertyTitle: string
+  isAuthenticated: boolean
 }
 
 const initialState: VisitRequestState = {}
@@ -41,6 +43,7 @@ function toDatetimeLocalMin(date: Date) {
 export function RequestVisitDialog({
   propertyId,
   propertyTitle,
+  isAuthenticated,
 }: RequestVisitDialogProps) {
   const [open, setOpen] = useState(false)
   const [formKey, setFormKey] = useState(0)
@@ -50,7 +53,7 @@ export function RequestVisitDialog({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)
-        if (nextOpen) {
+        if (nextOpen && isAuthenticated) {
           trackWebEvent("listing_contact_started", {
             listingId: propertyId,
             method: "FORM",
@@ -67,12 +70,33 @@ export function RequestVisitDialog({
         Demander une visite
       </DialogTrigger>
       <DialogContent>
-        <RequestVisitForm
-          key={formKey}
-          propertyId={propertyId}
-          propertyTitle={propertyTitle}
-          onClose={() => setOpen(false)}
-        />
+        {isAuthenticated ? (
+          <RequestVisitForm
+            key={formKey}
+            propertyId={propertyId}
+            propertyTitle={propertyTitle}
+            isAuthenticated
+            onClose={() => setOpen(false)}
+          />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Compte requis</DialogTitle>
+              <DialogDescription>
+                Pour demander une visite de « {propertyTitle} », créez un compte
+                ou connectez-vous.
+              </DialogDescription>
+            </DialogHeader>
+            <AuthRequiredCta
+              nextPath={
+                typeof window !== "undefined"
+                  ? window.location.pathname
+                  : `/annonces/${propertyId}`
+              }
+              reason="L’inscription permet de suivre vos demandes et d’être recontacté en toute sécurité."
+            />
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -85,9 +109,30 @@ function RequestVisitForm({
 }: RequestVisitDialogProps & { onClose: () => void }) {
   const [state, formAction, pending] = useActionState(
     requestPropertyVisit,
-    initialState
+    initialState,
   )
   const minVisitAt = toDatetimeLocalMin(new Date())
+
+  if (state.requiresAuth) {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Compte requis</DialogTitle>
+          <DialogDescription>
+            Votre session a expiré. Reconnectez-vous pour envoyer la demande.
+          </DialogDescription>
+        </DialogHeader>
+        <AuthRequiredCta
+          nextPath={
+            typeof window !== "undefined"
+              ? window.location.pathname
+              : `/annonces/${propertyId}`
+          }
+          reason={state.error ?? "Connexion requise pour demander une visite."}
+        />
+      </>
+    )
+  }
 
   if (state.success) {
     return (

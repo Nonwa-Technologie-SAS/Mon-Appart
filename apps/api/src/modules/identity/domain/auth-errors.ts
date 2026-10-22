@@ -12,6 +12,8 @@ export const AuthErrorCode = {
   EMAIL_ALREADY_USED: "EMAIL_ALREADY_USED",
   PHONE_ALREADY_USED: "PHONE_ALREADY_USED",
   CONTACT_REQUIRED: "CONTACT_REQUIRED",
+  ORGANIZATION_REQUIRED: "ORGANIZATION_REQUIRED",
+  INVALID_ACCOUNT_TYPE: "INVALID_ACCOUNT_TYPE",
   INVALID_EMAIL: "INVALID_EMAIL",
   INVALID_PHONE: "INVALID_PHONE",
   PASSWORD_TOO_WEAK: "PASSWORD_TOO_WEAK",
@@ -61,6 +63,14 @@ const DEFINITIONS: Record<AuthErrorCode, [HttpStatus, string]> = {
   EMAIL_ALREADY_USED: [HttpStatus.CONFLICT, "Adresse email déjà utilisée"],
   PHONE_ALREADY_USED: [HttpStatus.CONFLICT, "Numéro de téléphone déjà utilisé"],
   CONTACT_REQUIRED: [HttpStatus.BAD_REQUEST, "Email ou téléphone requis"],
+  ORGANIZATION_REQUIRED: [
+    HttpStatus.BAD_REQUEST,
+    "Nom de l'agence requis pour une inscription agence",
+  ],
+  INVALID_ACCOUNT_TYPE: [
+    HttpStatus.BAD_REQUEST,
+    "Type de compte non autorisé à l'inscription",
+  ],
   INVALID_EMAIL: [HttpStatus.UNPROCESSABLE_ENTITY, "Adresse email invalide"],
   INVALID_PHONE: [
     HttpStatus.UNPROCESSABLE_ENTITY,

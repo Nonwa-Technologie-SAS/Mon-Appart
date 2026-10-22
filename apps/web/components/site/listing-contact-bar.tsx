@@ -11,10 +11,12 @@ export function ListingContactBar({
   propertyId,
   propertyTitle,
   price,
+  isAuthenticated,
 }: {
   propertyId: string
   propertyTitle: string
   price: number
+  isAuthenticated: boolean
 }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-white/95 px-4 py-3 shadow-[var(--elevation-lg)] backdrop-blur-sm lg:static lg:z-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
@@ -27,6 +29,7 @@ export function ListingContactBar({
           <RequestVisitDialog
             propertyId={propertyId}
             propertyTitle={propertyTitle}
+            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>

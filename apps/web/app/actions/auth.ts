@@ -1,7 +1,9 @@
 "use server"
 
 import {
+  nestRegisterAgency,
   nestRegisterCustomer,
+  nestRegisterOwner,
   nestSignIn,
   nestSignOut,
 } from "@/app/actions/nest-auth"
@@ -19,8 +21,8 @@ export type AuthActionState = {
   success?: boolean
 }
 
-/** Inscription propriétaire → Nest CUSTOMER (élévation OWNER via admin Nest). */
-export async function registerOwner(
+/** Inscription visiteur / client → Nest CUSTOMER. */
+export async function registerCustomer(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
@@ -35,7 +37,23 @@ export async function registerOwner(
   return nestRegisterCustomer(_prev, formData)
 }
 
-/** Inscription agence → Nest CUSTOMER (élévation AGENCY via admin Nest). */
+/** Inscription propriétaire → Nest OWNER. */
+export async function registerOwner(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = credentialsSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+  })
+  if (!parsed.success) {
+    return { error: firstZodError(parsed.error) }
+  }
+  return nestRegisterOwner(_prev, formData)
+}
+
+/** Inscription agence → Nest AGENCY (+ métadonnées organisation). */
 export async function registerAgency(
   _prev: AuthActionState,
   formData: FormData,
@@ -51,7 +69,7 @@ export async function registerAgency(
   if (!parsed.success) {
     return { error: firstZodError(parsed.error) }
   }
-  return nestRegisterCustomer(_prev, formData)
+  return nestRegisterAgency(_prev, formData)
 }
 
 export async function createStaffUser(

@@ -37,7 +37,7 @@ export function SignInForm({
       <CardHeader>
         <CardTitle className="text-xl">Connexion</CardTitle>
         <CardDescription>
-          Accédez à votre espace pour publier et gérer vos biens.
+          Favoris, demandes de visite et espace propriétaire.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -90,18 +90,29 @@ export function SignInForm({
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm text-muted-foreground">
         <p>
-          Propriétaire ?{" "}
+          Pas encore de compte ?{" "}
           <Link
-            href="/inscription/proprietaire"
+            href={
+              next
+                ? `/inscription?next=${encodeURIComponent(next)}`
+                : "/inscription"
+            }
             className="text-foreground underline"
           >
             S&apos;inscrire
           </Link>
         </p>
         <p>
-          Agence ?{" "}
+          Propriétaire ?{" "}
+          <Link
+            href="/inscription/proprietaire"
+            className="text-foreground underline"
+          >
+            Publier un bien
+          </Link>
+          {" · "}
           <Link href="/inscription/agence" className="text-foreground underline">
-            Créer une agence
+            Agence
           </Link>
         </p>
       </CardFooter>

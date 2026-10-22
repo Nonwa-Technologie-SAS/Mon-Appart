@@ -80,6 +80,7 @@ export function AgencyRegisterForm() {
                 name="phone"
                 type="tel"
                 autoComplete="tel"
+                placeholder="07 01 02 03 04"
                 disabled={pending}
               />
             </Field>
@@ -89,6 +90,7 @@ export function AgencyRegisterForm() {
                 id="address"
                 name="address"
                 autoComplete="street-address"
+                placeholder="Quartier, commune"
                 disabled={pending}
               />
             </Field>
@@ -100,9 +102,12 @@ export function AgencyRegisterForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={10}
                 disabled={pending}
               />
+              <p className="text-xs text-muted-foreground">
+                Au moins 10 caractères.
+              </p>
             </Field>
             {state.error ? <FieldError>{state.error}</FieldError> : null}
             <Button type="submit" disabled={pending} className="w-full">

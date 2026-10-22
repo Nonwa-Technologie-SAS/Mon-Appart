@@ -72,9 +72,12 @@ export function OwnerRegisterForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={10}
                 disabled={pending}
               />
+              <p className="text-xs text-muted-foreground">
+                Au moins 10 caractères.
+              </p>
             </Field>
             {state.error ? <FieldError>{state.error}</FieldError> : null}
             <Button type="submit" disabled={pending} className="w-full">

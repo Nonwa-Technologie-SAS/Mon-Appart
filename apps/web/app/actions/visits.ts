@@ -8,6 +8,7 @@ import { normalizeWhatsapp } from "@/lib/visits"
 export type VisitRequestState = {
   error?: string
   success?: boolean
+  requiresAuth?: boolean
 }
 
 export async function recordVirtualTourVisit(listingId: string) {
@@ -61,7 +62,9 @@ export async function requestPropertyVisit(
   const session = await getSession()
   if (!session) {
     return {
-      error: "Connectez-vous pour demander une visite.",
+      requiresAuth: true,
+      error:
+        "Créez un compte ou connectez-vous pour demander une visite.",
     }
   }
 

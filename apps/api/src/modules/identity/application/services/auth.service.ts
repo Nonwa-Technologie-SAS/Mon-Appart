@@ -17,6 +17,11 @@ import {
   SessionRevocationReason,
 } from "../../domain/identity-events"
 import { assertPasswordStrength } from "../../domain/password-policy"
+import {
+  isPublicRegisterRole,
+  resolveRegisterRole,
+  roleNeedsOrganization,
+} from "../../domain/register-account-type"
 import { IdentityConfig } from "../../identity.config"
 import {
   IdentityDatabase,
@@ -39,6 +44,10 @@ export interface RegisterInput extends DeviceInfo {
   password: string
   firstName?: string
   lastName?: string
+  /** CUSTOMER | OWNER | AGENCY — défaut CUSTOMER. */
+  accountType?: string
+  organizationName?: string
+  organizationAddress?: string
 }
 
 export interface LoginInput extends DeviceInfo {
@@ -62,7 +71,7 @@ export class AuthService {
     @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
   ) {}
 
-  /** Utilisateur PENDING + rôle CUSTOMER + vérifications en attente, en une transaction. */
+  /** Utilisateur PENDING + rôle public + vérifications en attente, en une transaction. */
   async register(
     input: RegisterInput,
     context: ClientContext,
@@ -77,6 +86,17 @@ export class AuthService {
     const phone = input.phone ? requirePhone(input.phone) : null
     if (!email && !phone) throw authError(AuthErrorCode.CONTACT_REQUIRED)
     assertPasswordStrength(input.password, { email, phone })
+
+    const rawType = input.accountType?.trim()
+    if (rawType && !isPublicRegisterRole(rawType)) {
+      throw authError(AuthErrorCode.INVALID_ACCOUNT_TYPE)
+    }
+    const role = resolveRegisterRole(rawType)
+    const organizationName = input.organizationName?.trim() || null
+    const organizationAddress = input.organizationAddress?.trim() || null
+    if (roleNeedsOrganization(role) && !organizationName) {
+      throw authError(AuthErrorCode.ORGANIZATION_REQUIRED)
+    }
 
     if (email && (await this.users.contactTaken("email", email))) {
       throw authError(AuthErrorCode.EMAIL_ALREADY_USED)
@@ -94,9 +114,9 @@ export class AuthService {
     let created: { id: bigint; publicId: string }
     try {
       created = await this.db.transaction(async (tx) => {
-        const roleId = await this.rbac.roleId("CUSTOMER", tx)
+        const roleId = await this.rbac.roleId(role, tx)
         if (roleId === null)
-          throw new Error("Rôle CUSTOMER absent : lancer le seed de référence")
+          throw new Error(`Rôle ${role} absent : lancer le seed de référence`)
         const user = await this.users.create(
           {
             email,
@@ -115,7 +135,12 @@ export class AuthService {
             actorId: user.id,
             entityType: "user",
             entityId: user.publicId,
-            newValues: { channels, role: "CUSTOMER" },
+            newValues: {
+              channels,
+              role,
+              ...(organizationName ? { organizationName } : {}),
+              ...(organizationAddress ? { organizationAddress } : {}),
+            },
           },
           context,
           tx,
@@ -135,10 +160,12 @@ export class AuthService {
 
     this.activity.emit(IdentityEvent.UserRegistered, user.publicId, {
       channels,
+      role,
     })
     this.activity.log("user_registered", context, {
       user_id: user.publicId,
       session_id: issued.sessionId,
+      role,
     })
     if (email) {
       this.email

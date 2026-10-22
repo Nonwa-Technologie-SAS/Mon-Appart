@@ -185,6 +185,7 @@ export default async function ListingPage({ params }: PageProps) {
             propertyId={property.id}
             propertyTitle={property.title}
             available={available}
+            isAuthenticated={Boolean(session)}
           />
 
           <p className="leading-relaxed text-foreground/90">
@@ -231,6 +232,7 @@ export default async function ListingPage({ params }: PageProps) {
                 propertyId={property.id}
                 propertyTitle={property.title}
                 price={property.price}
+                isAuthenticated={Boolean(session)}
               />
             ) : null}
           </div>
