@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+coverage
+pnpm-lock.yaml
+package-lock.json
+apps/web/prisma/generated
+apps/web/.agents
+apps/web/.claude
+apps/web/.windsurf
+apps/api/src/generated
+apps/mobile/.expo

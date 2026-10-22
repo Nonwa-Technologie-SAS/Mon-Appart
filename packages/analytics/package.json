@@ -1,0 +1,32 @@
+{
+  "name": "@mon-appart/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mon-appart/types": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@mon-appart/eslint-config": "workspace:*",
+    "@mon-appart/tsconfig": "workspace:*",
+    "@types/node": "^22.18.8",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

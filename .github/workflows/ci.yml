@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+  NODE_ENV: test
+  APP_ENV: test
+  JWT_SECRET: test-only-jwt-secret-not-for-production-use
+  JWT_REFRESH_SECRET: test-only-refresh-secret-not-for-production
+  DATABASE_URL: postgresql://mon_appart:mon_appart_dev@127.0.0.1:5432/mon_appart
+  REDIS_URL: redis://127.0.0.1:6379
+
+jobs:
+  verify:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @mon-appart/api test:e2e
+      - run: pnpm build
+
+  integration:
+    name: API integration (Postgres/PostGIS)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: mon_appart
+          POSTGRES_PASSWORD: mon_appart_dev
+          POSTGRES_DB: mon_appart
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mon_appart -d mon_appart"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://mon_appart:mon_appart_dev@127.0.0.1:5432/mon_appart_test
+      JWT_SECRET: test-only-jwt-secret-not-for-production-use
+      JWT_REFRESH_SECRET: test-only-refresh-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create PostGIS test database
+        env:
+          PGPASSWORD: mon_appart_dev
+        run: |
+          psql -h 127.0.0.1 -U mon_appart -d mon_appart -c "SELECT 1 FROM pg_database WHERE datname = 'mon_appart_test'" | grep -q 1 \
+            || psql -h 127.0.0.1 -U mon_appart -d mon_appart -c "CREATE DATABASE mon_appart_test;"
+          psql -h 127.0.0.1 -U mon_appart -d mon_appart_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+      - name: Migrate + seed test DB
+        run: pnpm --filter @mon-appart/api db:test:migrate
+      - name: Integration tests
+        run: pnpm --filter @mon-appart/api test:db
+      - name: Migration drift check
+        env:
+          DATABASE_URL: postgresql://mon_appart:mon_appart_dev@127.0.0.1:5432/mon_appart_test
+        working-directory: apps/api
+        run: |
+          set -euo pipefail
+          DIFF="$(pnpm exec prisma migrate diff \
+            --from-config-datasource \
+            --to-schema-datamodel prisma/schema.prisma \
+            --script)"
+          if [ -n "$(echo "$DIFF" | tr -d '[:space:]')" ]; then
+            echo "Drift détecté entre migrations et schema.prisma :"
+            echo "$DIFF"
+            exit 1
+          fi
+          echo "Aucune dérive schema ↔ migrations."
+
+  recommendation:
+    name: Recommendation service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r services/recommendation/requirements.txt
+      - run: pytest
+        working-directory: services/recommendation
+
+  docker:
+    name: Build container images
+    runs-on: ubuntu-latest
+    needs: [verify]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          tags: mon-appart-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build workers image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/workers/Dockerfile
+          push: false
+          tags: mon-appart-workers:ci
+          cache-from: type=gha,scope=workers
+          cache-to: type=gha,mode=max,scope=workers
+      - name: Build recommendation image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/recommendation/Dockerfile
+          push: false
+          tags: mon-appart-recommendation:ci
+          cache-from: type=gha,scope=recommendation
+          cache-to: type=gha,mode=max,scope=recommendation
