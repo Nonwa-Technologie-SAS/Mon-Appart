@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { PropertyStatus, PropertyType, Role } from "@/prisma/generated/client/enums"
+import { PropertyStatus, PropertyType, Role } from "@/lib/domain-enums"
 import { VISIT_ROOMS } from "@/lib/visit-rooms"
 
 export const credentialsSchema = z.object({

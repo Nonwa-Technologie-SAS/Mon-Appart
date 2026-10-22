@@ -1,133 +1,82 @@
-import { randomUUID } from "node:crypto"
-
 import { requirePublisher } from "@/lib/api-auth"
-import {
-  createPropertySchema,
-  firstZodError,
-} from "@/lib/auth-schemas"
-import {
-  corsPreflight,
-  withCors,
-} from "@/lib/cors"
-import { GeocodeError } from "@/lib/geocode"
-import { createPropertyForUser, searchAvailableProperties } from "@/lib/properties"
-import {
-  collectImageLayout,
-  collectImageUrls,
-  normalizeImageLayout,
-  removePropertyImages,
-  UploadError,
-} from "@/lib/uploads"
+import { nestSearchListings } from "@/lib/nest-listings"
+import { nestPublishListing } from "@/lib/nest-publish"
 
-export const runtime = "nodejs"
-
-export async function OPTIONS(request: Request) {
-  return corsPreflight(request)
-}
-
+/** Recherche publique via Nest Search. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const properties = await searchAvailableProperties({
-    q: searchParams.get("q") ?? undefined,
-    type: searchParams.get("type") ?? undefined,
-    maxPrice: searchParams.get("maxPrice") ?? undefined,
-    lat: searchParams.get("lat") ?? undefined,
-    lng: searchParams.get("lng") ?? undefined,
-  })
-
-  return withCors(
-    request,
-    Response.json({
-      data: properties,
-      count: properties.length,
+  try {
+    const items = await nestSearchListings({
+      q: searchParams.get("q") ?? undefined,
+      type: searchParams.get("type") ?? undefined,
+      maxPrice: searchParams.get("maxPrice") ?? undefined,
+      lat: searchParams.get("lat") ?? undefined,
+      lng: searchParams.get("lng") ?? undefined,
     })
-  )
-}
-
-async function parseCreatePayload(request: Request) {
-  const contentType = request.headers.get("content-type") ?? ""
-
-  if (contentType.includes("multipart/form-data")) {
-    const form = await request.formData()
-    return {
-      title: form.get("title"),
-      description: form.get("description"),
-      price: form.get("price"),
-      type: form.get("type"),
-      location: form.get("location"),
-      latitude: form.get("latitude") || undefined,
-      longitude: form.get("longitude") || undefined,
-      beds: form.get("beds") || undefined,
-      baths: form.get("baths") || undefined,
-      surface: form.get("surface") || undefined,
-      status: form.get("status") || undefined,
-      publish: form.get("publish") !== "false",
-      imageLayout: collectImageLayout(form),
-      imageUrls: collectImageUrls(form),
-    }
-  }
-
-  return request.json()
-}
-
-export async function POST(request: Request) {
-  const { session, response } = await requirePublisher(request)
-  if (response) {
-    return withCors(request, response)
-  }
-
-  let fields: unknown
-  try {
-    fields = await parseCreatePayload(request)
-  } catch {
-    return withCors(
-      request,
-      Response.json({ error: "Requête invalide" }, { status: 400 })
-    )
-  }
-
-  const parsed = createPropertySchema.safeParse(fields)
-  if (!parsed.success) {
-    return withCors(
-      request,
-      Response.json({ error: firstZodError(parsed.error) }, { status: 400 })
-    )
-  }
-
-  let imageUrls: string[] = []
-
-  try {
-    const imageLayout = normalizeImageLayout(
-      parsed.data.imageLayout && parsed.data.imageLayout.length > 0
-        ? parsed.data.imageLayout
-        : parsed.data.imageUrls ?? (parsed.data.imageUrl ? [parsed.data.imageUrl] : [])
-    )
-    imageUrls = imageLayout.map((item) => item.url)
-
-    const property = await createPropertyForUser(
-      session.user.id,
-      session.user.agencyId,
-      {
-        ...parsed.data,
-        imageUrl: undefined,
-        imageUrls: undefined,
-        imageLayout,
-      },
-      randomUUID()
-    )
-
-    return withCors(
-      request,
-      Response.json({ data: property }, { status: 201 })
-    )
+    return Response.json({ items })
   } catch (error) {
-    await removePropertyImages(imageUrls)
-    const known = error instanceof UploadError || error instanceof GeocodeError
-    const message = known ? error.message : "Impossible de publier le bien"
-    const status = known ? 400 : 500
-    return withCors(
-      request,
-      Response.json({ error: message }, { status })
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Recherche indisponible",
+      },
+      { status: 502 },
+    )
+  }
+}
+
+/** Publication via Nest (property → listing → publish). */
+export async function POST(request: Request) {
+  const auth = await requirePublisher(request)
+  if (auth.response) return auth.response
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: "JSON invalide" }, { status: 400 })
+  }
+
+  const input = body as {
+    title?: string
+    description?: string
+    price?: number
+    type?: string
+    location?: string
+    beds?: string
+    baths?: string
+    surface?: string
+  }
+
+  if (
+    !input.title ||
+    !input.description ||
+    input.price == null ||
+    !input.type ||
+    !input.location
+  ) {
+    return Response.json({ error: "Champs requis manquants" }, { status: 400 })
+  }
+
+  try {
+    const result = await nestPublishListing({
+      title: input.title,
+      description: input.description,
+      price: Number(input.price),
+      type: input.type,
+      location: input.location,
+      beds: input.beds,
+      baths: input.baths,
+      surface: input.surface,
+    })
+    return Response.json(result, { status: 201 })
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Publication impossible",
+      },
+      { status: 502 },
     )
   }
 }

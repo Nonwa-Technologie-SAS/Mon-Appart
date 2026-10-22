@@ -8,7 +8,11 @@ import { AppModule } from "./app.module"
 import { configureApp } from "./configure-app"
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true })
+  // `rawBody` : les signatures de webhook se vérifient sur le corps reçu.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  })
   app.useLogger(app.get(Logger))
   configureApp(app)
   const port = app.get(ConfigService).get<number>("APP_PORT") ?? 4000
@@ -16,7 +20,8 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : "démarrage impossible"
+  const message =
+    error instanceof Error ? error.message : "démarrage impossible"
   console.error(message)
   process.exit(1)
 })

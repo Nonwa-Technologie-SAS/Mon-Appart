@@ -17,14 +17,35 @@ export function SiteFooter() {
           <div className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-3 sm:gap-8">
             <div className="flex flex-col gap-2">
               <p className="font-semibold text-foreground">Explorer</p>
-              <Link href="/" className="text-muted-foreground hover:text-primary">
-                Annonces
+              <Link
+                href="/locations"
+                className="min-h-9 text-muted-foreground hover:text-primary"
+              >
+                Locations
               </Link>
               <Link
-                href="/inscription/agence"
-                className="text-muted-foreground hover:text-primary"
+                href="/appartements-a-louer"
+                className="min-h-9 text-muted-foreground hover:text-primary"
               >
-                Agences
+                Appartements
+              </Link>
+              <Link
+                href="/maisons-a-louer"
+                className="min-h-9 text-muted-foreground hover:text-primary"
+              >
+                Maisons
+              </Link>
+              <Link
+                href="/terrains"
+                className="min-h-9 text-muted-foreground hover:text-primary"
+              >
+                Terrains
+              </Link>
+              <Link
+                href="/studios-a-louer"
+                className="min-h-9 text-muted-foreground hover:text-primary"
+              >
+                Studios
               </Link>
             </div>
             <div className="flex flex-col gap-2">
@@ -45,13 +66,29 @@ export function SiteFooter() {
             <div className="flex flex-col gap-2">
               <p className="font-semibold text-foreground">Plateforme</p>
               <Link
+                href="/assistant"
+                className="text-muted-foreground hover:text-primary"
+              >
+                Assistant IA
+              </Link>
+              <Link
                 href="/a-propos"
                 className="text-muted-foreground hover:text-primary"
               >
                 À propos
               </Link>
-              <p className="text-muted-foreground">Annonces vérifiées</p>
-              <p className="text-muted-foreground">Visites sécurisées</p>
+              <Link
+                href="/guides/louer-un-logement"
+                className="text-muted-foreground hover:text-primary"
+              >
+                Guide location
+              </Link>
+              <Link
+                href="/guides/eviter-les-arnaques"
+                className="text-muted-foreground hover:text-primary"
+              >
+                Éviter les arnaques
+              </Link>
             </div>
           </div>
         </div>

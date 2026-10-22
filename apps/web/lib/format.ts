@@ -1,4 +1,4 @@
-import { PropertyStatus, PropertyType } from "@/prisma/generated/client/enums"
+import { PropertyStatus, PropertyType } from "@/lib/domain-enums"
 
 const typeLabels: Record<PropertyType, string> = {
   APARTMENT: "Appartement",

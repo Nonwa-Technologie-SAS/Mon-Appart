@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 
+import { SessionProvider } from "@/components/session-provider"
 import { adminSite } from "@/lib/site"
 
 import "../styles/globals.css"
@@ -23,7 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   )
 }

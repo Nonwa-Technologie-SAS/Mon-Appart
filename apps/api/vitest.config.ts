@@ -14,8 +14,25 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
+    include: [
+      "src/**/*.spec.ts",
+      "test/**/*.e2e-spec.ts",
+      "test/contracts/**/*.contract-spec.ts",
+    ],
     setupFiles: ["./test/setup-env.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/main.ts",
+        "src/**/*.module.ts",
+        "src/**/*.spec.ts",
+        "src/**/cli/**",
+        "src/generated/**",
+      ],
+    },
     env: {
       NODE_ENV: "test",
       APP_ENV: "test",

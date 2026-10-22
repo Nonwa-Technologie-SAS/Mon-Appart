@@ -49,7 +49,7 @@ export function SiteMobileNav({
         type="button"
         variant="ghost"
         size="icon"
-        className="md:hidden"
+        className="size-11 md:hidden"
         aria-label="Ouvrir le menu"
         aria-expanded={open}
         aria-controls="site-mobile-nav"
@@ -90,7 +90,7 @@ export function SiteMobileNav({
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "rounded-md px-3 py-3 text-base font-medium",
+                    "min-h-11 rounded-md px-3 py-3 text-base font-medium",
                     item.active
                       ? "bg-accent text-primary"
                       : "text-foreground hover:bg-muted"
@@ -135,7 +135,7 @@ export function SiteMobileNav({
                 nativeButton={false}
                 render={<Link href={accountHref} onClick={() => setOpen(false)} />}
               >
-                {signedIn ? "Mon compte" : "Connexion"}
+                {signedIn ? "Mon profil" : "Connexion"}
               </Button>
             </div>
           </nav>

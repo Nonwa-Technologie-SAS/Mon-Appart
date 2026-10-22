@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common"
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core"
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler"
@@ -14,10 +19,10 @@ import { DomainEventsModule } from "./common/events/domain-events.module"
 import { HealthModule } from "./health/health.module"
 import { LoggerModule } from "./logging/logger.module"
 import { domainModules } from "./modules/domain"
+import { JwtAuthGuard, PermissionsGuard, RolesGuard } from "./modules/identity"
 import { ObservabilityModule } from "./observability/observability.module"
 import { RedisThrottlerStorage } from "./redis/redis-throttler.storage"
 import { RedisModule } from "./redis/redis.module"
-import { SecurityModule } from "./security/security.module"
 
 @Module({
   imports: [
@@ -32,7 +37,6 @@ import { SecurityModule } from "./security/security.module"
     DatabaseModule,
     DomainEventsModule,
     ObservabilityModule,
-    SecurityModule,
     ThrottlerModule.forRootAsync({
       inject: [RedisThrottlerStorage],
       useFactory: (storage: RedisThrottlerStorage) => ({
@@ -46,7 +50,11 @@ import { SecurityModule } from "./security/security.module"
   controllers: [AppController],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    // Ordre d'exécution : limite globale, authentification, rôles, permissions.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
   ],
 })

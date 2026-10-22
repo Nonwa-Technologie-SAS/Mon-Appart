@@ -1,88 +1,62 @@
-import { corsPreflight, withCors } from "@/lib/cors"
-import { firstZodError, createVisitSchema } from "@/lib/auth-schemas"
-import {
-  createVisitForProperty,
-  normalizeWhatsapp,
-} from "@/lib/visits"
+import { nestServerFetch } from "@/lib/nest-session"
+import { getRequestSession } from "@/lib/api-auth"
+import { normalizeWhatsapp } from "@/lib/visits"
 
-export async function OPTIONS(request: Request) {
-  return corsPreflight(request)
-}
+type Ctx = { params: Promise<{ id: string }> }
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
+/** Demande de visite → Nest appointments. */
+export async function POST(request: Request, context: Ctx) {
+  const session = await getRequestSession(request)
+  if (!session) {
+    return Response.json({ error: "Connexion requise" }, { status: 401 })
+  }
 
+  const { id: listingId } = await context.params
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return withCors(
-      request,
-      Response.json({ error: "JSON invalide" }, { status: 400 })
-    )
+    return Response.json({ error: "JSON invalide" }, { status: 400 })
   }
 
-  const parsed = createVisitSchema.safeParse(body)
-  if (!parsed.success) {
-    return withCors(
-      request,
-      Response.json({ error: firstZodError(parsed.error) }, { status: 400 })
-    )
+  const input = body as {
+    visitAt?: string
+    whatsapp?: string
+    visitorName?: string
+    visitorEmail?: string
   }
 
-  const whatsapp = normalizeWhatsapp(parsed.data.whatsapp)
-  if (!whatsapp) {
-    return withCors(
-      request,
-      Response.json(
-        { error: "Indiquez un numéro WhatsApp valide" },
-        { status: 400 }
-      )
-    )
+  const whatsapp = input.whatsapp
+    ? normalizeWhatsapp(input.whatsapp)
+    : null
+  if (!input.visitAt) {
+    return Response.json({ error: "Date requise" }, { status: 400 })
   }
 
-  const visitAt = parsed.data.visitAt
-  if (Number.isNaN(visitAt.getTime())) {
-    return withCors(
-      request,
-      Response.json({ error: "Date de visite invalide" }, { status: 400 })
+  try {
+    const appointment = await nestServerFetch("/appointments", {
+      method: "POST",
+      body: {
+        listingId,
+        scheduledAt: new Date(input.visitAt).toISOString(),
+        timezone: "Africa/Abidjan",
+        notes: [
+          whatsapp ? `WhatsApp: ${whatsapp}` : null,
+          input.visitorName,
+          input.visitorEmail,
+        ]
+          .filter(Boolean)
+          .join(" — "),
+      },
+    })
+    return Response.json(appointment, { status: 201 })
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Demande impossible",
+      },
+      { status: 502 },
     )
   }
-
-  const now = new Date()
-  if (visitAt.getTime() < now.getTime() - 60_000) {
-    return withCors(
-      request,
-      Response.json(
-        { error: "Choisissez une date et une heure à venir" },
-        { status: 400 }
-      )
-    )
-  }
-
-  const visit = await createVisitForProperty(
-    id,
-    {
-      visitAt,
-      whatsapp,
-      visitorName: parsed.data.visitorName,
-      visitorEmail: parsed.data.visitorEmail,
-    },
-    null
-  )
-
-  if (!visit) {
-    return withCors(
-      request,
-      Response.json({ error: "Bien introuvable" }, { status: 404 })
-    )
-  }
-
-  return withCors(
-    request,
-    Response.json({ data: visit }, { status: 201 })
-  )
 }

@@ -12,11 +12,14 @@ import {
 
 import { Button } from "@/components/ui/button"
 
-export const metadata: Metadata = {
+import { buildPageMetadata } from "@/lib/seo"
+
+export const metadata: Metadata = buildPageMetadata({
   title: "À propos",
   description:
     "Mon Appart est la plateforme de location immobilière en Côte d’Ivoire. Trouvez un logement de confiance, demandez une visite et publiez vos biens simplement.",
-}
+  path: "/a-propos",
+})
 
 const PILLARS = [
   {

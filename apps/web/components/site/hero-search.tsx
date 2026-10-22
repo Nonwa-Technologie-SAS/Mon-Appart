@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState, useTransition, type ReactNode } from "react"
-import { ChevronDownIcon, SearchIcon, SlidersHorizontalIcon } from "lucide-react"
+import { ChevronDownIcon, SearchIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,27 +68,36 @@ export function HeroSearch({
       <form
         onSubmit={onSubmit}
         className="flex w-full flex-col gap-3 lg:flex-row lg:items-center"
+        role="search"
       >
         {leading}
         <label className="relative min-w-0 flex-1">
+          <span className="sr-only">Ville ou quartier</span>
           <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             name="q"
+            type="search"
+            enterKeyHint="search"
+            autoComplete="address-level2"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Rechercher par ville, quartier…"
-            className="h-10 rounded-full border-border bg-white pl-10"
+            className="min-h-11 rounded-full border-border bg-white pl-10"
           />
         </label>
         <div className="flex flex-wrap items-center gap-2">
+          <label className="sr-only" htmlFor="compact-maxPrice">
+            Budget maximum
+          </label>
           <PillSelect
+            id="compact-maxPrice"
             name="maxPrice"
             value={maxPrice}
             onChange={(e) => {
               setMaxPrice(e.target.value)
               applyFilters({ maxPrice: e.target.value })
             }}
-            className="w-[9.5rem] sm:w-40"
+            className="min-h-11 w-[min(100%,11rem)] sm:w-44"
           >
             <option value="">Tout prix</option>
             <option value="500000">Jusqu’à 500 000 F CFA</option>
@@ -96,14 +105,18 @@ export function HeroSearch({
             <option value="1200000">Jusqu’à 1 200 000 F CFA</option>
             <option value="2500000">Jusqu’à 2 500 000 F CFA</option>
           </PillSelect>
+          <label className="sr-only" htmlFor="compact-type">
+            Type de bien
+          </label>
           <PillSelect
+            id="compact-type"
             name="type"
             value={type}
             onChange={(e) => {
               setType(e.target.value)
               applyFilters({ type: e.target.value })
             }}
-            className="w-[9.5rem] sm:w-40"
+            className="min-h-11 w-[min(100%,11rem)] sm:w-40"
           >
             <option value="">Tous types</option>
             {PROPERTY_TYPE_OPTIONS.map((option) => (
@@ -114,12 +127,11 @@ export function HeroSearch({
           </PillSelect>
           <Button
             type="submit"
-            variant="outline"
             disabled={isPending}
-            className="h-10 rounded-full border-border bg-muted px-4 text-foreground hover:bg-muted/80"
+            className="min-h-11 min-w-11 rounded-full px-4"
           >
-            <SlidersHorizontalIcon data-icon="inline-start" />
-            {isPending ? "…" : "Plus"}
+            <SearchIcon data-icon="inline-start" />
+            <span className="sm:inline">{isPending ? "…" : "OK"}</span>
           </Button>
         </div>
       </form>
@@ -129,16 +141,22 @@ export function HeroSearch({
   return (
     <form
       onSubmit={onSubmit}
-      className="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-xl border border-border bg-white p-3 md:flex-row md:items-end"
+      role="search"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-xl border border-border bg-white p-3 shadow-sm md:flex-row md:items-end"
     >
       <label className="flex flex-1 flex-col gap-1.5 px-1">
-        <span className="text-xs font-medium text-muted-foreground">Destination</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          Destination
+        </span>
         <Input
           name="q"
+          type="search"
+          enterKeyHint="search"
+          autoComplete="address-level2"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Ville, quartier…"
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="min-h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
         />
       </label>
       <label className="flex flex-1 flex-col gap-1.5 px-1 md:max-w-44">
@@ -147,7 +165,7 @@ export function HeroSearch({
           name="type"
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="min-h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
         >
           <option value="">Tous</option>
           {PROPERTY_TYPE_OPTIONS.map((option) => (
@@ -158,21 +176,24 @@ export function HeroSearch({
         </NativeSelect>
       </label>
       <label className="flex flex-1 flex-col gap-1.5 px-1 md:max-w-40">
-        <span className="text-xs font-medium text-muted-foreground">Budget max</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          Budget max
+        </span>
         <Input
           name="maxPrice"
           type="number"
+          inputMode="numeric"
           min={0}
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
           placeholder="F CFA / mois"
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="min-h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
         />
       </label>
       <Button
         type="submit"
         disabled={isPending}
-        className="h-11 w-full shrink-0 gap-2 md:w-auto"
+        className="min-h-11 w-full shrink-0 gap-2 md:w-auto"
         size="lg"
       >
         <SearchIcon data-icon="inline-start" />
@@ -190,7 +211,7 @@ export function PillSelect({
     <div className="relative">
       <NativeSelect
         className={cn(
-          "h-10 appearance-none rounded-full border-border bg-white pr-9 pl-4 text-sm",
+          "min-h-11 appearance-none rounded-full border-border bg-white pr-9 pl-4 text-sm",
           className
         )}
         {...props}

@@ -1,57 +1,61 @@
-import {
-  corsPreflight,
-  withCors,
-} from "@/lib/cors"
-import {
-  credentialsSchema,
-  firstZodError,
-} from "@/lib/auth-schemas"
-import { createUserWithPassword } from "@/lib/create-user"
-import { Role } from "@/prisma/generated/client/enums"
+import { nestApiUrl } from "@/lib/nest-url"
 
-export async function OPTIONS(request: Request) {
-  return corsPreflight(request)
-}
-
+/**
+ * Inscription propriétaire → Nest register (CUSTOMER).
+ * Élévation OWNER via admin Nest.
+ */
 export async function POST(request: Request) {
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return withCors(
-      request,
-      Response.json({ error: "JSON invalide" }, { status: 400 })
+    return Response.json({ error: "JSON invalide" }, { status: 400 })
+  }
+
+  const payload = body as {
+    name?: string
+    email?: string
+    password?: string
+  }
+
+  if (!payload.email || !payload.password) {
+    return Response.json(
+      { error: "Email et mot de passe requis" },
+      { status: 400 },
     )
   }
 
-  const parsed = credentialsSchema.safeParse(body)
-  if (!parsed.success) {
-    return withCors(
-      request,
-      Response.json({ error: firstZodError(parsed.error) }, { status: 400 })
+  const [firstName, ...rest] = (payload.name ?? "").trim().split(/\s+/)
+  const res = await fetch(nestApiUrl("/api/v1/auth/register"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Auth-Transport": "cookie",
+    },
+    body: JSON.stringify({
+      email: payload.email,
+      password: payload.password,
+      firstName: firstName || undefined,
+      lastName: rest.join(" ") || undefined,
+    }),
+  })
+
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    return Response.json(
+      data ?? { error: "Inscription impossible" },
+      { status: res.status },
     )
   }
 
-  try {
-    const user = await createUserWithPassword(parsed.data, Role.OWNER)
-    return withCors(
-      request,
-      Response.json({
-        data: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      })
-    )
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Impossible de créer le compte"
-    const status = message.includes("existe déjà") ? 409 : 500
-    return withCors(
-      request,
-      Response.json({ error: message }, { status })
-    )
+  // Relayer les Set-Cookie Nest vers le client.
+  const response = Response.json(data, { status: res.status })
+  const setCookies =
+    typeof res.headers.getSetCookie === "function"
+      ? res.headers.getSetCookie()
+      : []
+  for (const cookie of setCookies) {
+    response.headers.append("Set-Cookie", cookie)
   }
+  return response
 }

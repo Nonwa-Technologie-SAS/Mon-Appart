@@ -1,56 +1,36 @@
 "use server"
 
-import { headers } from "next/headers"
-
 import { firstZodError, requestVisitFormSchema } from "@/lib/auth-schemas"
-import { prisma } from "@/lib/prisma"
-import {
-  createVisitForProperty,
-  normalizeWhatsapp,
-} from "@/lib/visits"
-import { PropertyStatus } from "@/prisma/generated/client/enums"
+import { getSession } from "@/lib/auth-session"
+import { nestServerFetch } from "@/lib/nest-session"
+import { normalizeWhatsapp } from "@/lib/visits"
 
 export type VisitRequestState = {
   error?: string
   success?: boolean
 }
 
-async function getClientIp() {
-  const headerStore = await headers()
-  const forwarded = headerStore.get("x-forwarded-for")
-  return (
-    forwarded?.split(",")[0]?.trim() ||
-    headerStore.get("x-real-ip") ||
-    null
-  )
-}
+export async function recordVirtualTourVisit(listingId: string) {
+  if (!listingId) return { ok: false as const }
 
-export async function recordVirtualTourVisit(propertyId: string) {
-  if (!propertyId) return { ok: false as const }
-
-  const property = await prisma.property.findFirst({
-    where: { id: propertyId, status: PropertyStatus.AVAILABLE },
-    select: { id: true },
-  })
-
-  if (!property) return { ok: false as const }
-
-  await prisma.propertyVisit.create({
-    data: {
-      propertyId: property.id,
-      visitorName: "Visite virtuelle",
-      visitorWhatsapp: "",
-      visitDate: new Date(),
-      ipAddress: await getClientIp(),
-    },
-  })
-
-  return { ok: true as const }
+  try {
+    await nestServerFetch("/interactions/views", {
+      method: "POST",
+      body: {
+        listingId,
+        source: "DIRECT",
+        sessionId: crypto.randomUUID(),
+      },
+    })
+    return { ok: true as const }
+  } catch {
+    return { ok: false as const }
+  }
 }
 
 export async function requestPropertyVisit(
   _prev: VisitRequestState,
-  formData: FormData
+  formData: FormData,
 ): Promise<VisitRequestState> {
   const parsed = requestVisitFormSchema.safeParse({
     propertyId: formData.get("propertyId"),
@@ -78,20 +58,32 @@ export async function requestPropertyVisit(
     return { error: "Choisissez une date et une heure à venir" }
   }
 
-  const visit = await createVisitForProperty(
-    parsed.data.propertyId,
-    {
-      visitAt,
-      whatsapp,
-      visitorName: parsed.data.visitorName,
-      visitorEmail: parsed.data.visitorEmail,
-    },
-    await getClientIp()
-  )
-
-  if (!visit) {
-    return { error: "Bien introuvable" }
+  const session = await getSession()
+  if (!session) {
+    return {
+      error: "Connectez-vous pour demander une visite.",
+    }
   }
 
-  return { success: true }
+  try {
+    await nestServerFetch("/appointments", {
+      method: "POST",
+      body: {
+        listingId: parsed.data.propertyId,
+        scheduledAt: visitAt.toISOString(),
+        timezone: "Africa/Abidjan",
+        notes: `WhatsApp: ${whatsapp} — ${parsed.data.visitorName}${
+          parsed.data.visitorEmail ? ` (${parsed.data.visitorEmail})` : ""
+        }`,
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Impossible de planifier la visite",
+    }
+  }
 }

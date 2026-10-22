@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 
 import { CreateStaffForm } from "@/components/auth/create-staff-form"
 import { getSession } from "@/lib/auth-session"
-import { Role } from "@/prisma/generated/client/enums"
+import { Role } from "@/lib/domain-enums"
 
 export default async function CreateStaffPage() {
   const session = await getSession()

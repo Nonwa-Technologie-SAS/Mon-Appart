@@ -34,6 +34,25 @@ services:
       timeout: 3s
       retries: 20
 
+  # Interface SQL locale uniquement (127.0.0.1). Ne pas exposer hors de la machine.
+  pgadmin:
+    image: dpage/pgadmin4:9
+    environment:
+      # Pas de domaine .local : pgAdmin le refuse (nom réservé).
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: mon_appart_dev
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+    ports:
+      - "127.0.0.1:5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
+  pgadmin_data:

@@ -1,19 +1,33 @@
-import { auth } from "@/lib/auth"
-import { corsPreflight, withCors } from "@/lib/cors"
-import { toNextJsHandler } from "better-auth/next-js"
-
-const handlers = toNextJsHandler(auth)
-
-export async function OPTIONS(request: Request) {
-  return corsPreflight(request)
+/**
+ * better-auth retiré : l’auth web passe par Nest (`/api/v1/auth/*` via rewrite).
+ */
+function gone() {
+  return Response.json(
+    {
+      error: "AUTH_MOVED_TO_NEST",
+      message:
+        "L’authentification web utilise Nest Identity. Appelez /api/v1/auth/* (même origine).",
+    },
+    { status: 410 },
+  )
 }
 
-export async function GET(request: Request) {
-  const response = await handlers.GET(request)
-  return withCors(request, response)
+export async function GET() {
+  return gone()
 }
 
-export async function POST(request: Request) {
-  const response = await handlers.POST(request)
-  return withCors(request, response)
+export async function POST() {
+  return gone()
+}
+
+export async function PUT() {
+  return gone()
+}
+
+export async function PATCH() {
+  return gone()
+}
+
+export async function DELETE() {
+  return gone()
 }

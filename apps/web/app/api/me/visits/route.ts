@@ -1,25 +1,20 @@
-import { corsPreflight, withCors } from "@/lib/cors"
 import { requirePublisher } from "@/lib/api-auth"
-import { listVisitsForOwner } from "@/lib/visits"
-
-export async function OPTIONS(request: Request) {
-  return corsPreflight(request)
-}
+import { listNestAppointments } from "@/lib/nest-appointments"
 
 export async function GET(request: Request) {
-  const { session, response } = await requirePublisher(request)
-  if (response) {
-    return withCors(request, response)
+  const auth = await requirePublisher(request)
+  if (auth.response) return auth.response
+
+  try {
+    const items = await listNestAppointments()
+    return Response.json({ items })
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Visites indisponibles",
+      },
+      { status: 502 },
+    )
   }
-
-  const visits = await listVisitsForOwner(session.user.id)
-  const pendingCount = visits.filter((visit) => visit.status === "PENDING").length
-
-  return withCors(
-    request,
-    Response.json({
-      data: visits,
-      pendingCount,
-    })
-  )
 }

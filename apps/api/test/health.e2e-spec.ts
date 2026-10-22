@@ -26,7 +26,8 @@ describe("Health HTTP", () => {
       .get("/health/live")
       .expect(200)
       .expect(({ body, headers }) => {
-        expect(body).toEqual({ status: "ok", service: "api" })
+        expect(body.status).toBe("ok")
+        expect(body.service).toBe("api")
         expect(headers["x-request-id"]).toEqual(expect.any(String))
       })
   })

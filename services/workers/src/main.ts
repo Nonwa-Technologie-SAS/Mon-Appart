@@ -20,11 +20,9 @@ if (!redisUrl) {
 const connection = redisConnectionFromUrl(redisUrl)
 let redisReady = false
 
-const worker = new Worker(
-  JOB_QUEUES.systemPing,
-  async () => ({ ok: true }),
-  { connection },
-)
+const worker = new Worker(JOB_QUEUES.systemPing, async () => ({ ok: true }), {
+  connection,
+})
 
 worker.on("ready", () => {
   redisReady = true

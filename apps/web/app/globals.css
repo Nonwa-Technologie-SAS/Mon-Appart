@@ -28,7 +28,9 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-primary-hover: var(--primary-hover);
+  --color-secondary-hover: var(--secondary-hover);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -48,81 +50,106 @@
   --radius-2xl: calc(var(--radius) * 2);
   --radius-3xl: calc(var(--radius) * 2.5);
   --radius-4xl: calc(var(--radius) * 3);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --max-width-content: var(--content-max);
+  --max-width-prose: var(--prose-max);
+  --duration-fast: var(--motion-fast);
+  --duration-normal: var(--motion-normal);
 }
 
 :root {
-  --background: #f5f7fa;
-  --foreground: #212121;
+  /* Marque Mon Appart — bleu confiance + ambre action (marché CI) */
+  --background: #f3f6f9;
+  --foreground: #1a2332;
   --card: #ffffff;
-  --card-foreground: #212121;
+  --card-foreground: #1a2332;
   --popover: #ffffff;
-  --popover-foreground: #212121;
+  --popover-foreground: #1a2332;
   --primary: #1565c0;
   --primary-foreground: #ffffff;
   --primary-hover: #0d47a1;
-  --secondary: #ffc107;
-  --secondary-foreground: #212121;
-  --muted: #eef2f6;
-  --muted-foreground: #616161;
+  --secondary: #f5b400;
+  --secondary-foreground: #1a2332;
+  --secondary-hover: #e0a400;
+  --muted: #e8eef4;
+  --muted-foreground: #5a6577;
   --accent: #e3f2fd;
-  --accent-foreground: #1565c0;
-  --destructive: #d32f2f;
+  --accent-foreground: #0d47a1;
+  --destructive: #c62828;
   --success: #2e7d32;
   --warning: #ed6c02;
-  --border: #e0e0e0;
-  --input: #e0e0e0;
+  --info: #0277bd;
+  --border: #d7dee8;
+  --input: #d7dee8;
   --ring: #1565c0;
   --chart-1: #1565c0;
-  --chart-2: #ffc107;
+  --chart-2: #f5b400;
   --chart-3: #2e7d32;
-  --chart-4: #616161;
-  --chart-5: #212121;
-  --radius: 0.5rem;
+  --chart-4: #5a6577;
+  --chart-5: #1a2332;
+  --radius: 0.625rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #212121;
+  --sidebar-foreground: #1a2332;
   --sidebar-primary: #1565c0;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e3f2fd;
-  --sidebar-accent-foreground: #1565c0;
-  --sidebar-border: #e0e0e0;
+  --sidebar-accent-foreground: #0d47a1;
+  --sidebar-border: #d7dee8;
   --sidebar-ring: #1565c0;
+  /* Surfaces & layout */
+  --surface-hero: linear-gradient(165deg, #ffffff 0%, #eef4fb 48%, #f3f6f9 100%);
+  --elevation-sm: 0 1px 2px rgb(26 35 50 / 0.05);
+  --elevation-md: 0 4px 14px rgb(26 35 50 / 0.07);
+  --elevation-lg: 0 12px 32px rgb(26 35 50 / 0.1);
+  --content-max: 87.5rem; /* 1400px */
+  --prose-max: 42rem;
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
 }
 
 .dark {
-  --background: #121212;
-  --foreground: #f5f7fa;
-  --card: #1e1e1e;
-  --card-foreground: #f5f7fa;
-  --popover: #1e1e1e;
-  --popover-foreground: #f5f7fa;
-  --primary: #1565c0;
-  --primary-foreground: #ffffff;
-  --primary-hover: #0d47a1;
-  --secondary: #ffc107;
-  --secondary-foreground: #212121;
-  --muted: #2a2a2a;
-  --muted-foreground: #bdbdbd;
+  --background: #0f1419;
+  --foreground: #f0f4f8;
+  --card: #1a222c;
+  --card-foreground: #f0f4f8;
+  --popover: #1a222c;
+  --popover-foreground: #f0f4f8;
+  --primary: #42a5f5;
+  --primary-foreground: #0f1419;
+  --primary-hover: #64b5f6;
+  --secondary: #f5b400;
+  --secondary-foreground: #0f1419;
+  --secondary-hover: #ffc107;
+  --muted: #243040;
+  --muted-foreground: #a8b3c2;
   --accent: #1a3a5c;
   --accent-foreground: #90caf9;
-  --destructive: #d32f2f;
-  --success: #2e7d32;
-  --warning: #ed6c02;
-  --border: #3a3a3a;
-  --input: #3a3a3a;
-  --ring: #1565c0;
-  --chart-1: #1565c0;
-  --chart-2: #ffc107;
-  --chart-3: #2e7d32;
-  --chart-4: #bdbdbd;
-  --chart-5: #f5f7fa;
-  --sidebar: #1e1e1e;
-  --sidebar-foreground: #f5f7fa;
-  --sidebar-primary: #1565c0;
-  --sidebar-primary-foreground: #ffffff;
+  --destructive: #ef5350;
+  --success: #66bb6a;
+  --warning: #ffa726;
+  --info: #29b6f6;
+  --border: #2e3a48;
+  --input: #2e3a48;
+  --ring: #42a5f5;
+  --chart-1: #42a5f5;
+  --chart-2: #f5b400;
+  --chart-3: #66bb6a;
+  --chart-4: #a8b3c2;
+  --chart-5: #f0f4f8;
+  --sidebar: #1a222c;
+  --sidebar-foreground: #f0f4f8;
+  --sidebar-primary: #42a5f5;
+  --sidebar-primary-foreground: #0f1419;
   --sidebar-accent: #1a3a5c;
   --sidebar-accent-foreground: #90caf9;
-  --sidebar-border: #3a3a3a;
-  --sidebar-ring: #1565c0;
+  --sidebar-border: #2e3a48;
+  --sidebar-ring: #42a5f5;
+  --surface-hero: linear-gradient(165deg, #1a222c 0%, #152030 100%);
+  --elevation-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --elevation-md: 0 4px 14px rgb(0 0 0 / 0.4);
+  --elevation-lg: 0 12px 32px rgb(0 0 0 / 0.45);
 }
 
 @layer base {
@@ -254,4 +281,68 @@
   .nav-progress-done {
     transition: none;
   }
+
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+/* Cible tactile minimale recommandée (~44px) */
+.touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.container-content {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--content-max);
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-content {
+    padding-inline: 1.5rem;
+  }
+}
+
+.surface-hero {
+  background: var(--surface-hero);
+}
+
+.text-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+  line-height: 1.2;
+}
+
+.elevation-sm {
+  box-shadow: var(--elevation-sm);
+}
+
+.elevation-md {
+  box-shadow: var(--elevation-md);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform var(--motion-fast) ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0.75rem);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

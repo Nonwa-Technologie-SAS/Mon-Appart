@@ -21,7 +21,7 @@ export default async function SignInPage({
     redirect(nextPath ?? "/espace")
   }
   if (session) {
-    redirect(nextPath ?? "/")
+    redirect(nextPath ?? "/profil")
   }
 
   return (

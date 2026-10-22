@@ -1,14 +1,24 @@
 "use client"
 
-import Image, { type ImageProps } from "next/image"
+import Image from "next/image"
 import { useState } from "react"
 
 import { cn } from "@/lib/utils"
 
-type PropertyPhotoProps = Omit<ImageProps, "onError" | "src"> & {
+type PropertyPhotoProps = {
   src: string | null | undefined
+  alt: string
+  className?: string
   fallbackClassName?: string
   fallbackLabel?: string
+  fill?: boolean
+  width?: number
+  height?: number
+  sizes?: string
+  quality?: number
+  priority?: boolean
+  loading?: "eager" | "lazy"
+  unoptimized?: boolean
 }
 
 function isLocalUpload(src: string) {
@@ -21,7 +31,14 @@ export function PropertyPhoto({
   className,
   fallbackClassName,
   fallbackLabel = "Photo à venir",
-  ...props
+  fill,
+  width,
+  height,
+  sizes,
+  quality,
+  priority,
+  loading,
+  unoptimized,
 }: PropertyPhotoProps) {
   const [failed, setFailed] = useState(false)
 
@@ -40,10 +57,16 @@ export function PropertyPhoto({
 
   return (
     <Image
-      {...props}
       src={src}
       alt={alt}
-      unoptimized={isLocalUpload(src) || props.unoptimized}
+      fill={fill}
+      width={width}
+      height={height}
+      sizes={sizes}
+      quality={quality}
+      priority={priority}
+      loading={loading}
+      unoptimized={isLocalUpload(src) || unoptimized}
       className={className}
       onError={() => setFailed(true)}
     />

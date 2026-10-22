@@ -1,12 +1,18 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { InfoIcon, LocateFixedIcon } from "lucide-react"
+import { LocateFixedIcon } from "lucide-react"
 
 import type { PropertyListItem } from "@/lib/properties"
-import { PropertyCard } from "@/components/site/property-card"
+import { CategoryShortcuts } from "@/components/site/category-shortcuts"
+import { EmptyState } from "@/components/site/empty-state"
 import { HeroSearch, PillSelect } from "@/components/site/hero-search"
+import { PropertyCard } from "@/components/site/property-card"
+import { SaveSearchCriteria } from "@/components/site/save-search-criteria"
+import { PublisherCta } from "@/components/site/publisher-cta"
+import { TrustStrip } from "@/components/site/trust-strip"
 import { useVisitorLocation } from "@/components/site/use-visitor-location"
 import { Button } from "@/components/ui/button"
 import { AROUND_RADIUS_KM, NEARBY_RADIUS_KM, haversineKm } from "@/lib/geo"
@@ -18,7 +24,7 @@ const PropertyMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex size-full items-center justify-center bg-muted text-sm text-muted-foreground">
+      <div className="flex size-full min-h-[12rem] items-center justify-center bg-muted text-sm text-muted-foreground">
         Chargement de la carte…
       </div>
     ),
@@ -66,7 +72,6 @@ export function SearchResultsLayout({
 }: SearchResultsLayoutProps) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [showMap, setShowMap] = useState(false)
-  const [familyMode, setFamilyMode] = useState(true)
   const [sort, setSort] = useState(initialLat && initialLng ? "distance" : "newest")
   const geoEnabled = !initialQ?.trim()
   const location = useVisitorLocation({
@@ -125,18 +130,49 @@ export function SearchResultsLayout({
         ? "votre position"
         : "Côte d’Ivoire"
 
+  const emptyActions = [
+    { href: "/", label: "Effacer les filtres", variant: "default" as const },
+    {
+      href: "/appartements-a-louer",
+      label: "Élargir : appartements",
+      variant: "outline" as const,
+    },
+    {
+      href: "/maisons-a-louer",
+      label: "Élargir : maisons",
+      variant: "outline" as const,
+    },
+    {
+      href: "/terrains",
+      label: "Voir les terrains",
+      variant: "outline" as const,
+    },
+    {
+      href: "/guides/eviter-les-arnaques",
+      label: "Conseils anti-arnaques",
+      variant: "outline" as const,
+    },
+  ]
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border bg-white">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-5 sm:gap-6 sm:px-6 sm:py-8">
+      <div className="border-b border-border surface-hero">
+        <div className="container-content flex flex-col gap-4 py-5 sm:gap-5 sm:py-8 lg:py-10">
           <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold tracking-wide text-primary uppercase sm:text-base">
+              Mon Appart
+            </p>
             <h1 className="text-[1.75rem] leading-tight font-bold sm:text-4xl lg:text-5xl">
-              Trouvez votre chez-vous.
+              Trouvez votre chez-vous
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Annonces vérifiées, visites simples, en toute confiance.
+              Location en Côte d’Ivoire : comparez les annonces, les photos et
+              demandez une visite en quelques minutes.
             </p>
           </div>
+
+          {!hasFilters ? <CategoryShortcuts /> : null}
+
           <HeroSearch
             key={`${initialQ ?? ""}-${initialType ?? ""}-${initialMaxPrice ?? ""}`}
             compact
@@ -144,7 +180,7 @@ export function SearchResultsLayout({
             initialType={initialType}
             initialMaxPrice={initialMaxPrice}
             leading={
-              <p className="shrink-0 text-sm">
+              <p className="shrink-0 text-sm" aria-live="polite">
                 <span className="font-semibold text-foreground">
                   {sortedProperties.length} résultat
                   {sortedProperties.length > 1 ? "s" : ""}
@@ -159,19 +195,21 @@ export function SearchResultsLayout({
           />
 
           {geoEnabled && location.status === "prompting" ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground" role="status">
               Localisation en cours pour afficher les biens près de chez vous…
             </p>
           ) : null}
 
           {geoEnabled && (location.status === "denied" || location.status === "unavailable") ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm">
-              <p className="text-muted-foreground">
-                Activez la localisation pour voir les maisons disponibles dans votre zone.
+            <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm sm:flex-row sm:items-center">
+              <p className="flex-1 text-muted-foreground">
+                Activez la localisation pour voir les logements près de vous, ou
+                saisissez une ville / un quartier.
               </p>
               <Button
                 type="button"
                 size="sm"
+                className="min-h-11 shrink-0"
                 onClick={location.requestLocation}
               >
                 <LocateFixedIcon data-icon="inline-start" />
@@ -181,18 +219,8 @@ export function SearchResultsLayout({
           ) : null}
 
           <div className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:items-center">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-              <label className="inline-flex items-center gap-2 text-muted-foreground">
-                <FilterSwitch
-                  checked={familyMode}
-                  onCheckedChange={setFamilyMode}
-                  label="Mode famille"
-                />
-                Mode famille
-                <InfoIcon className="size-3.5" />
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <label className="inline-flex min-h-11 items-center gap-2.5 text-muted-foreground">
                 <FilterSwitch
                   checked={showMap}
                   onCheckedChange={setShowMap}
@@ -205,7 +233,7 @@ export function SearchResultsLayout({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 rounded-full bg-muted px-3.5 text-foreground hover:bg-muted/80"
+                className="min-h-11 rounded-full bg-muted px-4 text-foreground hover:bg-muted/80"
                 onClick={location.requestLocation}
               >
                 <LocateFixedIcon data-icon="inline-start" />
@@ -218,7 +246,7 @@ export function SearchResultsLayout({
               <PillSelect
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="w-full sm:w-36"
+                className="min-h-11 w-full sm:w-40"
               >
                 {location.status === "ready" ? (
                   <option value="distance">Distance</option>
@@ -229,6 +257,17 @@ export function SearchResultsLayout({
               </PillSelect>
             </label>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Astuce :{" "}
+            <Link
+              href="/guides/eviter-les-arnaques"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              comment éviter les arnaques
+            </Link>{" "}
+            avant de payer ou d’envoyer des documents.
+          </p>
         </div>
       </div>
 
@@ -248,19 +287,31 @@ export function SearchResultsLayout({
                 highlightedId={highlightedId}
                 onHighlight={setHighlightedId}
                 compact
+                emptyActions={hasFilters ? emptyActions : undefined}
+                saveCriteria={
+                  hasFilters
+                    ? {
+                        q: initialQ,
+                        type: initialType,
+                        maxPrice: initialMaxPrice,
+                      }
+                    : undefined
+                }
               />
             </div>
           </section>
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-4 py-6 sm:gap-10 sm:px-6 sm:py-8">
+        <div className="container-content flex flex-col gap-8 py-6 sm:gap-10 sm:py-8">
+          {!hasFilters ? <TrustStrip /> : null}
+
           {showGeoGroups ? (
             <>
               <PropertySection
                 title="Dans votre zone"
                 subtitle={`Biens à moins de ${NEARBY_RADIUS_KM} km`}
                 properties={nearby}
-                emptyMessage="Aucun bien disponible dans un rayon proche. Voici les alentours ci-dessous."
+                emptyMessage="Aucun bien dans un rayon proche. Voir les alentours ci-dessous."
                 highlightedId={highlightedId}
                 onHighlight={setHighlightedId}
               />
@@ -286,8 +337,20 @@ export function SearchResultsLayout({
               properties={sortedProperties}
               highlightedId={highlightedId}
               onHighlight={setHighlightedId}
+              emptyActions={hasFilters ? emptyActions : undefined}
+              saveCriteria={
+                hasFilters
+                  ? {
+                      q: initialQ,
+                      type: initialType,
+                      maxPrice: initialMaxPrice,
+                    }
+                  : undefined
+              }
             />
           )}
+
+          {!hasFilters ? <PublisherCta /> : null}
         </div>
       )}
     </div>
@@ -337,17 +400,45 @@ function PropertyList({
   highlightedId,
   onHighlight,
   compact = false,
+  emptyActions,
+  saveCriteria,
 }: {
   properties: PropertyListItem[]
   highlightedId: string | null
   onHighlight: (id: string | null) => void
   compact?: boolean
+  emptyActions?: readonly {
+    href: string
+    label: string
+    variant?: "default" | "outline" | "secondary"
+  }[]
+  saveCriteria?: { q?: string; type?: string; maxPrice?: string }
 }) {
   if (properties.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-border bg-white px-6 py-16 text-center text-muted-foreground">
-        Aucun bien disponible pour ces critères.
-      </p>
+      <div>
+        <EmptyState
+          title="Aucun logement pour ces critères"
+          description="Élargissez volontairement un filtre (budget, type, zone) — nous ne modifions pas vos critères à votre place."
+          actions={
+            emptyActions ?? [
+              {
+                href: "/",
+                label: "Voir toutes les annonces",
+                variant: "default",
+              },
+              { href: "/locations", label: "Locations", variant: "outline" },
+            ]
+          }
+        />
+        {saveCriteria ? (
+          <SaveSearchCriteria
+            q={saveCriteria.q}
+            type={saveCriteria.type}
+            maxPrice={saveCriteria.maxPrice}
+          />
+        ) : null}
+      </div>
     )
   }
 
@@ -394,13 +485,13 @@ function FilterSwitch({
       aria-checked={checked}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
-        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+        "relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         checked ? "bg-primary" : "bg-muted"
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform",
+          "absolute top-0.5 left-0.5 size-6 rounded-full bg-white shadow-sm transition-transform",
           checked && "translate-x-5"
         )}
       />

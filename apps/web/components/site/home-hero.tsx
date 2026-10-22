@@ -1,16 +1,19 @@
 import { HeroSearch } from "@/components/site/hero-search"
 
+/** Bloc hero autonome (pages marketing / variantes). L’accueil utilise SearchResultsLayout. */
 export function HomeHero() {
   return (
-    <section className="border-b border-border bg-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-16">
+    <section className="border-b border-border surface-hero">
+      <div className="container-content flex flex-col gap-6 py-8 sm:py-16">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-primary">Mon Appart</p>
+          <p className="text-sm font-semibold tracking-wide text-primary uppercase sm:text-base">
+            Mon Appart
+          </p>
           <h1 className="mt-2 text-[1.75rem] leading-tight font-bold sm:text-4xl lg:text-5xl">
-            Trouvez la maison qui vous ressemble
+            Trouvez votre chez-vous
           </h1>
           <p className="mt-3 max-w-lg text-base text-muted-foreground">
-            Parcourez des annonces vérifiées en Côte d’Ivoire et réservez une
+            Parcourez des annonces de location en Côte d’Ivoire et demandez une
             visite en quelques clics.
           </p>
         </div>

@@ -55,9 +55,12 @@ export function SignInForm({
                 id="email"
                 name="email"
                 type="email"
+                inputMode="email"
                 autoComplete="email"
                 required
                 disabled={pending}
+                className="min-h-11"
+                placeholder="vous@email.com"
               />
             </Field>
             <Field>
@@ -69,10 +72,17 @@ export function SignInForm({
                 autoComplete="current-password"
                 required
                 disabled={pending}
+                className="min-h-11"
               />
             </Field>
-            {state.error ? <FieldError>{state.error}</FieldError> : null}
-            <Button type="submit" disabled={pending} className="w-full">
+            {state.error ? (
+              <FieldError role="alert">{state.error}</FieldError>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={pending}
+              className="min-h-11 w-full"
+            >
               {pending ? "Connexion…" : "Se connecter"}
             </Button>
           </FieldGroup>

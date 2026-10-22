@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 
 import { updatePropertyListingStatus } from "@/app/actions/properties"
 import { Button } from "@/components/ui/button"
-import { PropertyStatus } from "@/prisma/generated/client/enums"
+import { PropertyStatus } from "@/lib/domain-enums"
 
 export function PropertyStatusToggle({
   propertyId,

@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common"
 import type { Request, Response } from "express"
 
+import { AppException, defaultErrorCode } from "../http/app-exception"
 import { safeErrorMessage } from "../http/safe-error"
 
 @Catch()
@@ -22,8 +23,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR
     let message = "Erreur interne du serveur"
     let details: unknown
+    let code: string | undefined
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof AppException) {
+      status = exception.getStatus()
+      code = exception.code
+      message = exception.message
+      if (exception.retryAfterSeconds !== undefined) {
+        response.setHeader("Retry-After", String(exception.retryAfterSeconds))
+      }
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus()
       const body = exception.getResponse()
       if (typeof body === "string") {
@@ -32,6 +41,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         details = body.message
         message =
           typeof body.message === "string" ? body.message : "Requête invalide"
+      }
+      if (status === HttpStatus.BAD_REQUEST && Array.isArray(details)) {
+        code = "VALIDATION_FAILED"
+      }
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        message = "Trop de requêtes, réessayez plus tard"
       }
     }
 
@@ -42,12 +57,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
           error: safeErrorMessage(exception),
         }),
       )
-      message = "Erreur interne du serveur"
+      if (status !== HttpStatus.SERVICE_UNAVAILABLE || !code) {
+        message = "Erreur interne du serveur"
+        code = undefined
+      }
       details = undefined
     }
 
     response.status(status).json({
       statusCode: status,
+      code: code ?? defaultErrorCode(status),
       message,
       details,
       requestId: request.id ?? null,

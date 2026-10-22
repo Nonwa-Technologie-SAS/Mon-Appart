@@ -87,8 +87,8 @@ export function PropertyImageGallery({
             src={current.url}
             alt={`${title} — photo ${index + 1} sur ${count}`}
             fill
-            preload
-            loading="eager"
+            priority={index === 0}
+            loading={index === 0 ? "eager" : "lazy"}
             sizes="(max-width: 1024px) 100vw, 60vw"
             quality={85}
             className="object-cover"

@@ -6,7 +6,9 @@ export interface RedisConnectionOptions {
   maxRetriesPerRequest: null
 }
 
-export function redisConnectionFromUrl(redisUrl: string): RedisConnectionOptions {
+export function redisConnectionFromUrl(
+  redisUrl: string,
+): RedisConnectionOptions {
   const url = new URL(redisUrl)
   const port = url.port ? Number(url.port) : 6379
   if (!Number.isInteger(port) || port <= 0) {

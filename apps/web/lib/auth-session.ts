@@ -1,44 +1,55 @@
 import { cache } from "react"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
-import { auth } from "@/lib/auth"
-import { Role } from "@/prisma/generated/client/enums"
+import { Role } from "@/lib/domain-enums"
+import {
+  getNestSession,
+  type WebSession,
+} from "@/lib/nest-session"
 
-export const PUBLISHER_ROLES: Role[] = [
+export type { WebSession }
+
+export const PUBLISHER_ROLES: string[] = [
   Role.OWNER,
   Role.AGENCY,
   Role.ADMIN,
   Role.SUPERADMIN,
+  Role.AGENT,
 ]
 
-export function isPublisherRole(role: unknown): role is Role {
-  return (
-    typeof role === "string" && PUBLISHER_ROLES.includes(role as Role)
-  )
+export function isPublisherRole(role: unknown): boolean {
+  return typeof role === "string" && PUBLISHER_ROLES.includes(role)
 }
 
 export function safeInternalPath(value: unknown) {
   if (typeof value !== "string") return null
-  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.startsWith("/\\")
+  ) {
     return null
   }
   return value
 }
 
-export const getSession = cache(async () => {
-  return auth.api.getSession({
-    headers: await headers(),
-  })
+/** Session Nest uniquement (JWT + cookies ma_*). */
+export const getSession = cache(async (): Promise<WebSession | null> => {
+  return getNestSession()
 })
 
-export async function requirePublisherPage(nextPath = "/espace") {
+export async function requireAuthPage(nextPath = "/profil") {
   const session = await getSession()
   if (!session) {
     redirect(`/connexion?next=${encodeURIComponent(nextPath)}`)
   }
+  return session
+}
+
+export async function requirePublisherPage(nextPath = "/espace") {
+  const session = await requireAuthPage(nextPath)
   if (!isPublisherRole(session.user.role)) {
-    redirect("/")
+    redirect("/profil")
   }
   return session
 }
@@ -53,9 +64,9 @@ export async function requireSession() {
 
 export async function requireRole(...allowedRoles: Role[]) {
   const session = await requireSession()
-  const role = session.user.role as Role | undefined
+  const role = session.user.role
 
-  if (!role || !allowedRoles.includes(role)) {
+  if (!role || !allowedRoles.includes(role as Role)) {
     throw new Error("Forbidden")
   }
 

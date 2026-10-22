@@ -1,14 +1,2705 @@
-// Schéma de fondation. Aucun modèle métier pour l'instant.
-// PROPERTY (bien physique) et LISTING (offre) seront introduits séparément.
-// Les coordonnées utiliseront plus tard GEOGRAPHY(Point, 4326).
+// Modèle physique v1 de Mon Appart.
+//
+// Conventions :
+// - `id` interne (BIGINT, INTEGER pour les référentiels) jamais exposé ;
+//   `public_id` UUID pour l'API.
+// - Tables et colonnes en snake_case via @@map / @map.
+// - `updated_at` est maintenu par le trigger SQL `set_updated_at()`, pas par
+//   @updatedAt, pour rester juste avec du SQL brut.
+// - Les CHECK, triggers et la colonne générée `geo_point` vivent dans les
+//   migrations SQL (voir docs/database.md).
+// - PROPERTY (bien physique) et LISTING (offre commerciale) restent séparés.
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  runtime      = "nodejs"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  runtime         = "nodejs"
+  moduleFormat    = "cjs"
+  previewFeatures = ["partialIndexes", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [postgis, citext, unaccent, pg_trgm]
+}
+
+// ---------------------------------------------------------------------------
+// ENUMS : états contrôlés par le code. Les catalogues administrables
+// (types de biens, équipements, lieux) sont des tables.
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+
+  @@map("user_status")
+}
+
+enum OtpChannel {
+  SMS
+  EMAIL
+
+  @@map("otp_channel")
+}
+
+enum OtpPurpose {
+  PHONE_VERIFICATION
+  EMAIL_VERIFICATION
+  LOGIN
+  PASSWORD_RESET
+  PHONE_CHANGE
+
+  @@map("otp_purpose")
+}
+
+enum PropertyCategory {
+  RESIDENTIAL
+  LAND
+  COMMERCIAL
+  INDUSTRIAL
+  MIXED
+  OTHER
+
+  @@map("property_category")
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+
+  @@map("property_status")
+}
+
+/// SOLE, JOINT, USUFRUCT : droits réels. AGENT, MANAGER : représentation
+/// (mandat de vente ou de gestion), sans propriété juridique.
+enum OwnershipType {
+  SOLE
+  JOINT
+  USUFRUCT
+  AGENT
+  MANAGER
+
+  @@map("ownership_type")
+}
+
+enum AmenityCategory {
+  SECURITY
+  COMFORT
+  OUTDOOR
+  ENERGY
+  WATER
+  ACCESSIBILITY
+  CONNECTIVITY
+  FURNITURE
+
+  @@map("amenity_category")
+}
+
+/// Ce que les vues publiques révèlent de l'emplacement exact du bien.
+enum LocationVisibility {
+  EXACT
+  APPROXIMATE
+  HIDDEN
+
+  @@map("location_visibility")
+}
+
+enum ListingType {
+  RENT
+  SALE
+  SHORT_TERM_RENT
+  LEASE_TO_OWN
+
+  @@map("listing_type")
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  PAUSED
+  SUSPENDED
+  EXPIRED
+  RENTED
+  SOLD
+  ARCHIVED
+
+  @@map("listing_status")
+}
+
+enum PricePeriod {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+  TOTAL
+
+  @@map("price_period")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  IMAGE_360 @map("360_IMAGE")
+
+  @@map("media_type")
+}
+
+enum StorageProvider {
+  S3
+  R2
+  /// Disque local : développement et tests uniquement.
+  LOCAL
+
+  @@map("storage_provider")
+}
+
+enum MediaStatus {
+  PENDING_UPLOAD
+  PROCESSING
+  READY
+  FAILED
+  REJECTED
+  /// Objet vérifié côté serveur, en attente de traitement.
+  UPLOADED
+
+  @@map("media_status")
+}
+
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+
+  @@map("media_visibility")
+}
+
+/// PROPERTY : média d'un bien. VERIFICATION : justificatif privé d'un dossier Trust, sans bien.
+/// MESSAGE : pièce jointe privée d'une conversation, lisible par ses participants.
+enum MediaPurpose {
+  PROPERTY
+  VERIFICATION
+  MESSAGE
+
+  @@map("media_purpose")
+}
+
+enum MediaVariantKind {
+  THUMBNAIL
+  CARD
+  GALLERY
+  LARGE
+  /// Copie publique d'une vidéo vérifiée (pas de transcodage).
+  PLAYBACK
+
+  @@map("media_variant_kind")
+}
+
+enum TrafficSource {
+  SEARCH
+  RECOMMENDATION
+  DIRECT
+  FAVORITE
+  NOTIFICATION
+  SHARE
+
+  @@map("traffic_source")
+}
+
+enum InquiryType {
+  CALL
+  WHATSAPP
+  MESSAGE
+  EMAIL
+  REQUEST_VISIT
+
+  @@map("inquiry_type")
+}
+
+enum InquiryStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+
+  @@map("inquiry_status")
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  /// Une nouvelle date est proposée (`proposed_at`) ; l'autre partie l'accepte ou contre-propose.
+  RESCHEDULE_REQUESTED
+
+  @@map("appointment_status")
+}
+
+/// PHONE et EMAIL sont vérifiés par Identity (OTP, `users.*_verified_at`) ;
+/// DOCUMENT est un ancien type conservé, non créé par l'API.
+enum VerificationType {
+  PHONE
+  EMAIL
+  IDENTITY
+  PROPERTY_OWNERSHIP
+  ADDRESS
+  DOCUMENT
+  OWNER_AUTHORIZATION
+  PROPERTY_DOCUMENT
+  AGENCY
+  LISTING_CONSISTENCY
+
+  @@map("verification_type")
+}
+
+/// PENDING : soumis, en attente d'examen. DRAFT : dossier en préparation.
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+  DRAFT
+  IN_REVIEW
+  NEEDS_MORE_INFORMATION
+  REVOKED
+  WITHDRAWN
+
+  @@map("verification_status")
+}
+
+enum VerificationPriority {
+  LOW
+  NORMAL
+  HIGH
+
+  @@map("verification_priority")
+}
+
+enum VerificationDocumentType {
+  NATIONAL_ID
+  PASSPORT
+  RESIDENCE_PERMIT
+  CONSULAR_CARD
+  TITLE_DEED
+  /// Arrêté de concession définitive (ACD).
+  CONCESSION_DECREE
+  ALLOCATION_LETTER
+  LAND_CERTIFICATE
+  SALE_DEED
+  BUILDING_PERMIT
+  UTILITY_BILL
+  RESIDENCE_CERTIFICATE
+  MANDATE
+  POWER_OF_ATTORNEY
+  /// Registre du commerce (RCCM).
+  COMPANY_REGISTRATION
+  PROFESSIONAL_CARD
+  OTHER
+
+  @@map("verification_document_type")
+}
+
+enum VerificationDocumentStatus {
+  ATTACHED
+  ACCEPTED
+  REJECTED
+  REMOVED
+
+  @@map("verification_document_status")
+}
+
+enum TrustActorKind {
+  USER
+  REVIEWER
+  SYSTEM
+
+  @@map("trust_actor_kind")
+}
+
+enum ReportTargetType {
+  LISTING
+  USER
+  MESSAGE
+  CONVERSATION
+
+  @@map("report_target_type")
+}
+
+enum ReportReason {
+  SUSPECTED_SCAM
+  DUPLICATE_LISTING
+  INCORRECT_PRICE
+  PROPERTY_NOT_AVAILABLE
+  UNAUTHORIZED_LISTING
+  MISLEADING_INFORMATION
+  SUSPICIOUS_DOCUMENT
+  INAPPROPRIATE_CONTENT
+  OTHER
+
+  @@map("report_reason")
+}
+
+/// Un signalement est une allégation : CONFIRMED ne vaut que par décision d'un modérateur.
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  CONFIRMED
+  DISMISSED
+
+  @@map("report_status")
+}
+
+enum ReportAction {
+  NONE
+  LISTING_SUSPENDED
+  VERIFICATION_REVIEW_REQUESTED
+  /// Conversation fermée par la modération : plus aucun message possible.
+  CONVERSATION_CLOSED
+
+  @@map("report_action")
+}
+
+enum TrustSignalSeverity {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("trust_signal_severity")
+}
+
+enum TrustSignalStatus {
+  OPEN
+  CONFIRMED
+  DISMISSED
+
+  @@map("trust_signal_status")
+}
+
+enum NotificationType {
+  NEW_RECOMMENDATION
+  PRICE_DROP
+  NEW_PROPERTY
+  APPOINTMENT
+  MESSAGE
+  VERIFICATION
+  SYSTEM
+  REPORT
+
+  @@map("notification_type")
+}
+
+/// Catégorie de préférence : ACCOUNT regroupe les messages nécessaires au
+/// service (sécurité, vérifications) ; MARKETING exige un accord explicite.
+enum NotificationCategory {
+  MESSAGES
+  VISITS
+  APPOINTMENT_REMINDERS
+  RECOMMENDATIONS
+  PRICE_DROPS
+  SAVED_SEARCHES
+  LISTING_UPDATES
+  ACCOUNT
+  MARKETING
+
+  @@map("notification_category")
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+
+  @@map("notification_channel")
+}
+
+/// SENT : accepté par le fournisseur (ou diffusé en temps réel pour IN_APP),
+/// ce qui ne prouve ni la réception ni la lecture. DELIVERED : confirmé par le fournisseur.
+enum DeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+
+  @@map("delivery_status")
+}
+
+enum PushPlatform {
+  ANDROID
+  IOS
+  WEB
+
+  @@map("push_platform")
+}
+
+/// Seuls les échanges liés à une annonce existent : pas de conversation libre ni de groupe.
+enum ConversationType {
+  PROPERTY_INQUIRY
+  VISIT_COORDINATION
+
+  @@map("conversation_type")
+}
+
+enum ConversationStatus {
+  OPEN
+  /// Fermée par la modération : lecture seule.
+  CLOSED
+
+  @@map("conversation_status")
+}
+
+enum ParticipantRole {
+  REQUESTER
+  LISTING_SIDE
+
+  @@map("participant_role")
+}
+
+enum ParticipantState {
+  ACTIVE
+  /// Rattachement au bien perdu : plus d'accès, l'historique de lecture reste.
+  LEFT
+
+  @@map("participant_state")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  /// Produit par le backend uniquement (visite demandée, confirmée...).
+  SYSTEM
+
+  @@map("message_type")
+}
+
+enum RecommendationContext {
+  PERSONALIZED
+  SIMILAR
+
+  @@map("recommendation_context")
+}
+
+/// Exposition (DISPLAYED, CLICKED) et retours explicites de l'utilisateur.
+enum RecommendationFeedbackType {
+  DISPLAYED
+  CLICKED
+  INTERESTED
+  NOT_INTERESTED
+  IRRELEVANT
+  WRONG_BUDGET
+  WRONG_LOCATION
+
+  @@map("recommendation_feedback_type")
+}
+
+enum UserEventType {
+  PROPERTY_VIEWED
+  PROPERTY_FAVORITED
+  PROPERTY_SHARED
+  SEARCH_PERFORMED
+  CONTACT_OWNER
+  WHATSAPP_CLICKED
+  PHONE_CLICKED
+  APPOINTMENT_REQUESTED
+  APPOINTMENT_COMPLETED
+  PROPERTY_IGNORED
+  RECOMMENDATION_CLICKED
+  RECOMMENDATION_ACCEPTED
+  PRICE_ALERT_CLICKED
+
+  @@map("user_event_type")
+}
+
+enum AnalyticsSource {
+  WEB
+  MOBILE
+  BACKEND
+
+  @@map("analytics_source")
+}
+
+/// Fondement de la collecte : consentement (navigation) ou intérêt légitime
+/// (événements métier pseudonymisés, à valider juridiquement).
+enum AnalyticsBasis {
+  CONSENT
+  LEGITIMATE_INTEREST
+
+  @@map("analytics_basis")
+}
+
+enum AnalyticsConsentStatus {
+  GRANTED
+  DENIED
+
+  @@map("analytics_consent_status")
+}
+
+// ---------------------------------------------------------------------------
+// IDENTITY
+// ---------------------------------------------------------------------------
+
+model User {
+  id              BigInt     @id @default(autoincrement())
+  publicId        String     @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  /// CITEXT : unicité insensible à la casse sans index sur lower(email).
+  email           String?    @db.Citext
+  /// Format E.164 (+225...), contrôlé par CHECK.
+  phone           String?    @db.VarChar(16)
+  /// Hash Argon2id produit par l'application. Nul pour un compte OTP seul.
+  passwordHash    String?    @map("password_hash") @db.VarChar(255)
+  firstName       String?    @map("first_name") @db.VarChar(100)
+  lastName        String?    @map("last_name") @db.VarChar(100)
+  status          UserStatus @default(PENDING)
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  phoneVerifiedAt DateTime?  @map("phone_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?  @map("deleted_at") @db.Timestamptz(6)
+
+  roles                   UserRole[]                @relation("UserRoleUser")
+  rolesGranted            UserRole[]                @relation("UserRoleGrantedBy")
+  ownerships              PropertyOwnership[]
+  listingsCreated         Listing[]                 @relation("ListingCreatedBy")
+  listingStatusChanges    ListingStatusHistory[]
+  favorites               Favorite[]
+  propertyViews           PropertyView[]
+  inquiriesSent           Inquiry[]                 @relation("InquirySender")
+  inquiriesReceived       Inquiry[]                 @relation("InquiryOwner")
+  appointmentsRequested   Appointment[]             @relation("AppointmentRequester")
+  appointmentsHosted      Appointment[]             @relation("AppointmentOwner")
+  searches                Search[]
+  preference              UserPreference?
+  behaviorProfile         UserBehaviorProfile?
+  recommendations         Recommendation[]
+  verifications           Verification[]            @relation("VerificationSubject")
+  verificationsReviewed   Verification[]            @relation("VerificationReviewer")
+  verificationsAssigned   Verification[]            @relation("VerificationAssignee")
+  verificationDocuments   VerificationDocument[]
+  verificationEvents      VerificationEvent[]
+  reportsFiled            Report[]                  @relation("ReportReporter")
+  reportsReceived         Report[]                  @relation("ReportTargetUser")
+  reportsAssigned         Report[]                  @relation("ReportAssignee")
+  reportsResolved         Report[]                  @relation("ReportResolver")
+  reportEvents            ReportEvent[]
+  trustSignals            TrustSignal[]             @relation("TrustSignalUser")
+  trustSignalsReviewed    TrustSignal[]             @relation("TrustSignalReviewer")
+  trustScore              TrustScore?
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  pushDevices             PushDevice[]
+  conversationsRequested  Conversation[]            @relation("ConversationRequester")
+  conversationMemberships ConversationParticipant[]
+  messagesAuthored        Message[]
+  messageAttachments      MessageAttachment[]
+  appointmentProposals    Appointment[]             @relation("AppointmentProposer")
+  appointmentsCancelled   Appointment[]             @relation("AppointmentCanceller")
+  auditLogs               AuditLog[]
+  events                  UserEvent[]
+  authSessions            AuthSession[]
+  passwordResetTokens     PasswordResetToken[]
+  otpChallenges           OtpChallenge[]
+  mediaUploaded           Media[]                   @relation("MediaUploader")
+  analyticsEvents         AnalyticsEvent[]
+  analyticsConsent        AnalyticsConsent?
+  adminNotes              AdminNote[]
+  billingPricesCreated    BillingPrice[]
+  billingOrders           BillingOrder[]
+  subscriptions           Subscription[]
+  refundsRequested        PaymentRefund[]           @relation("RefundRequester")
+  refundsDecided          PaymentRefund[]           @relation("RefundDecider")
+  billingIncidentsSolved  BillingIncident[]
+  partnersCreated         Partner[]                 @relation("PartnerCreatedBy")
+
+  @@unique([email], map: "users_email_active_key", where: raw("deleted_at IS NULL"))
+  @@unique([phone], map: "users_phone_active_key", where: raw("deleted_at IS NULL"))
+  @@index([status], map: "users_status_active_idx", where: raw("deleted_at IS NULL"))
+  /// Recherche back-office par nom (ILIKE '%…%').
+  @@index([firstName(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_first_name_trgm_idx")
+  @@index([lastName(ops: raw("gin_trgm_ops"))], type: Gin, map: "users_last_name_trgm_idx")
+  @@map("users")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  /// Format `ressource:action`, par exemple `listing:publish`.
+  code        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(150)
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId      BigInt   @map("user_id")
+  roleId      Int      @map("role_id")
+  grantedById BigInt?  @map("granted_by_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User  @relation("UserRoleUser", fields: [userId], references: [id], onDelete: Cascade)
+  role      Role  @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  grantedBy User? @relation("UserRoleGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       Int      @map("role_id")
+  permissionId Int      @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Une ligne par refresh token émis. `family_id` identifie la session logique
+/// (stable pendant les rotations) ; c'est l'identifiant exposé à l'API.
+model AuthSession {
+  id            BigInt    @id @default(autoincrement())
+  publicId      String    @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId        BigInt    @map("user_id")
+  familyId      String    @map("family_id") @db.Uuid
+  /// HMAC-SHA256 hexadécimal du refresh token. Jamais le token lui-même.
+  tokenHash     String    @unique @map("token_hash") @db.Char(64)
+  deviceId      String?   @map("device_id") @db.VarChar(128)
+  deviceName    String?   @map("device_name") @db.VarChar(150)
+  ipAddress     String?   @map("ip_address") @db.Inet
+  userAgent     String?   @map("user_agent") @db.VarChar(512)
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+  /// ROTATED, LOGOUT, LOGOUT_ALL, PASSWORD_CHANGED, PASSWORD_RESET, REUSE_DETECTED, ...
+  revokedReason String?   @map("revoked_reason") @db.VarChar(32)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("auth_sessions")
+}
+
+model PasswordResetToken {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  /// HMAC-SHA256 hexadécimal du token envoyé par email ou SMS.
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model OtpChallenge {
+  id              BigInt     @id @default(autoincrement())
+  publicId        String     @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId          BigInt?    @map("user_id")
+  channel         OtpChannel
+  purpose         OtpPurpose
+  /// HMAC de la destination normalisée : le code ne vaut que pour cette adresse.
+  destinationHash String     @map("destination_hash") @db.Char(64)
+  /// HMAC du code. Jamais le code en clair.
+  codeHash        String     @map("code_hash") @db.Char(64)
+  attempts        Int        @default(0) @db.SmallInt
+  maxAttempts     Int        @map("max_attempts") @db.SmallInt
+  expiresAt       DateTime   @map("expires_at") @db.Timestamptz(6)
+  consumedAt      DateTime?  @map("consumed_at") @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@index([expiresAt])
+  @@map("otp_challenges")
+}
+
+// ---------------------------------------------------------------------------
+// LOCATION : pays > district > ville > commune > quartier.
+// L'unicité (parent, code) sert aussi d'index sur la clé étrangère.
+// ---------------------------------------------------------------------------
+
+model Country {
+  id        Int      @id @default(autoincrement())
+  /// ISO 3166-1 alpha-2.
+  code      String   @unique @db.Char(2)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  districts District[]
+
+  @@map("countries")
+}
+
+model District {
+  id        Int      @id @default(autoincrement())
+  countryId Int      @map("country_id")
+  code      String   @db.VarChar(50)
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  cities  City[]
+
+  @@unique([countryId, code])
+  @@map("districts")
+}
+
+model City {
+  id         Int      @id @default(autoincrement())
+  districtId Int      @map("district_id")
+  code       String   @db.VarChar(50)
+  name       String   @db.VarChar(150)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  district District  @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  communes Commune[]
+
+  @@unique([districtId, code])
+  @@map("cities")
+}
+
+model Commune {
+  id        Int      @id @default(autoincrement())
+  cityId    Int      @map("city_id")
+  code      String   @db.VarChar(50)
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  city          City                   @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  neighborhoods Neighborhood[]
+  preferredBy   UserPreferredCommune[]
+
+  @@unique([cityId, code])
+  @@map("communes")
+}
+
+model Neighborhood {
+  id        Int      @id @default(autoincrement())
+  communeId Int      @map("commune_id")
+  code      String   @db.VarChar(80)
+  name      String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  commune     Commune                     @relation(fields: [communeId], references: [id], onDelete: Restrict)
+  properties  Property[]
+  searches    Search[]
+  preferredBy UserPreferredNeighborhood[]
+
+  @@unique([communeId, code])
+  @@map("neighborhoods")
+}
+
+// ---------------------------------------------------------------------------
+// PROPERTY : le bien physique. Aucun prix, aucun statut commercial ici.
+// ---------------------------------------------------------------------------
+
+model PropertyType {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique @db.VarChar(50)
+  name        String           @db.VarChar(100)
+  category    PropertyCategory
+  description String?          @db.VarChar(500)
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  properties  Property[]
+  searches    Search[]
+  preferredBy UserPreferredPropertyType[]
+
+  @@map("property_types")
+}
+
+model Property {
+  id                 BigInt                                 @id @default(autoincrement())
+  publicId           String                                 @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  propertyTypeId     Int                                    @map("property_type_id")
+  neighborhoodId     Int                                    @map("neighborhood_id")
+  title              String                                 @db.VarChar(200)
+  description        String?
+  /// m², NUMERIC pour éviter les arrondis binaires.
+  surface            Decimal?                               @db.Decimal(10, 2)
+  landSurface        Decimal?                               @map("land_surface") @db.Decimal(12, 2)
+  bedrooms           Int?                                   @db.SmallInt
+  bathrooms          Int?                                   @db.SmallInt
+  rooms              Int?                                   @db.SmallInt
+  floor              Int?                                   @db.SmallInt
+  totalFloors        Int?                                   @map("total_floors") @db.SmallInt
+  yearBuilt          Int?                                   @map("year_built") @db.SmallInt
+  address            String?                                @db.VarChar(255)
+  /// Valeurs exposées à l'API. La référence spatiale est `geo_point`.
+  latitude           Decimal?                               @db.Decimal(9, 6)
+  longitude          Decimal?                               @db.Decimal(9, 6)
+  /// Colonne générée depuis latitude/longitude (voir migration SQL). Lecture seule.
+  geoPoint           Unsupported("geography(Point, 4326)")? @default(dbgenerated()) @map("geo_point")
+  locationVisibility LocationVisibility                     @default(APPROXIMATE) @map("location_visibility")
+  /// Attributs secondaires propres au type (viabilisation d'un terrain...).
+  /// Tout champ filtré ou trié reste une colonne.
+  attributes         Json                                   @default("{}")
+  status             PropertyStatus                         @default(DRAFT)
+  createdAt          DateTime                               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                               @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?                              @map("deleted_at") @db.Timestamptz(6)
+
+  propertyType    PropertyType        @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
+  neighborhood    Neighborhood        @relation(fields: [neighborhoodId], references: [id], onDelete: Restrict)
+  ownerships      PropertyOwnership[]
+  amenities       PropertyAmenity[]
+  listings        Listing[]
+  media           Media[]
+  favorites       Favorite[]
+  views           PropertyView[]
+  inquiries       Inquiry[]
+  appointments    Appointment[]
+  recommendations Recommendation[]
+  verifications   Verification[]
+  events          UserEvent[]
+  conversations   Conversation[]
+
+  @@index([propertyTypeId])
+  @@index([neighborhoodId])
+  @@index([status], map: "properties_status_active_idx", where: raw("deleted_at IS NULL"))
+  @@index([createdAt])
+  @@index([geoPoint], type: Gist, map: "properties_geo_point_gist_idx")
+  @@map("properties")
+}
+
+/// Historique des propriétaires. Plusieurs propriétaires courants sont
+/// possibles (indivision) ; une même personne ne peut l'être deux fois.
+model PropertyOwnership {
+  id            BigInt        @id @default(autoincrement())
+  propertyId    BigInt        @map("property_id")
+  ownerId       BigInt        @map("owner_id")
+  ownershipType OwnershipType @default(SOLE) @map("ownership_type")
+  startedAt     DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt       DateTime?     @map("ended_at") @db.Timestamptz(6)
+  isCurrent     Boolean       @default(true) @map("is_current")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  owner    User     @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
+  @@unique([propertyId, ownerId], map: "property_ownerships_current_owner_key", where: raw("is_current"))
+  @@unique([propertyId], map: "property_ownerships_current_sole_key", where: raw("is_current AND ownership_type = 'SOLE'"))
+  @@index([propertyId])
+  @@index([ownerId], map: "property_ownerships_owner_current_idx", where: raw("is_current"))
+  @@map("property_ownerships")
+}
+
+model Amenity {
+  id        Int             @id @default(autoincrement())
+  code      String          @unique @db.VarChar(50)
+  name      String          @db.VarChar(100)
+  category  AmenityCategory @default(COMFORT)
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  properties  PropertyAmenity[]
+  preferredBy UserPreferredAmenity[]
+
+  @@map("amenities")
+}
+
+model PropertyAmenity {
+  propertyId BigInt   @map("property_id")
+  amenityId  Int      @map("amenity_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity  Amenity  @relation(fields: [amenityId], references: [id], onDelete: Restrict)
+
+  @@id([propertyId, amenityId])
+  @@index([amenityId])
+  @@map("property_amenities")
+}
+
+// ---------------------------------------------------------------------------
+// LISTING : l'offre commerciale publiée pour un bien.
+// ---------------------------------------------------------------------------
+
+model Listing {
+  id          BigInt        @id @default(autoincrement())
+  publicId    String        @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  propertyId  BigInt        @map("property_id")
+  /// Compte qui publie (propriétaire, agent ou agence). Sert aux autorisations.
+  createdById BigInt        @map("created_by_id")
+  listingType ListingType   @map("listing_type")
+  status      ListingStatus @default(DRAFT)
+  title       String        @db.VarChar(200)
+  description String?
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz(6)
+  expiresAt   DateTime?     @map("expires_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  property        Property               @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  createdBy       User                   @relation("ListingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  prices          ListingPrice[]
+  statusHistory   ListingStatusHistory[]
+  inquiries       Inquiry[]
+  appointments    Appointment[]
+  events          UserEvent[]
+  searchDocument  ListingSearchDocument?
+  recommendations Recommendation[]
+  verifications   Verification[]
+  reports         Report[]
+  trustSignals    TrustSignal[]
+  conversations   Conversation[]
+  analyticsEvents AnalyticsEvent[]
+  analyticsDaily  AnalyticsListingDaily[]
+
+  /// Cible des clés étrangères composites (listing_id, property_id).
+  @@unique([id, propertyId])
+  // Prédicat écrit sous la forme normalisée par PostgreSQL, sinon Prisma voit une dérive.
+  @@unique([propertyId, listingType], map: "listings_one_live_per_type_key", where: raw("status = ANY (ARRAY['PENDING_REVIEW'::listing_status, 'PUBLISHED'::listing_status, 'PAUSED'::listing_status]) AND deleted_at IS NULL"))
+  @@index([propertyId])
+  @@index([createdById])
+  @@index([status], map: "listings_status_active_idx", where: raw("deleted_at IS NULL"))
+  @@index([listingType, publishedAt(sort: Desc)], map: "listings_published_feed_idx", where: raw("status = 'PUBLISHED' AND deleted_at IS NULL"))
+  /// Flux public sans filtre de type, paginé par (published_at, id).
+  @@index([publishedAt(sort: Desc), id(sort: Desc)], map: "listings_published_recent_idx", where: raw("status = 'PUBLISHED' AND deleted_at IS NULL"))
+  /// Job d'expiration : annonces publiées dont expires_at est dépassé.
+  @@index([expiresAt], map: "listings_expiry_idx", where: raw("status = 'PUBLISHED' AND expires_at IS NOT NULL AND deleted_at IS NULL"))
+  @@map("listings")
+}
+
+/// Projection de recherche d'une annonce (module Search). Pas une source de
+/// vérité : statut, suppression et prix sont relus dans les tables métier.
+/// `search_vector` et `suggest_text` sont des colonnes générées (migration SQL).
+model ListingSearchDocument {
+  listingId       BigInt                   @id @map("listing_id")
+  schemaVersion   Int                      @default(1) @map("schema_version") @db.SmallInt
+  titleText       String                   @default("") @map("title_text")
+  typeText        String                   @default("") @map("type_text")
+  locationText    String                   @default("") @map("location_text")
+  descriptionText String                   @default("") @map("description_text")
+  amenitiesText   String                   @default("") @map("amenities_text")
+  /// 0..1, complétude de l'annonce (CHECK en SQL).
+  qualityScore    Float                    @default(0) @map("quality_score") @db.Real
+  indexedAt       DateTime                 @default(now()) @map("indexed_at") @db.Timestamptz(6)
+  searchVector    Unsupported("tsvector")? @default(dbgenerated()) @map("search_vector")
+  suggestText     String?                  @default(dbgenerated()) @map("suggest_text")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([searchVector], type: Gin, map: "listing_search_documents_vector_idx")
+  @@index([suggestText(ops: raw("gin_trgm_ops"))], type: Gin, map: "listing_search_documents_suggest_trgm_idx")
+  @@map("listing_search_documents")
+}
+
+/// Historique des prix. Le prix courant est la ligne sans `valid_to`.
+model ListingPrice {
+  id        BigInt      @id @default(autoincrement())
+  listingId BigInt      @map("listing_id")
+  amount    Decimal     @db.Decimal(14, 2)
+  /// ISO 4217. XOF au lancement.
+  currency  String      @default("XOF") @db.Char(3)
+  period    PricePeriod
+  validFrom DateTime    @default(now()) @map("valid_from") @db.Timestamptz(6)
+  validTo   DateTime?   @map("valid_to") @db.Timestamptz(6)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Restrict)
+
+  @@unique([listingId], map: "listing_prices_current_key", where: raw("valid_to IS NULL"))
+  @@index([listingId, validFrom(sort: Desc)])
+  /// Filtres de prix sur le prix courant.
+  @@index([amount], map: "listing_prices_current_amount_idx", where: raw("valid_to IS NULL"))
+  @@map("listing_prices")
+}
+
+model ListingStatusHistory {
+  id          BigInt         @id @default(autoincrement())
+  listingId   BigInt         @map("listing_id")
+  oldStatus   ListingStatus? @map("old_status")
+  newStatus   ListingStatus  @map("new_status")
+  changedById BigInt?        @map("changed_by_id")
+  reason      String?        @db.VarChar(500)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  changedBy User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([listingId, createdAt])
+  @@map("listing_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// MEDIA : métadonnées seulement. Les octets vivent dans S3/R2.
+// ---------------------------------------------------------------------------
+
+model Media {
+  id                 BigInt          @id @default(autoincrement())
+  publicId           String          @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  /// Renseigné si et seulement si `purpose = PROPERTY` (CHECK).
+  propertyId         BigInt?         @map("property_id")
+  purpose            MediaPurpose    @default(PROPERTY)
+  type               MediaType
+  storageProvider    StorageProvider @map("storage_provider")
+  storageKey         String          @map("storage_key") @db.VarChar(512)
+  /// URL publique (CDN) quand le média est public. Nulle pour un document privé.
+  url                String?         @db.VarChar(2048)
+  mimeType           String          @map("mime_type") @db.VarChar(127)
+  fileSize           BigInt          @map("file_size")
+  width              Int?
+  height             Int?
+  durationMs         Int?            @map("duration_ms")
+  sortOrder          Int             @default(0) @map("sort_order") @db.SmallInt
+  status             MediaStatus     @default(PENDING_UPLOAD)
+  /// Un document est toujours privé (CHECK) ; une URL n'existe que pour un média public.
+  visibility         MediaVisibility @default(PUBLIC)
+  uploadedById       BigInt?         @map("uploaded_by_id")
+  /// Nom d'origine nettoyé, informatif : jamais utilisé pour construire une clé.
+  originalFilename   String?         @map("original_filename") @db.VarChar(255)
+  uploadExpiresAt    DateTime?       @map("upload_expires_at") @db.Timestamptz(6)
+  uploadedAt         DateTime?       @map("uploaded_at") @db.Timestamptz(6)
+  readyAt            DateTime?       @map("ready_at") @db.Timestamptz(6)
+  /// File de traitement : échéance du prochain essai ou fin du bail en cours. Nulle = aucun travail.
+  nextAttemptAt      DateTime?       @map("next_attempt_at") @db.Timestamptz(6)
+  processingAttempts Int             @default(0) @map("processing_attempts") @db.SmallInt
+  /// Code d'erreur seulement, jamais de message brut ni de chemin.
+  processingError    String?         @map("processing_error") @db.VarChar(100)
+  /// Métadonnées techniques non sensibles (format source, codec, statut d'analyse).
+  metadata           Json            @default("{}")
+  /// Empreinte de l'original (documents et images), pour repérer un fichier réutilisé.
+  contentSha256      String?         @map("content_sha256") @db.Char(64)
+  /// Suppression définitive des objets planifiée après la rétention.
+  purgeAfter         DateTime?       @map("purge_after") @db.Timestamptz(6)
+  purgedAt           DateTime?       @map("purged_at") @db.Timestamptz(6)
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?       @map("deleted_at") @db.Timestamptz(6)
+
+  property             Property?             @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  uploadedBy           User?                 @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  variants             MediaVariant[]
+  verificationDocument VerificationDocument?
+  messageAttachment    MessageAttachment?
+
+  @@unique([storageProvider, storageKey])
+  @@index([contentSha256], map: "media_content_sha256_idx", where: raw("content_sha256 IS NOT NULL"))
+  @@index([propertyId, sortOrder], map: "media_property_order_active_idx", where: raw("deleted_at IS NULL"))
+  @@index([uploadedById, status])
+  @@index([nextAttemptAt], map: "media_job_due_idx", where: raw("next_attempt_at IS NOT NULL"))
+  @@index([uploadExpiresAt], map: "media_upload_expiry_idx", where: raw("status = 'PENDING_UPLOAD'"))
+  @@index([purgeAfter], map: "media_purge_due_idx", where: raw("purge_after IS NOT NULL AND purged_at IS NULL"))
+  @@map("media")
+}
+
+/// Dérivés produits par le traitement (WebP redimensionnés, copie publique d'une vidéo).
+model MediaVariant {
+  id              BigInt           @id @default(autoincrement())
+  mediaId         BigInt           @map("media_id")
+  kind            MediaVariantKind
+  storageProvider StorageProvider  @map("storage_provider")
+  storageKey      String           @map("storage_key") @db.VarChar(512)
+  /// Vrai : bucket public (CDN). Faux : bucket privé, lecture par URL présignée courte.
+  isPublic        Boolean          @map("is_public")
+  url             String?          @db.VarChar(2048)
+  mimeType        String           @map("mime_type") @db.VarChar(127)
+  fileSize        BigInt           @map("file_size")
+  width           Int?
+  height          Int?
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, kind])
+  @@unique([storageProvider, storageKey])
+  @@map("media_variants")
+}
+
+// ---------------------------------------------------------------------------
+// INTERACTION
+// ---------------------------------------------------------------------------
+
+model Favorite {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  propertyId BigInt   @map("property_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([propertyId])
+  @@map("favorites")
+}
+
+/// Table d'ingestion à fort volume. Clé primaire (id, created_at) pour pouvoir
+/// partitionner par mois sans changer la clé.
+model PropertyView {
+  id         BigInt        @default(autoincrement())
+  userId     BigInt?       @map("user_id")
+  propertyId BigInt        @map("property_id")
+  sessionId  String?       @map("session_id") @db.VarChar(64)
+  source     TrafficSource
+  durationMs Int?          @map("duration_ms")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@id([id, createdAt])
+  @@index([propertyId, createdAt])
+  @@index([userId, createdAt], map: "property_views_user_created_idx", where: raw("user_id IS NOT NULL"))
+  @@index([createdAt(ops: TimestampTzMinMaxOps)], type: Brin, map: "property_views_created_brin_idx")
+  @@map("property_views")
+}
+
+model Inquiry {
+  id         BigInt        @id @default(autoincrement())
+  publicId   String        @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId     BigInt        @map("user_id")
+  propertyId BigInt        @map("property_id")
+  listingId  BigInt        @map("listing_id")
+  /// Destinataire au moment de la demande (propriétaire ou agent).
+  ownerId    BigInt        @map("owner_id")
+  type       InquiryType
+  message    String?
+  status     InquiryStatus @default(OPEN)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user         User          @relation("InquirySender", fields: [userId], references: [id], onDelete: Restrict)
+  owner        User          @relation("InquiryOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  /// Clé composite : l'annonce doit appartenir au bien.
+  listing      Listing       @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
+  /// Conversation ouverte par cette demande (contact ou visite).
+  conversation Conversation?
+  appointments Appointment[]
+
+  @@index([ownerId, status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([listingId, propertyId])
+  @@index([propertyId])
+  @@map("inquiries")
+}
+
+/// Visite d'un bien. `scheduled_at` est un instant UTC ; `timezone` (IANA)
+/// sert à l'affichage local. Jamais confirmée automatiquement.
+model Appointment {
+  id                 BigInt            @id @default(autoincrement())
+  publicId           String            @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId             BigInt            @map("user_id")
+  propertyId         BigInt            @map("property_id")
+  listingId          BigInt            @map("listing_id")
+  /// Interlocuteur principal au moment de la demande ; l'accès côté annonce suit les rattachements courants.
+  ownerId            BigInt            @map("owner_id")
+  conversationId     BigInt?           @map("conversation_id")
+  inquiryId          BigInt?           @map("inquiry_id")
+  scheduledAt        DateTime          @map("scheduled_at") @db.Timestamptz(6)
+  timezone           String            @default("Africa/Abidjan") @db.VarChar(64)
+  durationMinutes    Int               @default(60) @map("duration_minutes") @db.SmallInt
+  status             AppointmentStatus @default(PENDING)
+  notes              String?           @db.VarChar(1000)
+  /// Nouvelle date proposée, renseignée si et seulement si RESCHEDULE_REQUESTED (CHECK).
+  proposedAt         DateTime?         @map("proposed_at") @db.Timestamptz(6)
+  proposedById       BigInt?           @map("proposed_by_id")
+  confirmedAt        DateTime?         @map("confirmed_at") @db.Timestamptz(6)
+  cancelledAt        DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  cancelledById      BigInt?           @map("cancelled_by_id")
+  /// Code de motif seulement, jamais de texte libre.
+  cancellationReason String?           @map("cancellation_reason") @db.VarChar(40)
+  completedAt        DateTime?         @map("completed_at") @db.Timestamptz(6)
+  reminderSentAt     DateTime?         @map("reminder_sent_at") @db.Timestamptz(6)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user         User          @relation("AppointmentRequester", fields: [userId], references: [id], onDelete: Restrict)
+  owner        User          @relation("AppointmentOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  listing      Listing       @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  inquiry      Inquiry?      @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+  proposedBy   User?         @relation("AppointmentProposer", fields: [proposedById], references: [id], onDelete: SetNull)
+  cancelledBy  User?         @relation("AppointmentCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  /// Une seule visite en cours par client et par annonce.
+  @@unique([listingId, userId], map: "appointments_one_active_per_listing_key", where: raw("status = ANY (ARRAY['PENDING'::appointment_status, 'CONFIRMED'::appointment_status, 'RESCHEDULE_REQUESTED'::appointment_status])"))
+  @@index([ownerId, scheduledAt])
+  @@index([userId, scheduledAt])
+  @@index([listingId, propertyId])
+  @@index([propertyId])
+  @@index([conversationId])
+  @@index([inquiryId])
+  @@index([proposedById])
+  @@index([cancelledById])
+  /// Rappels à envoyer : visites confirmées sans rappel.
+  @@index([scheduledAt], map: "appointments_reminder_due_idx", where: raw("status = 'CONFIRMED'::appointment_status AND reminder_sent_at IS NULL"))
+  @@map("appointments")
+}
+
+// ---------------------------------------------------------------------------
+// SEARCH : historique des recherches, à fort volume.
+// ---------------------------------------------------------------------------
+
+model Search {
+  id             BigInt       @default(autoincrement())
+  userId         BigInt?      @map("user_id")
+  query          String?      @db.VarChar(255)
+  listingType    ListingType? @map("listing_type")
+  propertyTypeId Int?         @map("property_type_id")
+  minPrice       Decimal?     @map("min_price") @db.Decimal(14, 2)
+  maxPrice       Decimal?     @map("max_price") @db.Decimal(14, 2)
+  currency       String       @default("XOF") @db.Char(3)
+  minSurface     Decimal?     @map("min_surface") @db.Decimal(10, 2)
+  maxSurface     Decimal?     @map("max_surface") @db.Decimal(10, 2)
+  bedrooms       Int?         @db.SmallInt
+  bathrooms      Int?         @db.SmallInt
+  neighborhoodId Int?         @map("neighborhood_id")
+  latitude       Decimal?     @db.Decimal(9, 6)
+  longitude      Decimal?     @db.Decimal(9, 6)
+  radiusM        Int?         @map("radius_m")
+  /// Filtres non prévus par les colonnes (objet JSON).
+  filters        Json?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  propertyType PropertyType? @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+  neighborhood Neighborhood? @relation(fields: [neighborhoodId], references: [id], onDelete: SetNull)
+
+  @@id([id, createdAt])
+  @@index([userId, createdAt], map: "searches_user_created_idx", where: raw("user_id IS NOT NULL"))
+  @@index([createdAt(ops: TimestampTzMinMaxOps)], type: Brin, map: "searches_created_brin_idx")
+  @@map("searches")
+}
+
+// ---------------------------------------------------------------------------
+// RECOMMENDATION : déclaré (preferences), déduit (behavior_profiles),
+// produit (recommendations). Trois tables, trois cycles de vie.
+// ---------------------------------------------------------------------------
+
+model UserPreference {
+  userId                BigInt        @id @map("user_id")
+  minBudget             Decimal?      @map("min_budget") @db.Decimal(14, 2)
+  maxBudget             Decimal?      @map("max_budget") @db.Decimal(14, 2)
+  currency              String        @default("XOF") @db.Char(3)
+  preferredListingTypes ListingType[] @map("preferred_listing_types")
+  preferredBedrooms     Int?          @map("preferred_bedrooms") @db.SmallInt
+  /// Périodicité du budget ; jamais comparé à un prix d'une autre périodicité.
+  budgetPeriod          PricePeriod?  @map("budget_period")
+  /// Dépassement accepté du budget maximum, en % (0 à 30, CHECK).
+  budgetTolerancePct    Int?          @map("budget_tolerance_pct") @db.SmallInt
+  preferredBathrooms    Int?          @map("preferred_bathrooms") @db.SmallInt
+  minSurface            Decimal?      @map("min_surface") @db.Decimal(10, 2)
+  maxSurface            Decimal?      @map("max_surface") @db.Decimal(10, 2)
+  /// Point de référence (travail, école...) et rayon, renseignés ensemble (CHECK).
+  latitude              Decimal?      @db.Decimal(9, 6)
+  longitude             Decimal?      @db.Decimal(9, 6)
+  radiusM               Int?          @map("radius_m")
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user          User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyTypes UserPreferredPropertyType[]
+  amenities     UserPreferredAmenity[]
+  communes      UserPreferredCommune[]
+  neighborhoods UserPreferredNeighborhood[]
+
+  @@map("user_preferences")
+}
+
+model UserPreferredPropertyType {
+  userId         BigInt @map("user_id")
+  propertyTypeId Int    @map("property_type_id")
+
+  preference   UserPreference @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  propertyType PropertyType   @relation(fields: [propertyTypeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, propertyTypeId])
+  @@index([propertyTypeId])
+  @@map("user_preferred_property_types")
+}
+
+model UserPreferredAmenity {
+  userId    BigInt @map("user_id")
+  amenityId Int    @map("amenity_id")
+
+  preference UserPreference @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  amenity    Amenity        @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([userId, amenityId])
+  @@index([amenityId])
+  @@map("user_preferred_amenities")
+}
+
+model UserPreferredCommune {
+  userId    BigInt @map("user_id")
+  communeId Int    @map("commune_id")
+
+  preference UserPreference @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  commune    Commune        @relation(fields: [communeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, communeId])
+  @@index([communeId])
+  @@map("user_preferred_communes")
+}
+
+model UserPreferredNeighborhood {
+  userId         BigInt @map("user_id")
+  neighborhoodId Int    @map("neighborhood_id")
+
+  preference   UserPreference @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  neighborhood Neighborhood   @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
+
+  @@id([userId, neighborhoodId])
+  @@index([neighborhoodId])
+  @@map("user_preferred_neighborhoods")
+}
+
+/// Profil déduit du comportement, recalculé par le service de recommandation.
+model UserBehaviorProfile {
+  userId                  BigInt   @id @map("user_id")
+  preferredBudgetMin      Decimal? @map("preferred_budget_min") @db.Decimal(14, 2)
+  preferredBudgetMax      Decimal? @map("preferred_budget_max") @db.Decimal(14, 2)
+  currency                String   @default("XOF") @db.Char(3)
+  /// Poids par lieu, par exemple {"COCODY": 0.8}.
+  preferredLocations      Json?    @map("preferred_locations")
+  preferredPropertyTypes  Json?    @map("preferred_property_types")
+  preferredAmenities      Json?    @map("preferred_amenities")
+  /// Sensibilités dans [0, 1].
+  priceSensitivity        Float?   @map("price_sensitivity")
+  locationSensitivity     Float?   @map("location_sensitivity")
+  propertyTypeSensitivity Float?   @map("property_type_sensitivity")
+  modelVersion            String   @map("model_version") @db.VarChar(50)
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_behavior_profiles")
+}
+
+/// Recommandation servie à un utilisateur connecté (une ligne par annonce,
+/// contexte et version d'algorithme). Calculée ≠ affichée : l'affichage est un
+/// retour `DISPLAYED` dans `recommendation_feedback`.
+model Recommendation {
+  id               BigInt                @id @default(autoincrement())
+  publicId         String                @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId           BigInt                @map("user_id")
+  propertyId       BigInt                @map("property_id")
+  listingId        BigInt                @map("listing_id")
+  context          RecommendationContext @default(PERSONALIZED)
+  /// Position dans la liste servie (1 = premier).
+  rank             Int?                  @db.SmallInt
+  /// Score dans [0, 1] (exposé sur 100). Pas une donnée monétaire : DOUBLE PRECISION convient.
+  score            Float
+  /// {"codes": [...], "components": {...}} : codes stables et détail interne, non exposé tel quel.
+  reason           Json?
+  algorithmVersion String                @map("algorithm_version") @db.VarChar(50)
+  generatedAt      DateTime              @default(now()) @map("generated_at") @db.Timestamptz(6)
+  expiresAt        DateTime              @map("expires_at") @db.Timestamptz(6)
+
+  user     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  /// Clé composite : l'annonce appartient au bien.
+  listing  Listing                  @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Cascade)
+  feedback RecommendationFeedback[]
+
+  @@unique([userId, listingId, context, algorithmVersion])
+  @@index([userId, score(sort: Desc)])
+  @@index([listingId, propertyId])
+  @@index([propertyId])
+  @@index([expiresAt])
+  @@map("recommendations")
+}
+
+/// Une ligne par recommandation et par type : un retour rejoué est idempotent.
+model RecommendationFeedback {
+  id               BigInt                     @id @default(autoincrement())
+  recommendationId BigInt                     @map("recommendation_id")
+  type             RecommendationFeedbackType
+  createdAt        DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  recommendation Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@unique([recommendationId, type])
+  @@index([type, createdAt])
+  @@map("recommendation_feedback")
+}
+
+// ---------------------------------------------------------------------------
+// TRUST
+// ---------------------------------------------------------------------------
+
+/// Dossier de vérification. `user_id` est le déclarant (sujet vérifié) ;
+/// l'agent de chaque décision est dans `verification_events`.
+model Verification {
+  id                BigInt               @id @default(autoincrement())
+  publicId          String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId            BigInt               @map("user_id")
+  /// Obligatoire pour les vérifications d'un bien ou d'une annonce (CHECK).
+  propertyId        BigInt?              @map("property_id")
+  /// LISTING_CONSISTENCY : l'annonce contrôlée, qui appartient au bien (clé composite).
+  listingId         BigInt?              @map("listing_id")
+  type              VerificationType
+  status            VerificationStatus   @default(PENDING)
+  /// Rattachement revendiqué au bien (propriétaire, mandataire...).
+  claimedRelation   OwnershipType?       @map("claimed_relation")
+  priority          VerificationPriority @default(NORMAL)
+  assignedToId      BigInt?              @map("assigned_to_id")
+  /// Ancien modèle à un justificatif. Les dossiers récents utilisent `verification_documents`.
+  documentType      String?              @map("document_type") @db.VarChar(50)
+  /// Clé de stockage S3/R2 du justificatif. Jamais le document lui-même.
+  documentReference String?              @map("document_reference") @db.VarChar(512)
+  rejectionReason   String?              @map("rejection_reason") @db.VarChar(500)
+  /// Motif normalisé de la dernière décision (rejet, complément, révocation).
+  reasonCode        String?              @map("reason_code") @db.VarChar(50)
+  /// Informations déclarées, minimales et sans numéro de pièce.
+  declaration       Json                 @default("{}")
+  /// Résultats des précontrôles automatiques : interne, jamais exposé au déclarant.
+  prechecks         Json                 @default("{}")
+  attestedAt        DateTime?            @map("attested_at") @db.Timestamptz(6)
+  submittedAt       DateTime?            @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  decidedAt         DateTime?            @map("decided_at") @db.Timestamptz(6)
+  verifiedAt        DateTime?            @map("verified_at") @db.Timestamptz(6)
+  verifiedById      BigInt?              @map("verified_by_id")
+  expiresAt         DateTime?            @map("expires_at") @db.Timestamptz(6)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user       User                   @relation("VerificationSubject", fields: [userId], references: [id], onDelete: Restrict)
+  property   Property?              @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  listing    Listing?               @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
+  verifiedBy User?                  @relation("VerificationReviewer", fields: [verifiedById], references: [id], onDelete: SetNull)
+  assignedTo User?                  @relation("VerificationAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  documents  VerificationDocument[]
+  events     VerificationEvent[]
+  signals    TrustSignal[]
+
+  @@index([userId, type])
+  @@index([propertyId], map: "verifications_property_idx", where: raw("property_id IS NOT NULL"))
+  @@index([listingId, propertyId], map: "verifications_listing_idx", where: raw("listing_id IS NOT NULL"))
+  @@index([createdAt], map: "verifications_pending_queue_idx", where: raw("status = 'PENDING'"))
+  @@index([status, priority, submittedAt], map: "verifications_review_queue_idx")
+  @@index([assignedToId, status], map: "verifications_assigned_idx", where: raw("assigned_to_id IS NOT NULL"))
+  @@map("verifications")
+}
+
+/// Justificatif d'un dossier : référence un média Media (aucune copie du fichier).
+model VerificationDocument {
+  id             BigInt                     @id @default(autoincrement())
+  publicId       String                     @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  verificationId BigInt                     @map("verification_id")
+  mediaId        BigInt                     @unique @map("media_id")
+  documentType   VerificationDocumentType   @map("document_type")
+  status         VerificationDocumentStatus @default(ATTACHED)
+  addedById      BigInt?                    @map("added_by_id")
+  reviewedAt     DateTime?                  @map("reviewed_at") @db.Timestamptz(6)
+  removedAt      DateTime?                  @map("removed_at") @db.Timestamptz(6)
+  createdAt      DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Restrict)
+  media        Media        @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  addedBy      User?        @relation(fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@index([verificationId])
+  @@index([addedById])
+  @@map("verification_documents")
+}
+
+/// Historique append-only (trigger) des actions sur un dossier. `internal_note`
+/// n'est lisible que par les relecteurs.
+model VerificationEvent {
+  id             BigInt              @id @default(autoincrement())
+  verificationId BigInt              @map("verification_id")
+  action         String              @db.VarChar(40)
+  fromStatus     VerificationStatus? @map("from_status")
+  toStatus       VerificationStatus  @map("to_status")
+  actorId        BigInt?             @map("actor_id")
+  actorKind      TrustActorKind      @map("actor_kind")
+  reasonCode     String?             @map("reason_code") @db.VarChar(50)
+  /// Message destiné au déclarant (ex. pièce attendue). Jamais de note interne.
+  userMessage    String?             @map("user_message") @db.VarChar(1000)
+  internalNote   String?             @map("internal_note") @db.VarChar(2000)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Restrict)
+  actor        User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([verificationId, createdAt])
+  @@index([actorId])
+  @@map("verification_events")
+}
+
+/// Signalement d'une annonce, d'un utilisateur, d'un message ou d'une conversation : une allégation à examiner.
+model Report {
+  id             BigInt               @id @default(autoincrement())
+  publicId       String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  reporterId     BigInt?              @map("reporter_id")
+  targetType     ReportTargetType     @map("target_type")
+  listingId      BigInt?              @map("listing_id")
+  targetUserId   BigInt?              @map("target_user_id")
+  conversationId BigInt?              @map("conversation_id")
+  messageId      BigInt?              @map("message_id")
+  reason         ReportReason
+  description    String?              @db.VarChar(1000)
+  status         ReportStatus         @default(OPEN)
+  priority       VerificationPriority @default(NORMAL)
+  assignedToId   BigInt?              @map("assigned_to_id")
+  action         ReportAction?
+  resolvedAt     DateTime?            @map("resolved_at") @db.Timestamptz(6)
+  resolvedById   BigInt?              @map("resolved_by_id")
+  /// Note interne du modérateur : jamais renvoyée au déclarant ni à la cible.
+  resolutionNote String?              @map("resolution_note") @db.VarChar(2000)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  reporter     User?         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  listing      Listing?      @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  targetUser   User?         @relation("ReportTargetUser", fields: [targetUserId], references: [id], onDelete: Restrict)
+  assignedTo   User?         @relation("ReportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  resolvedBy   User?         @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  message      Message?      @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  events       ReportEvent[]
+
+  @@index([status, priority, createdAt], map: "reports_queue_idx")
+  @@index([conversationId, status], map: "reports_conversation_idx", where: raw("conversation_id IS NOT NULL"))
+  @@index([messageId], map: "reports_message_idx", where: raw("message_id IS NOT NULL"))
+  @@index([listingId, status], map: "reports_listing_idx", where: raw("listing_id IS NOT NULL"))
+  @@index([targetUserId, status], map: "reports_target_user_idx", where: raw("target_user_id IS NOT NULL"))
+  @@index([reporterId, createdAt], map: "reports_reporter_idx", where: raw("reporter_id IS NOT NULL"))
+  @@index([assignedToId])
+  @@index([resolvedById])
+  @@map("reports")
+}
+
+/// Historique append-only (trigger) du traitement d'un signalement.
+model ReportEvent {
+  id           BigInt         @id @default(autoincrement())
+  reportId     BigInt         @map("report_id")
+  action       String         @db.VarChar(40)
+  fromStatus   ReportStatus?  @map("from_status")
+  toStatus     ReportStatus   @map("to_status")
+  actorId      BigInt?        @map("actor_id")
+  actorKind    TrustActorKind @map("actor_kind")
+  internalNote String?        @map("internal_note") @db.VarChar(2000)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  actor  User?  @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, createdAt])
+  @@index([actorId])
+  @@map("report_events")
+}
+
+/// Alerte produite par une règle de risque déterministe : point de départ d'un
+/// examen, jamais une conclusion. `dedup_key` évite les doublons tant qu'elle est ouverte.
+model TrustSignal {
+  id             BigInt              @id @default(autoincrement())
+  publicId       String              @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  ruleCode       String              @map("rule_code") @db.VarChar(60)
+  severity       TrustSignalSeverity
+  status         TrustSignalStatus   @default(OPEN)
+  userId         BigInt?             @map("user_id")
+  listingId      BigInt?             @map("listing_id")
+  verificationId BigInt?             @map("verification_id")
+  /// Faits observés (identifiants publics, compteurs) : aucune donnée personnelle.
+  details        Json                @default("{}")
+  dedupKey       String              @map("dedup_key") @db.VarChar(200)
+  reviewedById   BigInt?             @map("reviewed_by_id")
+  reviewedAt     DateTime?           @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote     String?             @map("review_note") @db.VarChar(2000)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user         User?         @relation("TrustSignalUser", fields: [userId], references: [id], onDelete: SetNull)
+  listing      Listing?      @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  verification Verification? @relation(fields: [verificationId], references: [id], onDelete: Restrict)
+  reviewedBy   User?         @relation("TrustSignalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([dedupKey], map: "trust_signals_open_dedup_key", where: raw("status = 'OPEN'"))
+  @@index([status, severity, createdAt], map: "trust_signals_queue_idx")
+  @@index([userId], map: "trust_signals_user_idx", where: raw("user_id IS NOT NULL"))
+  @@index([listingId], map: "trust_signals_listing_idx", where: raw("listing_id IS NOT NULL"))
+  @@index([verificationId], map: "trust_signals_verification_idx", where: raw("verification_id IS NOT NULL"))
+  @@index([reviewedById])
+  @@map("trust_signals")
+}
+
+/// Score interne courant, sur 100, calculé depuis des faits vérifiés (voir
+/// docs/trust-and-verification.md). Nul tant que les données sont insuffisantes.
+model TrustScore {
+  id               BigInt   @id @default(autoincrement())
+  userId           BigInt   @unique @map("user_id")
+  score            Decimal? @db.Decimal(5, 2)
+  identityScore    Decimal  @default(0) @map("identity_score") @db.Decimal(5, 2)
+  propertyScore    Decimal  @default(0) @map("property_score") @db.Decimal(5, 2)
+  behaviorScore    Decimal  @default(0) @map("behavior_score") @db.Decimal(5, 2)
+  transactionScore Decimal  @default(0) @map("transaction_score") @db.Decimal(5, 2)
+  algorithmVersion String   @map("algorithm_version") @db.VarChar(50)
+  /// Facteurs observés et contributions : explicabilité, accès restreint.
+  factors          Json     @default("{}")
+  isComplete       Boolean  @default(false) @map("is_complete")
+  computedAt       DateTime @default(now()) @map("computed_at") @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trust_scores")
+}
+
+// ---------------------------------------------------------------------------
+// COMMUNICATION
+// ---------------------------------------------------------------------------
+
+/// Notification in-app, source de vérité ; les envois externes sont dans `notification_deliveries`.
+model Notification {
+  id        BigInt               @id @default(autoincrement())
+  publicId  String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId    BigInt               @map("user_id")
+  type      NotificationType
+  category  NotificationCategory @default(ACCOUNT)
+  title     String               @db.VarChar(200)
+  body      String?              @db.VarChar(2000)
+  /// Identifiants publics et codes seulement.
+  data      Json?
+  /// Clé d'idempotence de l'événement métier : un même événement ne notifie qu'une fois.
+  dedupKey  String?              @map("dedup_key") @db.VarChar(200)
+  readAt    DateTime?            @map("read_at") @db.Timestamptz(6)
+  expiresAt DateTime?            @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@unique([userId, dedupKey], map: "notifications_user_dedup_key", where: raw("dedup_key IS NOT NULL"))
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId], map: "notifications_unread_idx", where: raw("read_at IS NULL"))
+  @@map("notifications")
+}
+
+/// Choix explicite d'un utilisateur ; sans ligne, la valeur par défaut du code s'applique.
+model NotificationPreference {
+  id        BigInt               @id @default(autoincrement())
+  userId    BigInt               @map("user_id")
+  category  NotificationCategory
+  channel   NotificationChannel
+  enabled   Boolean
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, channel])
+  @@map("notification_preferences")
+}
+
+/// Envoi externe d'une notification, et file de travail (`next_attempt_at`,
+/// SKIP LOCKED). Créée dans la transaction de la notification (outbox).
+/// Un seul envoi par canal et par notification : un repli ne peut pas boucler.
+model NotificationDelivery {
+  id             BigInt              @id @default(autoincrement())
+  publicId       String              @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  notificationId BigInt              @map("notification_id")
+  channel        NotificationChannel
+  provider       String?             @db.VarChar(40)
+  status         DeliveryStatus      @default(PENDING)
+  attempts       Int                 @default(0) @db.SmallInt
+  /// Échéance du prochain essai ou fin du bail en cours. Nulle = aucun travail.
+  nextAttemptAt  DateTime?           @map("next_attempt_at") @db.Timestamptz(6)
+  externalId     String?             @map("external_id") @db.VarChar(200)
+  /// Code normalisé (TEMPORARY:..., RECIPIENT:...), jamais la réponse brute du fournisseur.
+  lastError      String?             @map("last_error") @db.VarChar(100)
+  fallbackFromId BigInt?             @map("fallback_from_id")
+  sentAt         DateTime?           @map("sent_at") @db.Timestamptz(6)
+  deliveredAt    DateTime?           @map("delivered_at") @db.Timestamptz(6)
+  failedAt       DateTime?           @map("failed_at") @db.Timestamptz(6)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  notification Notification           @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  fallbackFrom NotificationDelivery?  @relation("DeliveryFallback", fields: [fallbackFromId], references: [id], onDelete: SetNull)
+  fallbacks    NotificationDelivery[] @relation("DeliveryFallback")
+
+  @@unique([notificationId, channel])
+  @@index([nextAttemptAt], map: "notification_deliveries_due_idx", where: raw("next_attempt_at IS NOT NULL"))
+  @@index([fallbackFromId])
+  @@index([status, createdAt])
+  @@map("notification_deliveries")
+}
+
+/// Appareil mobile ou navigateur inscrit aux notifications push. Le jeton
+/// n'est jamais journalisé ; il est invalidé quand le fournisseur le refuse.
+model PushDevice {
+  id            BigInt       @id @default(autoincrement())
+  publicId      String       @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId        BigInt       @map("user_id")
+  platform      PushPlatform
+  token         String       @db.VarChar(4096)
+  tokenSha256   String       @unique @map("token_sha256") @db.Char(64)
+  lastSeenAt    DateTime     @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  invalidatedAt DateTime?    @map("invalidated_at") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "push_devices_user_active_idx", where: raw("invalidated_at IS NULL"))
+  @@map("push_devices")
+}
+
+/// Échange lié à une annonce, entre un client (`requester`) et le côté annonce
+/// (gestionnaires courants du bien, revérifiés à chaque accès).
+model Conversation {
+  id             BigInt             @id @default(autoincrement())
+  publicId       String             @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  type           ConversationType
+  status         ConversationStatus @default(OPEN)
+  requesterId    BigInt?            @map("requester_id")
+  listingId      BigInt             @map("listing_id")
+  propertyId     BigInt             @map("property_id")
+  inquiryId      BigInt?            @unique @map("inquiry_id")
+  /// Numéro du dernier message : séquence sans trou, attribuée sous verrou de la conversation.
+  lastSeq        Int                @default(0) @map("last_seq")
+  lastMessageAt  DateTime?          @map("last_message_at") @db.Timestamptz(6)
+  lastActivityAt DateTime           @default(now()) @map("last_activity_at") @db.Timestamptz(6)
+  closedAt       DateTime?          @map("closed_at") @db.Timestamptz(6)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  requester    User?                     @relation("ConversationRequester", fields: [requesterId], references: [id], onDelete: SetNull)
+  listing      Listing                   @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
+  property     Property                  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  inquiry      Inquiry?                  @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  messages     Message[]
+  attachments  MessageAttachment[]
+  appointments Appointment[]
+  reports      Report[]
+
+  /// Une conversation par client et par annonce : la reprise retrouve l'existante.
+  @@unique([listingId, requesterId], map: "conversations_listing_requester_key")
+  @@index([requesterId, lastActivityAt(sort: Desc)])
+  @@index([propertyId, lastActivityAt(sort: Desc)])
+  @@index([listingId, propertyId])
+  @@map("conversations")
+}
+
+/// État propre à chaque participant : lecture, réception, archivage, sourdine.
+model ConversationParticipant {
+  id               BigInt           @id @default(autoincrement())
+  conversationId   BigInt           @map("conversation_id")
+  userId           BigInt           @map("user_id")
+  role             ParticipantRole
+  state            ParticipantState @default(ACTIVE)
+  joinedAt         DateTime         @default(now()) @map("joined_at") @db.Timestamptz(6)
+  leftAt           DateTime?        @map("left_at") @db.Timestamptz(6)
+  lastReadSeq      Int              @default(0) @map("last_read_seq")
+  lastReadAt       DateTime?        @map("last_read_at") @db.Timestamptz(6)
+  lastDeliveredSeq Int              @default(0) @map("last_delivered_seq")
+  archivedAt       DateTime?        @map("archived_at") @db.Timestamptz(6)
+  /// Pas de notification externe pour cette conversation (les compteurs restent justes).
+  muted            Boolean          @default(false)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, state])
+  @@map("conversation_participants")
+}
+
+/// Message persisté avant toute diffusion. Le texte n'est jamais journalisé.
+model Message {
+  id              BigInt      @id @default(autoincrement())
+  publicId        String      @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  conversationId  BigInt      @map("conversation_id")
+  seq             Int
+  /// Nul pour un message SYSTEM (CHECK) ou un compte supprimé.
+  authorId        BigInt?     @map("author_id")
+  type            MessageType
+  body            String?     @db.VarChar(4000)
+  /// Messages SYSTEM : code et paramètres (identifiants publics), rendus par le client.
+  systemCode      String?     @map("system_code") @db.VarChar(60)
+  data            Json        @default("{}")
+  /// Clé d'idempotence choisie par le client : un renvoi après coupure ne duplique pas.
+  clientMessageId String?     @map("client_message_id") @db.Uuid
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  editedAt        DateTime?   @map("edited_at") @db.Timestamptz(6)
+  deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz(6)
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  author       User?               @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  attachments  MessageAttachment[]
+  reports      Report[]
+
+  @@unique([conversationId, seq])
+  @@unique([conversationId, authorId, clientMessageId])
+  @@index([authorId, createdAt])
+  @@map("messages")
+}
+
+/// Pièce jointe : un média privé (Media, `purpose = MESSAGE`) réservé à une
+/// conversation dès l'envoi du fichier, puis rattaché au message qui le cite.
+model MessageAttachment {
+  id             BigInt   @id @default(autoincrement())
+  conversationId BigInt   @map("conversation_id")
+  messageId      BigInt?  @map("message_id")
+  mediaId        BigInt   @unique @map("media_id")
+  uploaderId     BigInt   @map("uploader_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  message      Message?     @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  media        Media        @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  uploader     User         @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+
+  @@index([messageId])
+  @@index([conversationId, uploaderId])
+  @@index([uploaderId])
+  @@map("message_attachments")
+}
+
+// ---------------------------------------------------------------------------
+// AUDIT : append-only (trigger). Pas de clé étrangère sur l'entité ciblée.
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         BigInt   @default(autoincrement())
+  actorId    BigInt?  @map("actor_id")
+  action     String   @db.VarChar(100)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String   @map("entity_id") @db.VarChar(64)
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.Inet
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
+  /// Corrélation avec X-Request-ID.
+  requestId  String?  @map("request_id") @db.VarChar(128)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@id([id, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt], map: "audit_logs_actor_created_idx", where: raw("actor_id IS NOT NULL"))
+  @@index([createdAt(ops: TimestampTzMinMaxOps)], type: Brin, map: "audit_logs_created_brin_idx")
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// ADMIN : back-office. Les décisions restent dans les tables métier ; ici
+// seulement le référentiel des motifs et les notes internes.
+// ---------------------------------------------------------------------------
+
+/// Décision de modération d'une annonce qui exige un motif normalisé.
+enum ModerationAction {
+  REJECT
+  REQUEST_CHANGES
+  SUSPEND
+
+  @@map("moderation_action")
+}
+
+/// Motif normalisé, administrable. `ownerMessage` est envoyé au propriétaire :
+/// jamais de détail interne ni antifraude.
+model ModerationReason {
+  id           Int              @id @default(autoincrement())
+  code         String           @unique @db.VarChar(64)
+  action       ModerationAction
+  label        String           @db.VarChar(120)
+  ownerMessage String           @map("owner_message") @db.VarChar(500)
+  isActive     Boolean          @default(true) @map("is_active")
+  sortOrder    Int              @default(0) @map("sort_order") @db.SmallInt
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([action, isActive, sortOrder])
+  @@map("moderation_reasons")
+}
+
+/// Note interne du back-office sur un utilisateur ou une annonce (identifiant
+/// public). En ajout seul ; jamais visible des utilisateurs.
+model AdminNote {
+  id         BigInt   @id @default(autoincrement())
+  publicId   String   @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  entityType String   @map("entity_type") @db.VarChar(20)
+  entityId   String   @map("entity_id") @db.VarChar(64)
+  authorId   BigInt?  @map("author_id")
+  body       String   @db.VarChar(2000)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@map("admin_notes")
+}
+
+// ---------------------------------------------------------------------------
+// BILLING : services payants de la plateforme (abonnements). Jamais de loyer,
+// de caution ni de prix de vente. Montants entiers dans l'unité de la devise
+// (XOF : franc, sans sous-unité). PostgreSQL est la source de vérité.
+// ---------------------------------------------------------------------------
+
+enum BillingProductKind {
+  SUBSCRIPTION_PLAN
+
+  @@map("billing_product_kind")
+}
+
+/// DRAFT : invisible et non vendable ; RETIRED : retiré du catalogue, les
+/// abonnements en cours gardent leurs droits.
+enum BillingProductStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+
+  @@map("billing_product_status")
+}
+
+enum BillingPriceStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("billing_price_status")
+}
+
+enum BillingOrderKind {
+  SUBSCRIPTION_START
+  SUBSCRIPTION_RENEWAL
+
+  @@map("billing_order_kind")
+}
+
+enum BillingOrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+  REFUNDED
+
+  @@map("billing_order_status")
+}
+
+/// Statut d'une tentative de paiement, distinct de celui de la commande.
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  EXPIRED
+
+  @@map("payment_status")
+}
+
+enum PaymentEnvironment {
+  TEST
+  LIVE
+
+  @@map("payment_environment")
+}
+
+/// RECEIVED : enregistré, traitement non terminé (rejouable).
+enum PaymentEventOutcome {
+  RECEIVED
+  APPLIED
+  IGNORED
+  REJECTED
+
+  @@map("payment_event_outcome")
+}
+
+enum RefundStatus {
+  REQUESTED
+  REJECTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+
+  @@map("refund_status")
+}
+
+/// PAST_DUE : échéance passée sans renouvellement, droits conservés pendant
+/// le délai de grâce. CANCELLED : fin anticipée (remboursement intégral).
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+
+  @@map("subscription_status")
+}
+
+enum BillingIncidentKind {
+  AMOUNT_MISMATCH
+  UNKNOWN_REFERENCE
+  DUPLICATE_PAYMENT
+  LATE_SUCCESS
+  GRANT_CONFLICT
+  REFUND_FAILED
+
+  @@map("billing_incident_kind")
+}
+
+enum BillingIncidentStatus {
+  OPEN
+  RESOLVED
+
+  @@map("billing_incident_status")
+}
+
+/// Produit commercial. Le code est immuable ; les droits accordés sont figés
+/// dans chaque commande et abonnement (un changement ne rétroagit pas).
+model BillingProduct {
+  id                Int                  @id @default(autoincrement())
+  publicId          String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  code              String               @unique @db.VarChar(64)
+  kind              BillingProductKind
+  status            BillingProductStatus @default(DRAFT)
+  name              String               @db.VarChar(120)
+  description       String?              @db.VarChar(1000)
+  /// Plan des comptes sans abonnement. Un seul ; jamais vendu.
+  isDefault         Boolean              @default(false) @map("is_default")
+  /// Annonces simultanément en revue, publiées ou en pause. NULL : illimité.
+  maxActiveListings Int?                 @map("max_active_listings")
+  sortOrder         Int                  @default(0) @map("sort_order") @db.SmallInt
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  prices        BillingPrice[]
+  orders        BillingOrder[]
+  subscriptions Subscription[]
+
+  @@unique([isDefault], map: "billing_products_one_default_key", where: raw("is_default"))
+  @@index([status, sortOrder])
+  @@map("billing_products")
+}
+
+/// Prix d'un produit. Immuable une fois créé (montant, devise, période) :
+/// un nouveau tarif est un nouveau prix, l'ancien est archivé.
+model BillingPrice {
+  id             Int                @id @default(autoincrement())
+  publicId       String             @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  productId      Int                @map("product_id")
+  amount         BigInt
+  currency       String             @db.Char(3)
+  intervalMonths Int                @map("interval_months") @db.SmallInt
+  status         BillingPriceStatus @default(ACTIVE)
+  validFrom      DateTime           @default(now()) @map("valid_from") @db.Timestamptz(6)
+  validUntil     DateTime?          @map("valid_until") @db.Timestamptz(6)
+  createdById    BigInt?            @map("created_by_id")
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  product   BillingProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  orders    BillingOrder[]
+
+  @@index([productId, status, validFrom])
+  @@map("billing_prices")
+}
+
+/// Intention d'achat. Le montant, la devise et les droits sont figés à la
+/// création (trigger) ; jamais recalculés depuis le catalogue.
+model BillingOrder {
+  id                BigInt             @id @default(autoincrement())
+  publicId          String             @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  buyerId           BigInt             @map("buyer_id")
+  kind              BillingOrderKind
+  status            BillingOrderStatus @default(PENDING)
+  productId         Int                @map("product_id")
+  priceId           Int                @map("price_id")
+  /// Abonnement renouvelé (SUBSCRIPTION_RENEWAL).
+  subscriptionId    BigInt?            @map("subscription_id")
+  productCode       String             @map("product_code") @db.VarChar(64)
+  productName       String             @map("product_name") @db.VarChar(120)
+  amount            BigInt
+  currency          String             @db.Char(3)
+  intervalMonths    Int                @map("interval_months") @db.SmallInt
+  maxActiveListings Int?               @map("max_active_listings")
+  idempotencyKey    String             @map("idempotency_key") @db.VarChar(64)
+  expiresAt         DateTime           @map("expires_at") @db.Timestamptz(6)
+  paidAt            DateTime?          @map("paid_at") @db.Timestamptz(6)
+  /// Droit accordé ; NULL sur une commande payée = incident à traiter.
+  fulfilledAt       DateTime?          @map("fulfilled_at") @db.Timestamptz(6)
+  cancelledAt       DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  refundedAt        DateTime?          @map("refunded_at") @db.Timestamptz(6)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  buyer        User                 @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  product      BillingProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  price        BillingPrice         @relation(fields: [priceId], references: [id], onDelete: Restrict)
+  subscription Subscription?        @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  payments     PaymentTransaction[]
+  period       SubscriptionPeriod?
+  incidents    BillingIncident[]
+
+  @@unique([buyerId, idempotencyKey])
+  @@unique([buyerId], map: "billing_orders_one_pending_per_buyer_key", where: raw("status = 'PENDING'::billing_order_status"))
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([status, expiresAt])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("billing_orders")
+}
+
+/// Tentative de paiement auprès d'un prestataire. `public_id` est la
+/// référence marchande transmise au prestataire.
+model PaymentTransaction {
+  id                BigInt             @id @default(autoincrement())
+  publicId          String             @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  orderId           BigInt             @map("order_id")
+  provider          String             @db.VarChar(32)
+  environment       PaymentEnvironment
+  providerReference String?            @map("provider_reference") @db.VarChar(128)
+  amount            BigInt
+  currency          String             @db.Char(3)
+  status            PaymentStatus      @default(CREATED)
+  /// Page hébergée du prestataire, sans secret.
+  redirectUrl       String?            @map("redirect_url") @db.VarChar(2048)
+  failureCode       String?            @map("failure_code") @db.VarChar(64)
+  refundedAmount    BigInt             @default(0) @map("refunded_amount")
+  expiresAt         DateTime           @map("expires_at") @db.Timestamptz(6)
+  succeededAt       DateTime?          @map("succeeded_at") @db.Timestamptz(6)
+  failedAt          DateTime?          @map("failed_at") @db.Timestamptz(6)
+  lastCheckedAt     DateTime?          @map("last_checked_at") @db.Timestamptz(6)
+  checkAttempts     Int                @default(0) @map("check_attempts")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  order     BillingOrder      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  events    PaymentEvent[]
+  refunds   PaymentRefund[]
+  incidents BillingIncident[]
+
+  @@unique([provider, providerReference])
+  @@unique([orderId], map: "payment_transactions_one_open_per_order_key", where: raw("status = ANY (ARRAY['CREATED'::payment_status, 'PENDING'::payment_status])"))
+  @@index([status, lastCheckedAt], map: "payment_transactions_open_idx", where: raw("status = ANY (ARRAY['CREATED'::payment_status, 'PENDING'::payment_status])"))
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("payment_transactions")
+}
+
+/// Notification reçue d'un prestataire : trace minimale (empreinte du corps,
+/// résumé normalisé), jamais le corps brut ni un secret.
+model PaymentEvent {
+  id             BigInt              @id @default(autoincrement())
+  provider       String              @db.VarChar(32)
+  eventId        String              @map("event_id") @db.VarChar(128)
+  paymentId      BigInt?             @map("payment_id")
+  signatureValid Boolean             @map("signature_valid")
+  outcome        PaymentEventOutcome @default(RECEIVED)
+  payloadSha256  String              @map("payload_sha256") @db.Char(64)
+  summary        Json?
+  errorCode      String?             @map("error_code") @db.VarChar(64)
+  attempts       Int                 @default(1)
+  receivedAt     DateTime            @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt    DateTime?           @map("processed_at") @db.Timestamptz(6)
+
+  payment PaymentTransaction? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, eventId])
+  @@index([paymentId, receivedAt])
+  @@index([receivedAt(sort: Desc), id(sort: Desc)])
+  @@map("payment_events")
+}
+
+/// Remboursement d'une transaction réussie. La transaction d'origine reste
+/// intacte ; seul son cumul remboursé évolue.
+model PaymentRefund {
+  id                  BigInt       @id @default(autoincrement())
+  publicId            String       @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  paymentId           BigInt       @map("payment_id")
+  amount              BigInt
+  currency            String       @db.Char(3)
+  status              RefundStatus @default(REQUESTED)
+  reason              String       @db.VarChar(500)
+  requestedById       BigInt?      @map("requested_by_id")
+  /// Demande du client (assistance) plutôt que d'un agent.
+  requestedByCustomer Boolean      @default(false) @map("requested_by_customer")
+  decidedById         BigInt?      @map("decided_by_id")
+  decidedAt           DateTime?    @map("decided_at") @db.Timestamptz(6)
+  decisionNote        String?      @map("decision_note") @db.VarChar(500)
+  providerReference   String?      @map("provider_reference") @db.VarChar(128)
+  failureCode         String?      @map("failure_code") @db.VarChar(64)
+  idempotencyKey      String       @map("idempotency_key") @db.VarChar(64)
+  completedAt         DateTime?    @map("completed_at") @db.Timestamptz(6)
+  lastCheckedAt       DateTime?    @map("last_checked_at") @db.Timestamptz(6)
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  payment     PaymentTransaction @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  requestedBy User?              @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  decidedBy   User?              @relation("RefundDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@unique([paymentId, idempotencyKey])
+  @@index([status, createdAt])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("payment_refunds")
+}
+
+/// Abonnement d'un compte (pas d'entité « organisation » : une agence est un
+/// compte). Renouvellement manuel : aucun prélèvement automatique.
+model Subscription {
+  id                 BigInt             @id @default(autoincrement())
+  publicId           String             @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId             BigInt             @map("user_id")
+  productId          Int                @map("product_id")
+  status             SubscriptionStatus @default(ACTIVE)
+  /// Droits figés à l'achat (dernière période payée).
+  maxActiveListings  Int?               @map("max_active_listings")
+  intervalMonths     Int                @map("interval_months") @db.SmallInt
+  currentPeriodStart DateTime           @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(6)
+  /// Résiliation demandée : droits conservés jusqu'à la fin de la période payée.
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt        DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  endedAt            DateTime?          @map("ended_at") @db.Timestamptz(6)
+  /// Échéance pour laquelle le rappel de renouvellement a été envoyé.
+  reminderSentFor    DateTime?          @map("reminder_sent_for") @db.Timestamptz(6)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product BillingProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orders  BillingOrder[]
+  periods SubscriptionPeriod[]
+
+  @@unique([userId], map: "subscriptions_one_current_per_user_key", where: raw("status = ANY (ARRAY['ACTIVE'::subscription_status, 'PAST_DUE'::subscription_status])"))
+  @@index([status, currentPeriodEnd])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("subscriptions")
+}
+
+/// Période payée. Une commande n'accorde qu'une période (clé unique) : un
+/// webhook rejoué ne prolonge jamais deux fois.
+model SubscriptionPeriod {
+  id             BigInt    @id @default(autoincrement())
+  subscriptionId BigInt    @map("subscription_id")
+  orderId        BigInt    @unique @map("order_id")
+  periodStart    DateTime  @map("period_start") @db.Timestamptz(6)
+  periodEnd      DateTime  @map("period_end") @db.Timestamptz(6)
+  /// Période annulée par un remboursement intégral.
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  order        BillingOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([subscriptionId, periodEnd])
+  @@map("subscription_periods")
+}
+
+/// Incohérence détectée (webhook, réconciliation). Jamais corrigée en
+/// silence : résolue par un agent, avec une justification.
+model BillingIncident {
+  id           BigInt                @id @default(autoincrement())
+  publicId     String                @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  kind         BillingIncidentKind
+  status       BillingIncidentStatus @default(OPEN)
+  paymentId    BigInt?               @map("payment_id")
+  orderId      BigInt?               @map("order_id")
+  /// Codes et montants seulement, jamais de donnée personnelle ni de secret.
+  detail       Json?
+  resolvedById BigInt?               @map("resolved_by_id")
+  resolvedAt   DateTime?             @map("resolved_at") @db.Timestamptz(6)
+  resolution   String?               @db.VarChar(1000)
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  payment    PaymentTransaction? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  order      BillingOrder?       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  resolvedBy User?               @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([kind, paymentId], map: "billing_incidents_one_open_key", where: raw("status = 'OPEN'::billing_incident_status"))
+  @@index([status, createdAt])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("billing_incidents")
+}
+
+// ---------------------------------------------------------------------------
+// EVENTS : flux comportemental pour la recommandation et l'analytics.
+// Partition future par `created_at` (heure serveur, pas l'horloge client).
+// ---------------------------------------------------------------------------
+
+model UserEvent {
+  id         BigInt         @default(autoincrement())
+  userId     BigInt?        @map("user_id")
+  sessionId  String?        @map("session_id") @db.VarChar(64)
+  eventType  UserEventType  @map("event_type")
+  propertyId BigInt?        @map("property_id")
+  listingId  BigInt?        @map("listing_id")
+  source     TrafficSource?
+  metadata   Json?
+  /// Horloge du client. `created_at` reste la référence de partition.
+  occurredAt DateTime       @map("occurred_at") @db.Timestamptz(6)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  listing  Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@id([id, createdAt])
+  @@index([userId, occurredAt], map: "user_events_user_occurred_idx", where: raw("user_id IS NOT NULL"))
+  @@index([eventType, occurredAt])
+  @@index([occurredAt])
+  @@index([createdAt(ops: TimestampTzMinMaxOps)], type: Brin, map: "user_events_created_brin_idx")
+  @@map("user_events")
+}
+
+// ---------------------------------------------------------------------------
+// ANALYTICS : événements versionnés (catalogue @mon-appart/analytics),
+// agrégats journaliers recalculables et consentement. Distinct de audit_logs.
+// ---------------------------------------------------------------------------
+
+model AnalyticsEvent {
+  id            BigInt          @id @default(autoincrement())
+  /// Clé d'idempotence fournie par l'émetteur.
+  eventId       String          @unique @map("event_id") @db.Uuid
+  name          String          @db.VarChar(64)
+  schemaVersion Int             @map("schema_version") @db.SmallInt
+  source        AnalyticsSource
+  basis         AnalyticsBasis
+  policyVersion String?         @map("policy_version") @db.VarChar(32)
+  /// Horloge de l'émetteur, corrigée du décalage et bornée à l'ingestion.
+  occurredAt    DateTime        @map("occurred_at") @db.Timestamptz(6)
+  receivedAt    DateTime        @default(now()) @map("received_at") @db.Timestamptz(6)
+  userId        BigInt?         @map("user_id")
+  /// Identifiant aléatoire du client, seulement avec consentement.
+  anonymousId   String?         @map("anonymous_id") @db.Uuid
+  sessionId     String?         @map("session_id") @db.Uuid
+  /// Annonce résolue côté serveur depuis l'identifiant public.
+  listingId     BigInt?         @map("listing_id")
+  /// Propriétés validées par le schéma de l'événement (liste d'autorisation).
+  properties    Json            @default("{}")
+  requestId     String?         @map("request_id") @db.VarChar(128)
+  appVersion    String?         @map("app_version") @db.VarChar(32)
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([name, occurredAt])
+  @@index([listingId, occurredAt], map: "analytics_events_listing_occurred_idx", where: raw("listing_id IS NOT NULL"))
+  @@index([userId, occurredAt], map: "analytics_events_user_occurred_idx", where: raw("user_id IS NOT NULL"))
+  @@index([anonymousId], map: "analytics_events_anonymous_idx", where: raw("anonymous_id IS NOT NULL"))
+  @@index([occurredAt(ops: TimestampTzMinMaxOps)], type: Brin, map: "analytics_events_occurred_brin_idx")
+  @@map("analytics_events")
+}
+
+/// Indicateurs globaux par jour (UTC). `dimension` et `value` valent '' pour
+/// le total : pas de NULL dans la clé d'unicité.
+model AnalyticsDailyMetric {
+  day        DateTime @db.Date
+  metric     String   @db.VarChar(64)
+  dimension  String   @default("") @db.VarChar(32)
+  value      String   @default("") @db.VarChar(64)
+  /// Nombre d'occurrences.
+  count      BigInt   @default(0)
+  /// Acteurs distincts (utilisateur, sinon identifiant anonyme, sinon session).
+  actors     BigInt   @default(0)
+  computedAt DateTime @default(now()) @map("computed_at") @db.Timestamptz(6)
+
+  @@id([day, metric, dimension, value])
+  @@index([metric, day])
+  @@map("analytics_daily_metrics")
+}
+
+/// Statistiques par annonce et par jour, seules données visibles des
+/// gestionnaires : aucun identifiant de visiteur.
+model AnalyticsListingDaily {
+  listingId                 BigInt   @map("listing_id")
+  day                       DateTime @db.Date
+  detailViews               Int      @default(0) @map("detail_views")
+  uniqueViewers             Int      @default(0) @map("unique_viewers")
+  cardImpressions           Int      @default(0) @map("card_impressions")
+  shares                    Int      @default(0)
+  contactsStarted           Int      @default(0) @map("contacts_started")
+  contactsSubmitted         Int      @default(0) @map("contacts_submitted")
+  appointmentsRequested     Int      @default(0) @map("appointments_requested")
+  appointmentsConfirmed     Int      @default(0) @map("appointments_confirmed")
+  appointmentsCompleted     Int      @default(0) @map("appointments_completed")
+  qualifiedLeads            Int      @default(0) @map("qualified_leads")
+  recommendationImpressions Int      @default(0) @map("recommendation_impressions")
+  recommendationOpens       Int      @default(0) @map("recommendation_opens")
+  computedAt                DateTime @default(now()) @map("computed_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, day])
+  @@index([day])
+  @@map("analytics_listing_daily")
+}
+
+/// Compteurs d'ingestion (acceptés, doublons, rejetés, ignorés) par motif.
+model AnalyticsIngestionStat {
+  day     DateTime        @db.Date
+  source  AnalyticsSource
+  outcome String          @db.VarChar(16)
+  reason  String          @default("") @db.VarChar(32)
+  count   BigInt          @default(0)
+
+  @@id([day, source, outcome, reason])
+  @@map("analytics_ingestion_stats")
+}
+
+/// État des traitements périodiques (agrégation, purge).
+model AnalyticsCheckpoint {
+  job           String    @id @db.VarChar(64)
+  /// Dernier jour entièrement recalculé.
+  completedDay  DateTime? @map("completed_day") @db.Date
+  lastRunAt     DateTime? @map("last_run_at") @db.Timestamptz(6)
+  lastSuccessAt DateTime? @map("last_success_at") @db.Timestamptz(6)
+  lastError     String?   @map("last_error") @db.VarChar(255)
+  durationMs    Int?      @map("duration_ms")
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("analytics_checkpoints")
+}
+
+/// Consentement analytique (distinct des CGU et du marketing).
+model AnalyticsConsent {
+  userId        BigInt                 @id @map("user_id")
+  status        AnalyticsConsentStatus
+  policyVersion String                 @map("policy_version") @db.VarChar(32)
+  source        String                 @db.VarChar(16)
+  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime               @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_consents")
+}
+
+// ---------------------------------------------------------------------------
+// PARTNERS : registre d'intégrations (statut commercial ≠ technique).
+// Secrets chiffrés (jamais en clair). Aucun partenaire inventé en seed.
+// ---------------------------------------------------------------------------
+
+enum PartnerCategory {
+  AGENCY
+  DEVELOPER
+  PROPERTY_MANAGER
+  SERVICE_PROVIDER
+  PAYMENT
+  COMMUNICATION
+  GEOCODING
+  ANALYTICS
+  OTHER
+
+  @@map("partner_category")
+}
+
+/// Accord / relation commerciale — distinct de l'intégration technique.
+enum PartnerCommercialStatus {
+  PROSPECT
+  ACTIVE
+  SUSPENDED
+  ENDED
+
+  @@map("partner_commercial_status")
+}
+
+enum PartnerIntegrationKind {
+  MANUAL
+  CSV_IMPORT
+  WEBHOOK_OUT
+  WEBHOOK_IN
+  API
+  SDK
+
+  @@map("partner_integration_kind")
+}
+
+enum PartnerIntegrationStatus {
+  PLANNED
+  INTEGRATING
+  ACTIVE
+  SUSPENDED
+  RETIRED
+
+  @@map("partner_integration_status")
+}
+
+enum PartnerDeliveryStatus {
+  PENDING
+  SENDING
+  DELIVERED
+  FAILED
+  CANCELLED
+
+  @@map("partner_delivery_status")
+}
+
+enum PartnerImportStatus {
+  VALIDATED
+  PARTIAL
+  REJECTED
+  APPLIED
+
+  @@map("partner_import_status")
+}
+
+/// Fiche partenaire (registre). Pas de secrets ici.
+model Partner {
+  id                BigInt                   @id @default(autoincrement())
+  publicId          String                   @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  code              String                   @unique @db.VarChar(64)
+  name              String                   @db.VarChar(160)
+  category          PartnerCategory
+  description       String?                  @db.VarChar(1000)
+  commercialStatus  PartnerCommercialStatus  @default(PROSPECT) @map("commercial_status")
+  createdById       BigInt?                  @map("created_by_id")
+  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  createdBy    User?                 @relation("PartnerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  integrations PartnerIntegration[]
+  deliveries   PartnerDelivery[]
+  listingLinks PartnerListingLink[]
+  imports      PartnerImportBatch[]
+
+  @@index([category, commercialStatus])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@map("partners")
+}
+
+/// Connexion technique (peut être inactive alors que le commercial est ACTIVE).
+model PartnerIntegration {
+  id                 BigInt                    @id @default(autoincrement())
+  publicId           String                    @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  partnerId          BigInt                    @map("partner_id")
+  kind               PartnerIntegrationKind
+  status             PartnerIntegrationStatus  @default(PLANNED)
+  contractVersion    String                    @default("2026-10-v1") @map("contract_version") @db.VarChar(32)
+  /// URL HTTPS de livraison outbound (webhooks sortants).
+  webhookUrl         String?                   @map("webhook_url") @db.VarChar(500)
+  /// Empreinte SHA-256 du secret (diagnostic) — jamais le secret.
+  webhookSecretFp    String?                   @map("webhook_secret_fp") @db.VarChar(64)
+  /// Secret chiffré AES-GCM (iv + tag + cipher, base64). Jamais journalisé.
+  webhookSecretCipher String?                  @map("webhook_secret_cipher") @db.VarChar(500)
+  capabilities       String[]                  @default([])
+  lastCheckedAt      DateTime?                 @map("last_checked_at") @db.Timestamptz(6)
+  lastError          String?                   @map("last_error") @db.VarChar(255)
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  partner    Partner           @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  deliveries PartnerDelivery[]
+
+  @@index([partnerId, status])
+  @@index([kind, status])
+  @@map("partner_integrations")
+}
+
+/// Outbox de livraison vers un partenaire (webhooks sortants).
+model PartnerDelivery {
+  id            BigInt                @id @default(autoincrement())
+  publicId      String                @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  partnerId     BigInt                @map("partner_id")
+  integrationId BigInt                @map("integration_id")
+  eventName     String                @map("event_name") @db.VarChar(64)
+  /// Identifiant d'idempotence (ex. event domain id).
+  eventId       String                @map("event_id") @db.Uuid
+  /// Charge utile minimale (IDs publics), jamais de secrets ni PII.
+  payload       Json
+  status        PartnerDeliveryStatus @default(PENDING)
+  attempts      Int                   @default(0) @db.SmallInt
+  nextAttemptAt DateTime              @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  deliveredAt   DateTime?             @map("delivered_at") @db.Timestamptz(6)
+  lastError     String?               @map("last_error") @db.VarChar(255)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  partner     Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  integration PartnerIntegration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, eventId])
+  @@index([status, nextAttemptAt], map: "partner_deliveries_due_idx")
+  @@map("partner_deliveries")
+}
+
+/// Lien annonce Mon Appart ↔ identifiant externe partenaire (déduplication).
+model PartnerListingLink {
+  id               BigInt    @id @default(autoincrement())
+  partnerId        BigInt    @map("partner_id")
+  listingPublicId  String    @map("listing_public_id") @db.Uuid
+  externalListingId String   @map("external_listing_id") @db.VarChar(120)
+  sourceFingerprint String?  @map("source_fingerprint") @db.VarChar(64)
+  lastSyncedAt     DateTime? @map("last_synced_at") @db.Timestamptz(6)
+  syncStatus       String    @default("OK") @map("sync_status") @db.VarChar(32)
+  lastError        String?   @map("last_error") @db.VarChar(255)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, externalListingId])
+  @@unique([partnerId, listingPublicId])
+  @@index([listingPublicId])
+  @@map("partner_listing_links")
+}
+
+/// Lot d'import CSV (validation / dry-run). Application métier séparée.
+model PartnerImportBatch {
+  id           BigInt              @id @default(autoincrement())
+  publicId     String              @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  partnerId    BigInt              @map("partner_id")
+  status       PartnerImportStatus @default(VALIDATED)
+  filename     String              @db.VarChar(255)
+  rowCount     Int                 @default(0) @map("row_count")
+  acceptedRows Int                 @default(0) @map("accepted_rows")
+  rejectedRows Int                 @default(0) @map("rejected_rows")
+  /// Rapport compact (compteurs + échantillon d'erreurs), pas le fichier entier.
+  report       Json?
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId, createdAt(sort: Desc)])
+  @@map("partner_import_batches")
 }

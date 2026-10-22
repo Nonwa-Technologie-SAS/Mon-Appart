@@ -1,5 +1,6 @@
-import { createAuthClient } from "better-auth/react"
+/**
+ * @deprecated better-auth client retiré.
+ * Utiliser `@/lib/nest-api` (login / refresh / nestApi).
+ */
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL,
-})
+export const authClient = null as never

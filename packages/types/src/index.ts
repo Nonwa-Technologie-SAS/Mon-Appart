@@ -1,16 +1,29 @@
+export * from "./search"
+export * from "./recommendation"
+
+/** Codes de la table `roles` (seed de référence de l'API). */
 export const ROLES = [
-  "VISITOR",
-  "TENANT",
+  "CUSTOMER",
   "OWNER",
+  "AGENT",
   "AGENCY",
+  "MODERATOR",
+  "TRUST_OFFICER",
+  "SUPPORT",
+  "ANALYST",
   "ADMIN",
-  "SUPERADMIN",
+  "SUPER_ADMIN",
 ] as const
 
 export type Role = (typeof ROLES)[number]
 
 /** Offre commerciale. Distincte du bien physique. */
-export const LISTING_TYPES = ["RENT", "SALE", "SHORT_TERM_RENT"] as const
+export const LISTING_TYPES = [
+  "RENT",
+  "SALE",
+  "SHORT_TERM_RENT",
+  "LEASE_TO_OWN",
+] as const
 
 export type ListingType = (typeof LISTING_TYPES)[number]
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative grid min-h-svh w-full bg-background lg:grid-cols-2">
+    <main className="relative grid min-h-svh w-full bg-background surface-hero lg:grid-cols-2">
       <div className="relative h-48 overflow-hidden sm:h-64 lg:h-auto lg:min-h-svh">
         <Image
           src="/auth-hero.jpg"
@@ -33,8 +33,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             Trouvez votre chez-vous.
           </p>
           <p className="mt-2 hidden text-sm text-white/90 sm:block lg:text-base">
-            Publiez et gérez vos biens en toute confiance, partout en Côte
-            d’Ivoire.
+            Publiez et gérez vos annonces de location en Côte d’Ivoire.
           </p>
         </div>
       </div>

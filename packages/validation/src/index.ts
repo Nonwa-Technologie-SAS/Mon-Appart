@@ -34,5 +34,9 @@ export function decodeCursor(cursor: string): CursorPayload | null {
 
 /** Texte affichable. Ne pas l'utiliser sur un mot de passe ou un jeton. */
 export function sanitizePlainText(value: string): string {
-  return value.replace(/\u0000/g, "").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim()
+  // eslint-disable-next-line no-control-regex -- retirer les caractères de contrôle est le but
+  return value
+    .replace(/\u0000/g, "")
+    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .trim()
 }

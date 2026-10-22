@@ -7,6 +7,7 @@ import {
   type VisitRequestState,
 } from "@/app/actions/visits"
 import { Button } from "@/components/ui/button"
+import { trackWebEvent } from "@/lib/analytics/tracker"
 import {
   Dialog,
   DialogContent,
@@ -49,12 +50,20 @@ export function RequestVisitDialog({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)
+        if (nextOpen) {
+          trackWebEvent("listing_contact_started", {
+            listingId: propertyId,
+            method: "FORM",
+          })
+        }
         if (!nextOpen) {
           setFormKey((key) => key + 1)
         }
       }}
     >
-      <DialogTrigger render={<Button size="lg" className="w-full" />}>
+      <DialogTrigger
+        render={<Button size="lg" className="min-h-11 w-full text-base" />}
+      >
         Demander une visite
       </DialogTrigger>
       <DialogContent>

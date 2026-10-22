@@ -1,5 +1,5 @@
 {
-  "name": "frontend-public",
+  "name": "@mon-appart/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,11 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test lib/seo/**/*.test.ts lib/network.test.ts lib/publish-draft.test.ts lib/analytics/**/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "icons:pwa": "node scripts/generate-pwa-icons.mjs",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@better-auth/expo": "^1.6.27",
+    "@mon-appart/analytics": "workspace:*",
     "@photo-sphere-viewer/core": "^5.14.3",
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.1",
@@ -34,6 +39,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
@@ -44,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "prisma": "^7.9.1",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
     "typescript": "^5"

@@ -1,0 +1,64 @@
+# Déploiement staging — manuel uniquement.
+# Aucun secret Cloud n'est configuré dans ce dépôt.
+# Remplir les secrets d'environnement GitHub « staging » puis activer les étapes.
+
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Taper deploy-staging pour confirmer"
+        required: true
+        type: string
+      image_tag:
+        description: "Tag d'image (commit SHA ou semver)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm intent
+        run: |
+          if [ "${{ inputs.confirm }}" != "deploy-staging" ]; then
+            echo "Confirmation invalide. Attendu: deploy-staging"
+            exit 1
+          fi
+
+  # Placeholder : brancher le registry + l'orchestrateur choisis (voir docs/ci-cd.md).
+  publish:
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve image tag
+        id: tag
+        run: |
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="${GITHUB_SHA}"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Build images (no push until registry secrets exist)
+        uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          tags: mon-appart-api:${{ steps.tag.outputs.tag }}
+      - name: Next steps (manual)
+        run: |
+          echo "Images construites localement au job CI."
+          echo "Pour pousser / déployer : configurer registry + secrets staging,"
+          echo "puis compléter ce workflow (docs/ci-cd.md)."
+          echo "Migrations : pnpm --filter @mon-appart/api db:migrate (migrate deploy)"
+          echo "Smoke : node scripts/smoke-health.mjs"

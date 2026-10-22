@@ -1,6 +1,5 @@
 "use server"
 
-import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
@@ -10,7 +9,7 @@ import {
   updateOwnedPropertyStatusSchema,
 } from "@/lib/auth-schemas"
 import { getSession, isPublisherRole } from "@/lib/auth-session"
-import { createPropertyForUser, updateOwnedPropertyStatus } from "@/lib/properties"
+import { nestPublishListing, nestUpdateListingVisibility } from "@/lib/nest-publish"
 import { GeocodeError } from "@/lib/geocode"
 import {
   collectImageLayout,
@@ -18,7 +17,6 @@ import {
   removePropertyImages,
   UploadError,
 } from "@/lib/uploads"
-import { Role } from "@/prisma/generated/client/enums"
 
 export type PropertyActionState = {
   error?: string
@@ -26,14 +24,16 @@ export type PropertyActionState = {
 
 export async function publishProperty(
   _prev: PropertyActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<PropertyActionState> {
   const session = await getSession()
   if (!session) {
     return { error: "Connexion requise" }
   }
   if (!isPublisherRole(session.user.role)) {
-    return { error: "Seuls les propriétaires et agences peuvent publier un bien" }
+    return {
+      error: "Seuls les propriétaires et agences peuvent publier un bien",
+    }
   }
 
   let imageLayout: ReturnType<typeof normalizeImageLayout> = []
@@ -67,23 +67,25 @@ export async function publishProperty(
   const imageUrls = imageLayout.map((item) => item.url)
 
   try {
-    await createPropertyForUser(
-      session.user.id,
-      session.user.agencyId,
-      {
-        ...parsed.data,
-        imageUrl: undefined,
-        imageUrls: undefined,
-        imageLayout,
-      },
-      randomUUID()
-    )
+    await nestPublishListing({
+      title: parsed.data.title,
+      description: parsed.data.description,
+      price: parsed.data.price,
+      type: parsed.data.type,
+      location: parsed.data.location,
+      beds: parsed.data.beds,
+      baths: parsed.data.baths,
+      surface: parsed.data.surface,
+    })
+    // Photos Blob : pipeline media Nest en suivi.
   } catch (error) {
     await removePropertyImages(imageUrls)
     if (error instanceof UploadError || error instanceof GeocodeError) {
       return { error: error.message }
     }
-    return { error: "Impossible de publier le bien" }
+    const message =
+      error instanceof Error ? error.message : "Impossible de publier le bien"
+    return { error: message }
   }
 
   redirect("/espace?published=1")
@@ -98,7 +100,9 @@ export async function updatePropertyListingStatus(input: {
     return { error: "Connexion requise" }
   }
   if (!isPublisherRole(session.user.role)) {
-    return { error: "Seuls les propriétaires et agences peuvent modifier un bien" }
+    return {
+      error: "Seuls les propriétaires et agences peuvent modifier un bien",
+    }
   }
 
   const parsed = updateOwnedPropertyStatusSchema.safeParse(input)
@@ -106,30 +110,23 @@ export async function updatePropertyListingStatus(input: {
     return { error: firstZodError(parsed.error) }
   }
 
-  const asStaff =
-    session.user.role === Role.ADMIN || session.user.role === Role.SUPERADMIN
-
   try {
-    const property = await updateOwnedPropertyStatus(
+    await nestUpdateListingVisibility(
       parsed.data.propertyId,
-      session.user.id,
-      parsed.data.status,
-      asStaff
+      parsed.data.status === "AVAILABLE",
     )
-
-    if (!property) {
-      return { error: "Bien introuvable" }
-    }
   } catch (error) {
-    if (error instanceof Error && error.message === "Forbidden") {
-      return { error: "Vous ne pouvez pas modifier ce bien" }
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Impossible de mettre à jour le statut",
     }
-    return { error: "Impossible de mettre à jour le statut" }
   }
 
   revalidatePath("/")
   revalidatePath("/espace")
-  revalidatePath("/recherche")
-  revalidatePath(`/biens/${parsed.data.propertyId}`)
+  revalidatePath("/locations")
+  revalidatePath("/annonces", "layout")
   return {}
 }

@@ -86,7 +86,9 @@ export function PhotoSceneStage({
     if (!ref) return
     if (typeof ref === "function") {
       ref(handleRef.current)
-      return () => ref(null)
+      return () => {
+        ref(null)
+      }
     }
     ref.current = handleRef.current
     return () => {
@@ -100,8 +102,9 @@ export function PhotoSceneStage({
   }, [url])
 
   useEffect(() => {
-    const viewport = viewportRef.current
-    if (!viewport) return
+    const viewportEl = viewportRef.current
+    if (!viewportEl) return
+    const viewport: HTMLElement = viewportEl
 
     function onPointerDown(event: PointerEvent) {
       viewport.setPointerCapture(event.pointerId)

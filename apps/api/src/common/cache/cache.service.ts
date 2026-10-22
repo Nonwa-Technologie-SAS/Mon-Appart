@@ -47,6 +47,17 @@ export class CacheService {
     }
   }
 
+  /** Compteur atomique ; `null` si Redis est absent ou en échec. */
+  async incr(key: string): Promise<number | null> {
+    const client = this.redis.getClient()
+    if (!client) return null
+    try {
+      return await client.incr(PREFIX + key)
+    } catch {
+      return null
+    }
+  }
+
   async acquireLock(key: string, ttlSeconds: number): Promise<string | null> {
     const client = this.redis.getClient()
     if (!client) return null

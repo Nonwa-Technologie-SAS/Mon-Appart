@@ -8,6 +8,7 @@ import "leaflet/dist/leaflet.css"
 
 import type { PropertyListItem } from "@/lib/properties"
 import { formatPrice } from "@/lib/format"
+import { listingPath } from "@/lib/seo/paths"
 
 type PropertyMapProps = {
   properties: PropertyListItem[]
@@ -103,7 +104,7 @@ export function PropertyMap({
                 <span className="font-normal text-muted-foreground"> / mois</span>
               </p>
               <Link
-                href={`/biens/${property.id}`}
+                href={listingPath(property.title, property.id)}
                 className="text-sm font-medium text-primary underline-offset-2 hover:underline"
               >
                 Voir le bien

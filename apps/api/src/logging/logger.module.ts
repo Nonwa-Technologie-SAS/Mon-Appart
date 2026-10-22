@@ -4,7 +4,7 @@ import { LoggerModule as PinoLoggerModule } from "nestjs-pino"
 import type { IncomingMessage } from "node:http"
 
 import { resolveRequestId } from "../common/http/request-id"
-import { LOG_REDACT_PATHS } from "./redact-paths"
+import { LOG_REDACT_PATHS, redactUrl } from "./redact-paths"
 
 @Module({
   imports: [
@@ -18,6 +18,12 @@ import { LOG_REDACT_PATHS } from "./redact-paths"
             level,
             base: { service: "api" },
             redact: { paths: LOG_REDACT_PATHS, censor: "[Redacted]" },
+            serializers: {
+              req: (request: { url?: string }) => {
+                request.url = redactUrl(request.url)
+                return request
+              },
+            },
             genReqId: (request: IncomingMessage, response) => {
               const requestId = resolveRequestId(
                 request.headers["x-request-id"],

@@ -35,7 +35,7 @@ Le prototype `apps/web` a aujourd'hui un modèle `Property` qui mélange bien et
 
 ## Événements
 
-`DomainEventPublisher` émet dans le processus (EventEmitter). Les événements critiques passeront par une table **outbox** PostgreSQL, dans la même transaction que l'écriture métier, avant d'être relayés vers BullMQ puis, si le volume l'exige, vers Kafka ou Redpanda.
+`DomainEventPublisher` émet dans le processus (EventEmitter). Le module `analytics` écoute ces événements de manière asynchrone pour produire les faits métier mesurés ; aucun module ne dépend de lui, et son échec n'interrompt jamais l'action d'origine (voir [analytics-and-tracking.md](./analytics-and-tracking.md)). Les événements critiques passeront par une table **outbox** PostgreSQL, dans la même transaction que l'écriture métier, avant d'être relayés vers BullMQ puis, si le volume l'exige, vers Kafka ou Redpanda.
 
 ## Stateless et charge
 

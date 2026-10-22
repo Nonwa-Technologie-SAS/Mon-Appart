@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { HeartIcon, UserRoundIcon } from "lucide-react"
+import { UserRoundIcon } from "lucide-react"
 
 import { BrandMark } from "@/components/site/brand-mark"
 import { SiteMobileNav } from "@/components/site/site-mobile-nav"
@@ -9,8 +9,10 @@ import { cn } from "@/lib/utils"
 
 const PUBLIC_NAV_ITEMS: { href: string; label: string; active?: boolean }[] = [
   { href: "/", label: "Louer", active: true },
-  { href: "/", label: "Acheter" },
-  { href: "/inscription/agence", label: "Agences" },
+  { href: "/locations", label: "Locations" },
+  { href: "/assistant", label: "Assistant" },
+  { href: "/pour-vous", label: "Pour vous" },
+  { href: "/guides/eviter-les-arnaques", label: "Sécurité" },
 ]
 
 const PUBLISHER_NAV_ITEMS: { href: string; label: string; active?: boolean }[] =
@@ -24,7 +26,7 @@ export async function SiteHeader() {
   const session = await getSession()
   const publisher = isPublisherRole(session?.user.role)
   const navItems = publisher ? PUBLISHER_NAV_ITEMS : PUBLIC_NAV_ITEMS
-  const accountHref = publisher ? "/espace" : "/connexion"
+  const accountHref = session ? "/profil" : "/connexion"
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-white pt-[env(safe-area-inset-top)]">
@@ -79,18 +81,8 @@ export async function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden text-secondary sm:inline-flex"
-            aria-label="Favoris"
-            nativeButton={false}
-            render={<Link href="/" />}
-          >
-            <HeartIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            aria-label={publisher ? "Mon espace" : "Connexion"}
+            className="relative size-11"
+            aria-label={session ? "Mon profil" : "Connexion"}
             nativeButton={false}
             render={<Link href={accountHref} />}
           >
