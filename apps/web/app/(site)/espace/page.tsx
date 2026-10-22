@@ -79,8 +79,8 @@ export default async function PublisherSpacePage({
             Bonjour {session.user.name}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Publiez vos biens, suivez les visites et retirez une annonce dès
-            qu’un logement est pris. Une annonce complète (photos, prix en
+            Publiez vos biens, suivez les visites et vérifiez votre identité
+            pour renforcer la confiance. Une annonce complète (photos, prix en
             FCFA, localisation exacte) convertit mieux qu’un volume élevé
             d’annonces incomplètes.
           </p>
@@ -92,6 +92,14 @@ export default async function PublisherSpacePage({
             render={<Link href="/espace/publier" />}
           >
             Publier un bien
+          </Button>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full sm:w-auto"
+            nativeButton={false}
+            render={<Link href="/espace/verification" />}
+          >
+            Vérifier mon compte
           </Button>
           <SignOutButton />
         </div>

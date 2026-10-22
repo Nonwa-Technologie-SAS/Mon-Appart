@@ -121,6 +121,13 @@ export default async function ProfilPage() {
               >
                 Publier un bien
               </Button>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/espace/verification" />}
+              >
+                Vérifier mon compte
+              </Button>
             </>
           ) : (
             <>

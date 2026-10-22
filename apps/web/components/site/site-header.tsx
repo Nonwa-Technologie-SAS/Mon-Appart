@@ -20,6 +20,7 @@ const PUBLISHER_NAV_ITEMS: { href: string; label: string; active?: boolean }[] =
     { href: "/", label: "Annonces" },
     { href: "/espace", label: "Mon espace", active: true },
     { href: "/espace/publier", label: "Publier" },
+    { href: "/espace/verification", label: "Vérification" },
   ]
 
 export async function SiteHeader() {

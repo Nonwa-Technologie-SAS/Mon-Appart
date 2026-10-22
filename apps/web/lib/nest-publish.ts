@@ -111,52 +111,31 @@ export async function nestPublishListing(input: {
   return { listingId: listing.id, propertyId: property.id }
 }
 
-export async function nestListMine(): Promise<
-  Array<{
+export type NestMineListing = {
+  id: string
+  title: string
+  price: { amount: string } | null
+  property: {
     id: string
-    title: string
-    price: { amount: string } | null
-    property: {
-      propertyType: { code: string }
-      bedrooms?: number | null
-      bathrooms?: number | null
-      surface?: string | null
-    }
-    location: {
-      neighborhood?: { name: string }
-      commune?: { name: string }
-      city?: { name: string }
-      latitude?: number | null
-      longitude?: number | null
-    }
-    coverUrl: string | null
-    publishedAt: string | null
-    status?: string
-  }>
-> {
-  const page = await nestServerFetch<{
-    items: Array<{
-      id: string
-      title: string
-      price: { amount: string } | null
-      property: {
-        propertyType: { code: string }
-        bedrooms?: number | null
-        bathrooms?: number | null
-        surface?: string | null
-      }
-      location: {
-        neighborhood?: { name: string }
-        commune?: { name: string }
-        city?: { name: string }
-        latitude?: number | null
-        longitude?: number | null
-      }
-      coverUrl: string | null
-      publishedAt: string | null
-      status?: string
-    }>
-  }>("/listings", {
+    propertyType: { code: string }
+    bedrooms?: number | null
+    bathrooms?: number | null
+    surface?: string | null
+  }
+  location: {
+    neighborhood?: { name: string }
+    commune?: { name: string }
+    city?: { name: string }
+    latitude?: number | null
+    longitude?: number | null
+  }
+  coverUrl: string | null
+  publishedAt: string | null
+  status?: string
+}
+
+export async function nestListMine(): Promise<NestMineListing[]> {
+  const page = await nestServerFetch<{ items: NestMineListing[] }>("/listings", {
     query: { scope: "mine", limit: 50 },
   })
   return page.items
