@@ -10,6 +10,8 @@ export const PartnerErrorCode = {
   INVALID_WEBHOOK_URL: "INVALID_WEBHOOK_URL",
   INTEGRATION_INACTIVE: "INTEGRATION_INACTIVE",
   IMPORT_INVALID: "IMPORT_INVALID",
+  SUPPLY_LEAD_NOT_FOUND: "SUPPLY_LEAD_NOT_FOUND",
+  SUPPLY_LEAD_INVALID_TRANSITION: "SUPPLY_LEAD_INVALID_TRANSITION",
 } as const
 
 export type PartnerErrorCode =
@@ -32,6 +34,11 @@ const META: Record<PartnerErrorCode, [number, string]> = {
     "Intégration inactive ou non éligible",
   ],
   IMPORT_INVALID: [HttpStatus.UNPROCESSABLE_ENTITY, "Import invalide"],
+  SUPPLY_LEAD_NOT_FOUND: [HttpStatus.NOT_FOUND, "Prospect supply introuvable"],
+  SUPPLY_LEAD_INVALID_TRANSITION: [
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    "Transition de pipeline supply invalide",
+  ],
 }
 
 export function partnerError(
