@@ -1,27 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useActionState, useState } from "react"
 
+import {
+  createSavedSearch,
+  type RetentionActionState,
+} from "@/app/actions/retention"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const KEY = "mon-appart:growth:saved-search:v1"
+const initial: RetentionActionState = {}
 
 /**
- * Mémorise localement les critères (fondation alertes).
- * N’envoie aucune notification tant que le job d’alerte n’existe pas.
+ * Enregistre une recherche sur le compte (alertes) ou localement si déconnecté.
  */
 export function SaveSearchCriteria({
   q,
   type,
   maxPrice,
+  signedIn = false,
 }: {
   q?: string
   type?: string
   maxPrice?: string
+  signedIn?: boolean
 }) {
-  const [status, setStatus] = useState<string | null>(null)
+  const [localStatus, setLocalStatus] = useState<string | null>(null)
+  const [state, formAction, pending] = useActionState(
+    createSavedSearch,
+    initial,
+  )
 
-  function save() {
+  function saveLocal() {
     const record = {
       q: q ?? null,
       type: type ?? null,
@@ -30,34 +41,86 @@ export function SaveSearchCriteria({
     }
     try {
       localStorage.setItem(KEY, JSON.stringify(record))
-      setStatus(
-        "Critères mémorisés sur cet appareil. Les alertes arriveront lorsque le module d’alertes sera activé — aucune notification fictive.",
+      setLocalStatus(
+        "Critères mémorisés sur cet appareil. Connectez-vous pour recevoir des alertes.",
       )
     } catch {
-      setStatus("Impossible d’enregistrer (stockage indisponible).")
+      setLocalStatus("Impossible d’enregistrer (stockage indisponible).")
     }
   }
 
+  if (!signedIn) {
+    return (
+      <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 p-3 text-sm">
+        <p className="text-muted-foreground">
+          Aucun bien pour ces critères ? Mémorisez-les sur cet appareil, ou
+          connectez-vous pour activer des alertes réellement ciblées.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-2"
+          onClick={saveLocal}
+        >
+          Mémoriser ces critères
+        </Button>
+        {localStatus ? (
+          <p className="mt-2 text-xs text-muted-foreground" role="status">
+            {localStatus}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
-    <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 p-3 text-sm">
+    <form
+      action={formAction}
+      className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 p-3 text-sm"
+    >
       <p className="text-muted-foreground">
-        Aucun bien pour ces critères ? Mémorisez-les pour une future alerte
-        (stockage local uniquement, sans spam).
+        Enregistrez cette recherche pour la reprendre plus tard et recevoir un
+        résumé des nouvelles annonces compatibles — pas de spam.
       </p>
+      <input type="hidden" name="q" value={q ?? ""} />
+      <input type="hidden" name="listingType" value={type ?? ""} />
+      <input type="hidden" name="maxPrice" value={maxPrice ?? ""} />
+      <input type="hidden" name="alertsEnabled" value="true" />
+      <label
+        className="mt-2 block text-xs font-medium"
+        htmlFor="saved-search-name"
+      >
+        Nom de la recherche
+      </label>
+      <Input
+        id="saved-search-name"
+        name="name"
+        required
+        minLength={2}
+        maxLength={80}
+        placeholder="Ex. Appartement Cocody"
+        className="mt-1"
+      />
       <Button
-        type="button"
+        type="submit"
         variant="outline"
         size="sm"
         className="mt-2"
-        onClick={save}
+        disabled={pending}
       >
-        Mémoriser ces critères
+        {pending ? "Enregistrement…" : "Enregistrer et activer les alertes"}
       </Button>
-      {status ? (
+      {state.success ? (
         <p className="mt-2 text-xs text-muted-foreground" role="status">
-          {status}
+          Recherche enregistrée. Vous pourrez la reprendre depuis votre profil.
         </p>
       ) : null}
-    </div>
+      {state.error ? (
+        <p className="mt-2 text-xs text-destructive" role="status">
+          {state.error}
+        </p>
+      ) : null}
+    </form>
   )
 }

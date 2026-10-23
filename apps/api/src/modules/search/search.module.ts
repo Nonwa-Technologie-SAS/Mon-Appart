@@ -20,6 +20,11 @@ import { SearchEngineFactory } from "./infrastructure/search-engine.factory"
 import { SuggestionProvider } from "./infrastructure/suggestion.provider"
 import { SearchHealthController } from "./presentation/search-health.controller"
 import { SearchController } from "./presentation/search.controller"
+import {
+  RetentionController,
+  SavedSearchController,
+} from "./presentation/saved-search.controller"
+import { SavedSearchService } from "./application/saved-search.service"
 import { SearchConfig } from "./search.config"
 
 /**
@@ -28,7 +33,12 @@ import { SearchConfig } from "./search.config"
  */
 @Module({
   imports: [IdentityModule, PropertyModule],
-  controllers: [SearchController, SearchHealthController],
+  controllers: [
+    SearchController,
+    SearchHealthController,
+    SavedSearchController,
+    RetentionController,
+  ],
   providers: [
     SearchConfig,
     {
@@ -45,6 +55,7 @@ import { SearchConfig } from "./search.config"
     PostgresIndexStore,
     SearchCache,
     SearchHistoryService,
+    SavedSearchService,
     SearchIndexer,
     SearchReindexService,
     SearchService,
@@ -55,7 +66,7 @@ import { SearchConfig } from "./search.config"
     SearchReindexService,
     ListingCandidateSource,
     SearchHydrator,
+    SavedSearchService,
   ],
 })
 export class SearchModule {}
-

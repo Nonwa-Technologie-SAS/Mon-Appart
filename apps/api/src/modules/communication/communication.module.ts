@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common"
 import { IdentityModule } from "../identity/identity.module"
 import { MediaModule } from "../media/media.module"
 import { AppointmentReminders } from "./appointments/application/appointment-reminders"
+import { SavedSearchAlerts } from "./appointments/application/saved-search-alerts"
 import { AppointmentService } from "./appointments/application/appointment.service"
 import { AppointmentController } from "./appointments/presentation/appointment.controller"
 import { InquiryService } from "./inquiries/application/inquiry.service"
@@ -65,6 +66,7 @@ import { RealtimePublisher } from "./realtime/realtime.publisher"
     InquiryService,
     AppointmentService,
     AppointmentReminders,
+    SavedSearchAlerts,
   ],
   exports: [NotificationService, ConversationModerationService, DeliveryRunner],
 })

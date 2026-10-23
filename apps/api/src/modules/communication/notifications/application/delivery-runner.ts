@@ -8,6 +8,7 @@ import { OnEvent } from "@nestjs/event-emitter"
 
 import { safeErrorMessage } from "../../../../common/http/safe-error"
 import { AppointmentReminders } from "../../appointments/application/appointment-reminders"
+import { SavedSearchAlerts } from "../../appointments/application/saved-search-alerts"
 import { CommunicationActivity } from "../../communication-activity"
 import { CommunicationConfig } from "../../communication.config"
 import {
@@ -45,6 +46,7 @@ export type DeliveryOutcome = "SENT" | "RETRY" | "FAILED" | "CANCELLED" | "LOST"
 
 const BLOCKED_STATUSES = new Set(["SUSPENDED", "BANNED", "INACTIVE"])
 const REMINDER_INTERVAL_MS = 60_000
+const ALERT_INTERVAL_MS = 120_000
 
 /**
  * Worker des livraisons, dans le processus de l'API (aucun Redis requis) :
@@ -62,12 +64,14 @@ export class DeliveryRunner
   private running: Promise<unknown> | null = null
   private stopping = false
   private lastReminders = 0
+  private lastAlerts = 0
 
   constructor(
     private readonly deliveries: DeliveryRepository,
     private readonly channels: ChannelRegistry,
     private readonly realtime: RealtimePublisher,
     private readonly reminders: AppointmentReminders,
+    private readonly alerts: SavedSearchAlerts,
     private readonly config: CommunicationConfig,
     private readonly activity: CommunicationActivity,
   ) {}
@@ -135,6 +139,14 @@ export class DeliveryRunner
     }
     this.lastReminders = Date.now()
     return this.reminders.sendDue()
+  }
+
+  async runAlerts(force = false): Promise<number> {
+    if (!force && Date.now() - this.lastAlerts < ALERT_INTERVAL_MS) {
+      return 0
+    }
+    this.lastAlerts = Date.now()
+    return this.alerts.sendDue()
   }
 
   private async process(job: ClaimedDelivery): Promise<DeliveryOutcome> {
@@ -417,6 +429,7 @@ export class DeliveryRunner
   private async cycle(): Promise<void> {
     try {
       await this.runReminders()
+      await this.runAlerts()
       await this.runOnce()
       this.deliveries
         .countPending()

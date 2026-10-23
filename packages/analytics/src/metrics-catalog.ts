@@ -197,6 +197,79 @@ export const METRICS_CATALOG: readonly MetricDefinition[] = [
     filters: ["from", "to"],
     limitations: "Volume ≠ qualité ; préférer annonces complètes et éligibles.",
   },
+  {
+    id: "retention.saved_search_resume_rate",
+    name: "Reprise des recherches enregistrées",
+    description: "Part des recherches persistantes relancées sur la période.",
+    formula:
+      "COUNT(search_resumed) / COUNT(saved_search_created ∪ saved_search_updated)",
+    sources: [
+      "analytics_events.search_resumed",
+      "analytics_events.saved_search_*",
+    ],
+    freshness: "on_demand_snapshot",
+    roles: ["analytics:admin"],
+    filters: ["from", "to"],
+    limitations:
+      "Dénominateur = recherches touchées, pas tous les comptes. Pas un taux de location.",
+  },
+  {
+    id: "retention.alert_click_rate",
+    name: "Clics sur alertes immobilières",
+    description: "Clics / alertes envoyées (digest exact, hors near_budget).",
+    formula: "COUNT(property_alert_clicked) / COUNT(property_alert_sent)",
+    sources: [
+      "analytics_events.property_alert_sent",
+      "analytics_events.property_alert_clicked",
+    ],
+    freshness: "on_demand_snapshot",
+    roles: ["analytics:admin"],
+    filters: ["from", "to"],
+    limitations:
+      "property_alert_clicked n’est pas encore instrumenté côté client. Ne pas inventer un CTR.",
+  },
+  {
+    id: "retention.post_visit_feedback_rate",
+    name: "Retours post-visite",
+    description: "Retours facultatifs / visites COMPLETED.",
+    formula:
+      "COUNT(post_visit_feedback_submitted) / COUNT(appointments COMPLETED)",
+    sources: ["analytics_events.post_visit_feedback_submitted", "appointments"],
+    freshness: "on_demand_snapshot",
+    roles: ["analytics:admin"],
+    filters: ["from", "to"],
+    limitations:
+      "Le non-retour n’est pas un échec. Issues déclarées ≠ résultats vérifiés.",
+  },
+  {
+    id: "retention.reactivation_return_rate",
+    name: "Retour après réactivation",
+    description: "Retours déclarés / digest de réactivation envoyés.",
+    formula: "COUNT(reactivation_returned) / COUNT(reactivation_sent)",
+    sources: [
+      "analytics_events.reactivation_sent",
+      "analytics_events.reactivation_returned",
+    ],
+    freshness: "on_demand_snapshot",
+    roles: ["analytics:admin"],
+    filters: ["from", "to"],
+    limitations:
+      "reactivation_returned n’est pas instrumenté. Association ≠ causalité. Groupe témoin requis avant conclusion.",
+  },
+  {
+    id: "retention.marketing_unsubscribe_rate",
+    name: "Désinscription marketing",
+    description:
+      "Comptes ayant coupé au moins un canal MARKETING / campagnes envoyées.",
+    formula:
+      "COUNT(marketing_unsubscribed) / utilisateurs exposés aux comm. promo",
+    sources: ["analytics_events.marketing_unsubscribed"],
+    freshness: "on_demand_snapshot",
+    roles: ["analytics:admin"],
+    filters: ["from", "to"],
+    limitations:
+      "Distinct des alertes transactionnelles. Le marketing est opt-in (défaut off).",
+  },
 ] as const
 
 export function getMetric(id: string): MetricDefinition | undefined {

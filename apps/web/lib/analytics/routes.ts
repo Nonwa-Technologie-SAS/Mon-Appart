@@ -18,6 +18,7 @@ export function normalizeAnalyticsRoute(pathname: string): string {
   }
   if (path.startsWith("/espace")) return "/espace"
   if (path.startsWith("/profil")) return "/profil"
+  if (path.startsWith("/favoris")) return "/favoris"
   if (path.startsWith("/connexion")) return "/connexion"
   if (path.startsWith("/inscription")) return "/inscription"
 
