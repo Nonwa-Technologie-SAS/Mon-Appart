@@ -337,6 +337,7 @@ export class BusinessEventListener {
           payload.conversationId,
           event.occurredAt,
         ),
+        userId: null,
         occurredAt: new Date(event.occurredAt),
       },
     )
@@ -354,6 +355,7 @@ export class BusinessEventListener {
       },
       {
         eventId: deterministicEventId("assistant_feedback_submitted", event.id),
+        userId: null,
         occurredAt: new Date(event.occurredAt),
       },
     )

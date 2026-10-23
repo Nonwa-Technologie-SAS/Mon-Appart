@@ -66,11 +66,7 @@ export function SavedSearchActions({ search }: { search: NestSavedSearch }) {
   )
 
   useEffect(() => {
-    if (
-      resumeState.success &&
-      "resumePath" in resumeState &&
-      resumeState.resumePath
-    ) {
+    if (resumeState.success && resumeState.resumePath) {
       router.push(resumeState.resumePath)
     }
   }, [resumeState, router])

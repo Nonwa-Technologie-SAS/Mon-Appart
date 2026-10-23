@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache"
 import { requireAuthPage } from "@/lib/auth-session"
 import { nestServerFetch } from "@/lib/nest-session"
 
-export type RetentionActionState = { error?: string; success?: boolean }
+export type RetentionActionState = {
+  error?: string
+  success?: boolean
+  resumePath?: string
+}
 
 async function guard() {
   await requireAuthPage("/profil")
@@ -107,7 +111,7 @@ export async function deleteSavedSearch(
 export async function resumeSavedSearch(
   _prev: RetentionActionState,
   formData: FormData,
-): Promise<RetentionActionState & { resumePath?: string }> {
+): Promise<RetentionActionState> {
   await guard()
   const id = String(formData.get("savedSearchId") ?? "")
   if (!id) return { error: "Recherche introuvable" }
