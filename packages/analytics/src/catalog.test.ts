@@ -27,6 +27,8 @@ describe("catalogue", () => {
         "appointment_completed": 1,
         "appointment_confirmed": 1,
         "appointment_requested": 1,
+        "assistant_feedback_submitted": 1,
+        "assistant_turn_completed": 1,
         "checkout_started": 1,
         "conversation_created": 1,
         "email_verification_completed": 1,

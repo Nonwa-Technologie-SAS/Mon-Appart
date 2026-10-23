@@ -4,6 +4,8 @@
 
 **Aucun modèle n’a été entraîné, évalué hors ligne à grande échelle, ni déployé.**
 
+Une évaluation **synthétique** de `rules-v1` vs fraîcheur/popularité existe (`GET /admin/ai/eval`, `reco-eval-synthetic-v1`). Elle ne remplace pas une éval production.
+
 - `RECOMMENDATION_ENGINE=rules` (défaut)
 - `services/recommendation` : FastAPI `/health` uniquement (pas de `/v1/rank`)
 - Client Nest `RemoteRecommendationEngine` prêt + repli règles (`meta.degraded`)
@@ -18,11 +20,11 @@
 
 ## Versionnement prévu
 
-| Artefact | Emplacement envisagé |
-| --- | --- |
-| Features | pipeline Python versionnée |
-| Modèle | registre + `algorithm_version` déjà persisté |
-| Rollback | `RECOMMENDATION_ENGINE=rules` |
+| Artefact | Emplacement envisagé                         |
+| -------- | -------------------------------------------- |
+| Features | pipeline Python versionnée                   |
+| Modèle   | registre + `algorithm_version` déjà persisté |
+| Rollback | `RECOMMENDATION_ENGINE=rules`                |
 
 ## Biais connus à surveiller
 

@@ -7,12 +7,15 @@ import { Loader2Icon, SparklesIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { PriceDisplay } from "@/components/site/price-display"
+import { trackWebEvent } from "@/lib/analytics/tracker"
+import { getNestAccessToken } from "@/lib/nest-api"
 import {
   fetchRecommendations,
   recommendationsConfigured,
   type RecommendationCard,
   type RecommendationPage,
 } from "@/lib/recommendations-api"
+import { listingPath } from "@/lib/seo/paths"
 
 function locationLabel(card: RecommendationCard): string {
   const { neighborhood, commune, city } = card.listing.location
@@ -41,9 +44,22 @@ export function RecommendationsPanel() {
         const data = await fetchRecommendations({
           listingType: "RENT",
           limit: 8,
+          accessToken: getNestAccessToken(),
         })
         setPage(data)
         setError(null)
+        if (data.items.length > 0) {
+          trackWebEvent("recommendations_viewed", {
+            recommendationRequestId: data.meta.requestId,
+            algorithmVersion: data.meta.algorithmVersion,
+            context:
+              data.meta.context === "SIMILAR" ? "SIMILAR" : "PERSONALIZED",
+            items: data.items.map((item, index) => ({
+              listingId: item.listing.listingId,
+              position: index + 1,
+            })),
+          })
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erreur")
         setPage(null)
@@ -178,7 +194,28 @@ export function RecommendationsPanel() {
                     size="sm"
                     className="mt-auto w-fit"
                     nativeButton={false}
-                    render={<Link href={`/biens/${item.listing.listingId}`} />}
+                    render={
+                      <Link
+                        href={listingPath(
+                          item.listing.title,
+                          item.listing.listingId,
+                        )}
+                        onClick={() => {
+                          if (!page) return
+                          trackWebEvent("recommended_listing_opened", {
+                            recommendationRequestId: page.meta.requestId,
+                            algorithmVersion: page.meta.algorithmVersion,
+                            listingId: item.listing.listingId,
+                            position:
+                              page.items.findIndex(
+                                (row) =>
+                                  row.listing.listingId ===
+                                  item.listing.listingId,
+                              ) + 1,
+                          })
+                        }}
+                      />
+                    }
                   >
                     Voir l’annonce
                   </Button>

@@ -158,6 +158,8 @@ export const apiEnvSchema = z.object({
   SEARCH_SYNONYMS: z.string().default(""),
   /** `rules` : moteur déterministe NestJS ; `remote` : service Python, repli sur `rules`. */
   RECOMMENDATION_ENGINE: z.enum(["rules", "remote"]).default("rules"),
+  /** Comparer le remote sans servir ses résultats (si engine=rules). */
+  RECOMMENDATION_SHADOW: z.enum(["true", "false"]).default("false"),
   RECOMMENDATION_SERVICE_URL: z.preprocess(
     emptyToUndefined,
     z.url().optional(),

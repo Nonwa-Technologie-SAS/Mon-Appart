@@ -34,6 +34,14 @@ describe("permissions d'affichage", () => {
     expect(hrefs).not.toContain("/billing")
   })
 
+  it("montre la gouvernance IA aux analystes habilités", () => {
+    const analyst = me(
+      ["admin:access", "analytics:admin", "ai:admin"],
+      ["ANALYST"],
+    )
+    expect(visibleNav(analyst).map((item) => item.href)).toContain("/ai")
+  })
+
   it("montre la facturation aux seuls comptes habilités", () => {
     const finance = me(["admin:access", "billing:read"], ["FINANCE"])
     expect(visibleNav(finance).map((item) => item.href)).toEqual([

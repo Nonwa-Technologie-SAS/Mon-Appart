@@ -19,6 +19,11 @@ import {
   type FavoriteChangedPayload,
 } from "../../interaction"
 import {
+  AssistantEvent,
+  type AssistantFeedbackPayload,
+  type AssistantTurnPayload,
+} from "../../ai-assistant"
+import {
   RecommendationEvent,
   type RecommendationFeedbackPayload,
   type RecommendationServedPayload,
@@ -308,6 +313,49 @@ export class BusinessEventListener {
       "recommendation_feedback_submitted",
       { ...common, feedback: type as ExplicitFeedback },
       context,
+    )
+  }
+
+  @OnEvents([AssistantEvent.TURN_COMPLETED], ASYNC)
+  async onAssistantTurn(
+    event: DomainEvent<AssistantTurnPayload>,
+  ): Promise<void> {
+    const payload = event.payload
+    await this.tracker.track(
+      "assistant_turn_completed",
+      {
+        mode: payload.mode,
+        provider: payload.provider,
+        promptVersion: payload.promptVersion,
+        listingCount: payload.listingCount,
+        fallback: payload.fallback,
+        injectionSuspected: payload.injectionSuspected,
+      },
+      {
+        eventId: deterministicEventId(
+          "assistant_turn_completed",
+          payload.conversationId,
+          event.occurredAt,
+        ),
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([AssistantEvent.FEEDBACK], ASYNC)
+  async onAssistantFeedback(
+    event: DomainEvent<AssistantFeedbackPayload>,
+  ): Promise<void> {
+    await this.tracker.track(
+      "assistant_feedback_submitted",
+      {
+        rating: event.payload.rating,
+        promptVersion: event.payload.promptVersion,
+      },
+      {
+        eventId: deterministicEventId("assistant_feedback_submitted", event.id),
+        occurredAt: new Date(event.occurredAt),
+      },
     )
   }
 

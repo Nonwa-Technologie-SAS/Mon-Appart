@@ -6,6 +6,7 @@
 export const FEATURE_FLAG_IDS = [
   "search_opensearch",
   "recommendation_remote",
+  "recommendation_shadow",
   "metrics_scrape",
   "listing_moderation_required",
   "payment_mock",
@@ -42,6 +43,14 @@ export const FEATURE_FLAG_CATALOG: readonly FeatureFlagDefinition[] = [
     description: "Déléguer les reco au service FastAPI (sinon rules Nest).",
     defaultEnabled: false,
     envKey: "RECOMMENDATION_ENGINE",
+    serverOnly: true,
+  },
+  {
+    id: "recommendation_shadow",
+    description:
+      "Comparer le classifieur distant sans exposer ses résultats (engine=rules).",
+    defaultEnabled: false,
+    envKey: "RECOMMENDATION_SHADOW",
     serverOnly: true,
   },
   {
@@ -121,6 +130,9 @@ export function resolveFeatureFlags(
   return {
     search_opensearch: searchEngine === "opensearch",
     recommendation_remote: recommendationEngine === "remote",
+    recommendation_shadow:
+      parseBool(env.RECOMMENDATION_SHADOW, false) &&
+      recommendationEngine !== "remote",
     metrics_scrape: parseBool(env.METRICS_ENABLED, false),
     listing_moderation_required: parseBool(
       env.LISTING_MODERATION_REQUIRED,

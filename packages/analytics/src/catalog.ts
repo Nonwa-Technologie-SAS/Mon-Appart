@@ -169,6 +169,7 @@ export type EventCategory =
   | "navigation"
   | "interest"
   | "recommendation"
+  | "assistant"
   | "listing"
   | "account"
   | "conversion"
@@ -485,6 +486,33 @@ export const EVENTS = {
       conversion: z.enum(CONVERSION_KINDS),
     }),
     listingKey: "listingId",
+  }),
+
+  assistant_turn_completed: event({
+    origin: "server",
+    category: "assistant",
+    description:
+      "Tour assistant terminé (mode, provider, volume). Jamais le texte du message.",
+    version: 1,
+    schema: z.strictObject({
+      mode: z.enum(["clarify", "results", "empty", "error"]),
+      provider: z.enum(["rules", "openai", "degraded"]),
+      promptVersion: algorithmVersion,
+      listingCount: counter,
+      fallback: z.boolean(),
+      injectionSuspected: z.boolean(),
+    }),
+  }),
+  assistant_feedback_submitted: event({
+    origin: "server",
+    category: "assistant",
+    description:
+      "Retour explicite sur un tour (code, pas de commentaire libre).",
+    version: 1,
+    schema: z.strictObject({
+      rating: z.enum(["helpful", "not_helpful", "wrong_results"]),
+      promptVersion: algorithmVersion,
+    }),
   }),
 
   // D. Publication et gestion des annonces (backend uniquement)

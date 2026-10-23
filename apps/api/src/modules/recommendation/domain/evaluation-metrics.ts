@@ -10,10 +10,7 @@ export interface RankedId {
 }
 
 /** Precision@K : part des K premiers jugés pertinents (relevance > 0). */
-export function precisionAtK(
-  ranked: readonly RankedId[],
-  k: number,
-): number {
+export function precisionAtK(ranked: readonly RankedId[], k: number): number {
   if (k <= 0) return 0
   const slice = ranked.slice(0, k)
   if (slice.length === 0) return 0
@@ -45,6 +42,27 @@ function dcg(relevances: readonly number[]): number {
   return sum
 }
 
+/**
+ * Average Precision@K puis moyenne (MAP) sur une liste unique :
+ * précision cumulée aux rangs pertinents / min(K, #pertinents dans le slice).
+ */
+export function averagePrecisionAtK(
+  ranked: readonly RankedId[],
+  k: number,
+): number {
+  if (k <= 0) return 0
+  const slice = ranked.slice(0, k)
+  let hits = 0
+  let sum = 0
+  for (let i = 0; i < slice.length; i += 1) {
+    if (slice[i]!.relevance <= 0) continue
+    hits += 1
+    sum += hits / (i + 1)
+  }
+  const denom = Math.max(hits, 1)
+  return hits === 0 ? 0 : sum / denom
+}
+
 /** NDCG@K avec pertinence graduée (0..n). */
 export function ndcgAtK(ranked: readonly RankedId[], k: number): number {
   if (k <= 0) return 0
@@ -74,9 +92,7 @@ export function catalogCoverage(
  * Diversité simple : 1 − (max fréquence d’une clé / n).
  * Clé = commune, type, etc.
  */
-export function attributeDiversity(
-  attributes: readonly string[],
-): number {
+export function attributeDiversity(attributes: readonly string[]): number {
   if (attributes.length === 0) return 0
   const counts = new Map<string, number>()
   for (const value of attributes) {

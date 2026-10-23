@@ -8,18 +8,18 @@ Comprendre une demande en français (marché ivoirien), la convertir en critère
 
 ## Composants
 
-| Composant | Rôle |
-| --- | --- |
-| `criteria-extractor` | NLU déterministe FR (intent, type, lieu, budget XOF, chambres…) |
-| `location-resolver` | Communes / quartiers / villes alignés sur le seed Abidjan |
-| `criteria-to-search` | Mapping → `RawSearchParams` de Search |
-| `explain-matches` | Raisons de correspondance depuis champs réels |
-| `ConversationStore` | Mémoire process + TTL (isolation user/session) |
-| `RulesAiProvider` | Reformulation texte sans réseau (défaut) |
-| `OpenAiTextProvider` | Reformulation optionnelle ; repli rules si clé absente / erreur |
-| `AssistantService` | Orchestration + appels `SearchService` |
-| `AiAssistantController` | API versionnée `/api/v1/ai-assistant/*` |
-| `AssistantChat` (web) | UI conversationnelle ; appelle Nest via `NEXT_PUBLIC_NEST_API_URL` |
+| Composant               | Rôle                                                               |
+| ----------------------- | ------------------------------------------------------------------ |
+| `criteria-extractor`    | NLU déterministe FR (intent, type, lieu, budget XOF, chambres…)    |
+| `location-resolver`     | Communes / quartiers / villes alignés sur le seed Abidjan          |
+| `criteria-to-search`    | Mapping → `RawSearchParams` de Search                              |
+| `explain-matches`       | Raisons de correspondance depuis champs réels                      |
+| `ConversationStore`     | Mémoire process + TTL (isolation user/session)                     |
+| `RulesAiProvider`       | Reformulation texte sans réseau (défaut)                           |
+| `OpenAiTextProvider`    | Reformulation optionnelle ; repli rules si clé absente / erreur    |
+| `AssistantService`      | Orchestration + appels `SearchService`                             |
+| `AiAssistantController` | API versionnée `/api/v1/ai-assistant/*`                            |
+| `AssistantChat` (web)   | UI conversationnelle ; appelle Nest via `NEXT_PUBLIC_NEST_API_URL` |
 
 ## Flux
 
@@ -51,4 +51,4 @@ Comprendre une demande en français (marché ivoirien), la convertir en critère
 
 Header optionnel : `x-assistant-session` (UUID anonyme). Auth JWT optionnelle.
 
-Voir aussi : `natural-language-search.md`, `ai-provider-configuration.md`, `ai-security-and-privacy.md`, `ai-evaluation.md`.
+Voir aussi : `natural-language-search.md`, `ai-provider-configuration.md`, `ai-security-and-privacy.md`, `ai-evaluation.md`, `llm-evaluation-and-prompt-governance.md`, `ai-governance-framework.md`.

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -47,10 +48,8 @@ export class CompareListingsDto {
 
 export class AssistantFeedbackDto {
   @ApiProperty({ enum: ["helpful", "not_helpful", "wrong_results"] })
-  @IsString()
-  @MinLength(3)
-  @MaxLength(32)
-  rating!: string
+  @IsIn(["helpful", "not_helpful", "wrong_results"])
+  rating!: "helpful" | "not_helpful" | "wrong_results"
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -61,8 +60,7 @@ export class AssistantFeedbackDto {
 
 export class NaturalSearchDto {
   @ApiProperty({
-    example:
-      "Maison 3 chambres à louer à Cocody, budget 250 000 FCFA par mois",
+    example: "Maison 3 chambres à louer à Cocody, budget 250 000 FCFA par mois",
   })
   @IsString()
   @MinLength(1)

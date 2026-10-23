@@ -27,6 +27,11 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Business Intelligence",
     anyOf: ["analytics:admin"],
   },
+  {
+    href: "/ai",
+    label: "Gouvernance IA",
+    anyOf: ["ai:admin"],
+  },
   { href: "/users", label: "Utilisateurs", anyOf: ["user:read"] },
   {
     href: "/listings",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   attributeDiversity,
+  averagePrecisionAtK,
   catalogCoverage,
   ndcgAtK,
   precisionAtK,
@@ -38,6 +39,22 @@ describe("evaluation-metrics (hors ligne)", () => {
     ]
     expect(ndcgAtK(good, 3)).toBeGreaterThan(ndcgAtK(bad, 3))
     expect(ndcgAtK(good, 3)).toBeLessThanOrEqual(1)
+  })
+
+  it("average precision favorise les hits en tête", () => {
+    const good = [
+      { id: "a", relevance: 1 },
+      { id: "b", relevance: 0 },
+      { id: "c", relevance: 1 },
+    ]
+    const bad = [
+      { id: "b", relevance: 0 },
+      { id: "c", relevance: 1 },
+      { id: "a", relevance: 1 },
+    ]
+    expect(averagePrecisionAtK(good, 3)).toBeGreaterThan(
+      averagePrecisionAtK(bad, 3),
+    )
   })
 
   it("couverture et diversité", () => {

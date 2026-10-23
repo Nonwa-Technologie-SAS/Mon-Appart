@@ -200,6 +200,50 @@ export class MetricsService implements OnModuleInit {
       labelNames: ["outcome"],
       registers: [this.registry],
     }),
+    shadow: new Counter({
+      name: "recommendation_shadow_total",
+      help: "Comparaisons shadow du moteur distant (sans exposition)",
+      labelNames: ["outcome"],
+      registers: [this.registry],
+    }),
+  }
+
+  readonly assistant = {
+    requests: new Counter({
+      name: "assistant_requests_total",
+      help: "Tours assistant servis",
+      labelNames: ["mode", "provider"],
+      registers: [this.registry],
+    }),
+    latency: new Histogram({
+      name: "assistant_latency_ms",
+      help: "Durée d'un tour assistant, en millisecondes",
+      labelNames: ["mode"],
+      buckets: [10, 25, 50, 100, 200, 400, 800, 1600, 3200, 8000],
+      registers: [this.registry],
+    }),
+    empty: new Counter({
+      name: "assistant_empty_total",
+      help: "Tours Search sans annonce",
+      registers: [this.registry],
+    }),
+    fallbacks: new Counter({
+      name: "assistant_fallback_total",
+      help: "Replis (Search en erreur ou OpenAI indisponible)",
+      labelNames: ["reason"],
+      registers: [this.registry],
+    }),
+    injection: new Counter({
+      name: "assistant_injection_suspected_total",
+      help: "Messages ressemblant à une injection de prompt (non bloqués)",
+      registers: [this.registry],
+    }),
+    feedback: new Counter({
+      name: "assistant_feedback_total",
+      help: "Retours utilisateur sur l'assistant",
+      labelNames: ["rating"],
+      registers: [this.registry],
+    }),
   }
 
   readonly media = {

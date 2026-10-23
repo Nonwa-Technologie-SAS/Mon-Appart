@@ -26,6 +26,13 @@ describe("metrics catalog", () => {
     expect(acquisition?.limitations).toMatch(/causalité|dépenses/i)
   })
 
+  it("documente les taux vides reco et repli assistant", () => {
+    expect(getMetric("reco.empty_rate")?.limitations).toMatch(/vide/i)
+    expect(getMetric("assistant.fallback_rate")?.limitations).toMatch(
+      /hallucination|Coût/i,
+    )
+  })
+
   it("documente la rétention sans CTR inventé", () => {
     const alerts = getMetric("retention.alert_click_rate")
     expect(alerts?.limitations).toMatch(/instrumenté/i)

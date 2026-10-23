@@ -210,7 +210,10 @@ export const PERMISSIONS = [
     name: "Signaler une annonce, un utilisateur ou un message",
   },
   { code: "report:review", name: "Traiter les signalements" },
-  { code: "trust_score:read", name: "Consulter le score de confiance détaillé" },
+  {
+    code: "trust_score:read",
+    name: "Consulter le score de confiance détaillé",
+  },
   {
     code: "analytics:read",
     name: "Consulter les statistiques de ses annonces",
@@ -218,6 +221,10 @@ export const PERMISSIONS = [
   {
     code: "analytics:admin",
     name: "Consulter les statistiques globales de la plateforme",
+  },
+  {
+    code: "ai:admin",
+    name: "Consulter le portefeuille et les évaluations des systèmes IA",
   },
   { code: "conversation:create", name: "Contacter un annonceur" },
   { code: "appointment:request", name: "Demander une visite" },
@@ -347,7 +354,7 @@ export const ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[]> = {
     "billing:read",
     "billing:refund_request",
   ],
-  ANALYST: ["admin:access", "analytics:admin", "partner:read"],
+  ANALYST: ["admin:access", "analytics:admin", "ai:admin", "partner:read"],
   ADMIN: ALL_PERMISSIONS.filter(
     (code) => !PERSONAL_DOCUMENT_PERMISSIONS.includes(code),
   ),

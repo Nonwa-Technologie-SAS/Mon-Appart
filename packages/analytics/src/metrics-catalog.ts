@@ -114,6 +114,34 @@ export const METRICS_CATALOG: readonly MetricDefinition[] = [
     limitations: "Nécessite événements client d’exposition.",
   },
   {
+    id: "reco.empty_rate",
+    name: "Taux de listes de recommandation vides",
+    description:
+      "Premières pages sans item (Prometheus recommendation_empty_total).",
+    formula: "recommendation_empty_total / recommendation_requests_total",
+    sources: ["prometheus.recommendation_*"],
+    freshness: "live",
+    roles: ["analytics:admin"],
+    filters: ["context"],
+    limitations:
+      "Liste vide ≠ irrelevance : catalogue, filtres stricts ou visiteur anonyme.",
+  },
+  {
+    id: "assistant.fallback_rate",
+    name: "Taux de repli assistant",
+    description: "Tours en mode degraded ou fallback Search/OpenAI.",
+    formula: "assistant_fallback_total / assistant_requests_total",
+    sources: [
+      "prometheus.assistant_*",
+      "analytics_events.assistant_turn_completed",
+    ],
+    freshness: "live",
+    roles: ["analytics:admin"],
+    filters: ["provider"],
+    limitations:
+      "Un repli n’est pas une hallucination. Coût fournisseur non collecté.",
+  },
+  {
     id: "market.active_listings",
     name: "Annonces actives (stock)",
     description: "Annonces PUBLISHED non expirées, bien ACTIVE.",

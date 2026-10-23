@@ -34,6 +34,20 @@ describe("feature-flags", () => {
     })
     expect(flags.search_opensearch).toBe(true)
     expect(flags.recommendation_remote).toBe(true)
+    expect(flags.recommendation_shadow).toBe(false)
+  })
+
+  it("active le shadow seulement si le remote n’est pas servi", () => {
+    expect(
+      resolveFeatureFlags({ RECOMMENDATION_SHADOW: "true" })
+        .recommendation_shadow,
+    ).toBe(true)
+    expect(
+      resolveFeatureFlags({
+        RECOMMENDATION_ENGINE: "remote",
+        RECOMMENDATION_SHADOW: "true",
+      }).recommendation_shadow,
+    ).toBe(false)
   })
 
   it("désactive les flags UI via FF_*", () => {
