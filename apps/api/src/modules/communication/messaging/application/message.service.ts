@@ -43,6 +43,7 @@ import {
   ConversationAccessService,
   type ConversationAccessContext,
 } from "./conversation-access.service"
+import { InquiryService } from "../../inquiries/application/inquiry.service"
 import { messageView, type MessageView } from "./messaging-views"
 
 export interface PostInput {
@@ -90,6 +91,7 @@ export class MessageService {
     private readonly realtime: RealtimePublisher,
     private readonly activity: CommunicationActivity,
     private readonly config: CommunicationConfig,
+    private readonly inquiries: InquiryService,
     @Inject(MEDIA_ATTACHMENT_ACCESS)
     private readonly media: MediaAttachmentAccess,
   ) {}
@@ -226,6 +228,11 @@ export class MessageService {
         where: { id: conversation.inquiryId, status: "OPEN" },
         data: { status: "IN_PROGRESS" },
       })
+      await this.inquiries.markFirstResponse(
+        conversation.inquiryId,
+        actor.userId,
+        tx,
+      )
     }
 
     await this.conversations.syncListingSide(conversation, tx)

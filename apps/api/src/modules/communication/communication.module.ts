@@ -5,6 +5,8 @@ import { MediaModule } from "../media/media.module"
 import { AppointmentReminders } from "./appointments/application/appointment-reminders"
 import { AppointmentService } from "./appointments/application/appointment.service"
 import { AppointmentController } from "./appointments/presentation/appointment.controller"
+import { InquiryService } from "./inquiries/application/inquiry.service"
+import { InquiryController } from "./inquiries/presentation/inquiry.controller"
 import { CommunicationActivity } from "./communication-activity"
 import { CommunicationConfig } from "./communication.config"
 import { ConversationAccessService } from "./messaging/application/conversation-access.service"
@@ -37,6 +39,7 @@ import { RealtimePublisher } from "./realtime/realtime.publisher"
   imports: [IdentityModule, MediaModule],
   controllers: [
     ConversationController,
+    InquiryController,
     AppointmentController,
     NotificationController,
     NotificationPreferenceController,
@@ -59,6 +62,7 @@ import { RealtimePublisher } from "./realtime/realtime.publisher"
     MessageService,
     ConversationService,
     ConversationModerationService,
+    InquiryService,
     AppointmentService,
     AppointmentReminders,
   ],

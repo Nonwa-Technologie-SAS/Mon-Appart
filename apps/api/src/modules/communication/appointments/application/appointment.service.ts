@@ -32,6 +32,7 @@ import {
   peopleSelect,
   type MessageRow,
 } from "../../messaging/infrastructure/conversation.repository"
+import { InquiryService } from "../../inquiries/application/inquiry.service"
 import { NotificationService } from "../../notifications/application/notification.service"
 import { RealtimePublisher } from "../../realtime/realtime.publisher"
 import { serialize } from "../../presentation/serialize"
@@ -45,6 +46,15 @@ import {
   type AppointmentState,
   type CancellationReason,
 } from "../domain/appointment-rules"
+import {
+  isVisitFeedbackOutcome,
+  isVisitFeedbackReason,
+  outcomeCompletesProject,
+  outcomePausesSearch,
+  ownerVisibleOutcome,
+  type VisitFeedbackOutcome,
+  type VisitFeedbackReason,
+} from "../domain/visit-feedback"
 
 export interface RequestVisitInput {
   listingId: string
@@ -75,6 +85,11 @@ export interface AppointmentView {
   createdAt: Date
   /** Actions que je peux faire maintenant. */
   actions: AppointmentAction[]
+  /** Présence d'un retour ; l'issue n'est visible côté annonce que si partagée. */
+  feedback: {
+    submitted: boolean
+    outcome: string | null
+  }
 }
 
 const appointmentSelect = {
@@ -84,6 +99,7 @@ const appointmentSelect = {
   propertyId: true,
   listingId: true,
   conversationId: true,
+  inquiryId: true,
   scheduledAt: true,
   timezone: true,
   durationMinutes: true,
@@ -98,6 +114,13 @@ const appointmentSelect = {
   completedAt: true,
   createdAt: true,
   listing: { select: { publicId: true, title: true } },
+  visitFeedback: {
+    select: {
+      publicId: true,
+      outcome: true,
+      shareOutcomeWithOwner: true,
+    },
+  },
   conversation: {
     select: { id: true, publicId: true, requesterId: true, status: true },
   },
@@ -133,6 +156,7 @@ export class AppointmentService {
     private readonly realtime: RealtimePublisher,
     private readonly activity: CommunicationActivity,
     private readonly config: CommunicationConfig,
+    private readonly inquiries: InquiryService,
   ) {}
 
   async request(
@@ -243,36 +267,41 @@ export class AppointmentService {
 
   async list(
     actor: Actor,
-    query: { scope?: "upcoming" | "past"; limit?: number },
+    query: { scope?: "upcoming" | "past" | "all"; limit?: number },
   ): Promise<AppointmentView[]> {
     const now = new Date()
-    const upcoming = (query.scope ?? "upcoming") === "upcoming"
-    const rows = await this.conversations.client.appointment.findMany({
-      where: {
-        AND: [
-          {
-            OR: [
-              { userId: actor.userId },
-              {
-                property: {
-                  ownerships: {
-                    some: { ownerId: actor.userId, isCurrent: true },
+    const scope = query.scope ?? "upcoming"
+    const upcoming = scope === "upcoming"
+    const accessFilter: Prisma.AppointmentWhereInput = {
+      OR: [
+        { userId: actor.userId },
+        {
+          property: {
+            ownerships: {
+              some: { ownerId: actor.userId, isCurrent: true },
+            },
+          },
+        },
+      ],
+    }
+    const timeFilter: Prisma.AppointmentWhereInput | undefined =
+      scope === "all"
+        ? undefined
+        : upcoming
+          ? {
+              OR: [
+                { scheduledAt: { gte: now } },
+                {
+                  status: {
+                    in: ["PENDING", "RESCHEDULE_REQUESTED"],
                   },
                 },
-              },
-            ],
-          },
-          upcoming
-            ? {
-                OR: [
-                  { scheduledAt: { gte: now } },
-                  { status: { in: ["PENDING", "RESCHEDULE_REQUESTED"] } },
-                ],
-              }
-            : { scheduledAt: { lt: now } },
-        ],
-      },
-      orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
+              ],
+            }
+          : { scheduledAt: { lt: now } }
+    const rows = await this.conversations.client.appointment.findMany({
+      where: timeFilter ? { AND: [accessFilter, timeFilter] } : accessFilter,
+      orderBy: { scheduledAt: upcoming || scope === "all" ? "asc" : "desc" },
       take: Math.min(Math.max(query.limit ?? 50, 1), LIST_LIMIT),
       select: appointmentSelect,
     })
@@ -355,7 +384,7 @@ export class AppointmentService {
       const status = nextStatus(action)
       const data: Prisma.AppointmentUncheckedUpdateInput = { status }
       let message: { code: SystemCode; payload: Prisma.InputJsonObject }
-      let notice: { title: string; key: string }
+      let notice: { title: string; key: string; body?: string }
       let auditAction: string
       switch (action) {
         case "CONFIRM": {
@@ -428,6 +457,9 @@ export class AppointmentService {
             title: completed
               ? "Visite effectuée"
               : "Visite marquée sans présentation",
+            body: completed
+              ? `Pour « ${row.listing.title} ». Vous pouvez indiquer si vous souhaitez poursuivre — c'est facultatif.`
+              : `Pour « ${row.listing.title} »`,
             key: completed ? "completed" : "no_show",
           }
           auditAction = completed
@@ -459,7 +491,7 @@ export class AppointmentService {
           : null
       await this.notifyOtherSide(tx, saved, side, {
         title: notice.title,
-        body: `Pour « ${saved.listing.title} »`,
+        body: notice.body ?? `Pour « ${saved.listing.title} »`,
         key: notice.key,
       })
       await this.audit(
@@ -474,6 +506,22 @@ export class AppointmentService {
         },
         client,
       )
+      if (action === "CONFIRM") {
+        await this.inquiries.applyVisitHint(
+          saved.inquiryId,
+          actor.userId,
+          "CONFIRMED",
+          tx,
+        )
+      }
+      if (action === "COMPLETE") {
+        await this.inquiries.applyVisitHint(
+          saved.inquiryId,
+          actor.userId,
+          "COMPLETED",
+          tx,
+        )
+      }
       return { appointment: saved, message: systemMessage, side }
     })
     await this.afterCommit(result)
@@ -647,6 +695,196 @@ export class AppointmentService {
       completedAt: row.completedAt,
       createdAt: row.createdAt,
       actions: availableActions(state, side, now),
+      feedback: this.feedbackSummary(row, side),
+    }
+  }
+
+  async submitFeedback(
+    actor: Actor,
+    appointmentPublicId: string,
+    input: {
+      outcome: string
+      reason?: string | null
+      privateNote?: string | null
+      shareOutcomeWithOwner?: boolean
+    },
+    client: ClientContext,
+  ): Promise<AppointmentView> {
+    if (!isVisitFeedbackOutcome(input.outcome)) {
+      throw communicationError("MESSAGE_INVALID", "outcome")
+    }
+    const reason = input.reason
+      ? isVisitFeedbackReason(input.reason)
+        ? input.reason
+        : null
+      : null
+    if (input.reason && !reason) {
+      throw communicationError("MESSAGE_INVALID", "reason")
+    }
+    const note = input.privateNote?.trim() ?? ""
+    if (note.length > 1000) {
+      throw communicationError("MESSAGE_INVALID", "privateNote")
+    }
+    const result = await this.conversations.transaction(async (tx) => {
+      const row = await tx.appointment.findFirst({
+        where: { publicId: appointmentPublicId },
+        select: appointmentSelect,
+      })
+      if (!row) throw communicationError("APPOINTMENT_NOT_FOUND")
+      const side = await this.sideOf(actor.userId, row, tx)
+      if (side !== "REQUESTER" || row.status !== "COMPLETED") {
+        throw communicationError("VISIT_FEEDBACK_NOT_ALLOWED")
+      }
+      if (row.visitFeedback) {
+        throw communicationError("VISIT_FEEDBACK_EXISTS")
+      }
+      await tx.visitFeedback.create({
+        data: {
+          appointmentId: row.id,
+          userId: row.userId,
+          listingId: row.listingId,
+          propertyId: row.propertyId,
+          outcome: input.outcome as VisitFeedbackOutcome,
+          reason: reason as VisitFeedbackReason | null,
+          privateNote: note || null,
+          shareOutcomeWithOwner: input.shareOutcomeWithOwner === true,
+        },
+      })
+      if (outcomeCompletesProject(input.outcome as VisitFeedbackOutcome)) {
+        await tx.userPreference.upsert({
+          where: { userId: actor.userId },
+          create: {
+            userId: actor.userId,
+            projectStatus: "COMPLETED",
+            projectCompletedAt: new Date(),
+          },
+          update: {
+            projectStatus: "COMPLETED",
+            projectCompletedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        })
+        await tx.savedSearch.updateMany({
+          where: { userId: actor.userId, alertsEnabled: true },
+          data: {
+            alertsEnabled: false,
+            frequency: "PAUSED",
+            updatedAt: new Date(),
+          },
+        })
+      }
+      if (outcomePausesSearch(input.outcome as VisitFeedbackOutcome)) {
+        await tx.userPreference.upsert({
+          where: { userId: actor.userId },
+          create: {
+            userId: actor.userId,
+            projectStatus: "PAUSED",
+          },
+          update: { projectStatus: "PAUSED", updatedAt: new Date() },
+        })
+      }
+      await this.audit(
+        tx,
+        actor,
+        row,
+        CommunicationAuditAction.VISIT_FEEDBACK_SUBMITTED,
+        {
+          outcome: input.outcome,
+          shared: input.shareOutcomeWithOwner === true,
+        },
+        client,
+      )
+      return tx.appointment.findUniqueOrThrow({
+        where: { id: row.id },
+        select: appointmentSelect,
+      })
+    })
+    this.activity.emit(
+      CommunicationEvent.VISIT_FEEDBACK_SUBMITTED,
+      result.publicId,
+      {
+        appointmentId: result.publicId,
+        listingId: result.listing.publicId,
+        outcome: input.outcome,
+        shared: input.shareOutcomeWithOwner === true,
+      },
+    )
+    return this.view(result, "REQUESTER", new Date())
+  }
+
+  async getFeedback(
+    actor: Actor,
+    appointmentPublicId: string,
+  ): Promise<{
+    submitted: boolean
+    outcome: string | null
+    reason: string | null
+    privateNote: string | null
+    shareOutcomeWithOwner: boolean
+  }> {
+    const row = await this.conversations.client.appointment.findFirst({
+      where: { publicId: appointmentPublicId },
+      select: {
+        ...appointmentSelect,
+        visitFeedback: {
+          select: {
+            publicId: true,
+            outcome: true,
+            reason: true,
+            privateNote: true,
+            shareOutcomeWithOwner: true,
+          },
+        },
+      },
+    })
+    if (!row) throw communicationError("APPOINTMENT_NOT_FOUND")
+    const side = await this.sideOf(actor.userId, row, this.conversations.client)
+    const feedback = row.visitFeedback
+    if (!feedback) {
+      return {
+        submitted: false,
+        outcome: null,
+        reason: null,
+        privateNote: null,
+        shareOutcomeWithOwner: false,
+      }
+    }
+    if (side === "REQUESTER") {
+      return {
+        submitted: true,
+        outcome: feedback.outcome,
+        reason: feedback.reason,
+        privateNote: feedback.privateNote,
+        shareOutcomeWithOwner: feedback.shareOutcomeWithOwner,
+      }
+    }
+    return {
+      submitted: true,
+      outcome: ownerVisibleOutcome({
+        shareOutcomeWithOwner: feedback.shareOutcomeWithOwner,
+        outcome: feedback.outcome as VisitFeedbackOutcome,
+      }),
+      reason: null,
+      privateNote: null,
+      shareOutcomeWithOwner: feedback.shareOutcomeWithOwner,
+    }
+  }
+
+  private feedbackSummary(
+    row: AppointmentRow,
+    side: ParticipantSide,
+  ): { submitted: boolean; outcome: string | null } {
+    const feedback = row.visitFeedback
+    if (!feedback) return { submitted: false, outcome: null }
+    if (side === "REQUESTER") {
+      return { submitted: true, outcome: feedback.outcome }
+    }
+    return {
+      submitted: true,
+      outcome: ownerVisibleOutcome({
+        shareOutcomeWithOwner: feedback.shareOutcomeWithOwner,
+        outcome: feedback.outcome as VisitFeedbackOutcome,
+      }),
     }
   }
 }

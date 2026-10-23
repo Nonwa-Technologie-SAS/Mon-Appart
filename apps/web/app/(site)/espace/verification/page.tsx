@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { ContactVerifyPanel } from "@/components/espace/contact-verify-panel"
+import { EspaceNav } from "@/components/espace/espace-nav"
 import { StartVerificationForm } from "@/components/espace/start-verification-form"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,6 +40,7 @@ export default async function VerificationHubPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-10">
+      <EspaceNav current="/espace/verification" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium tracking-wide text-primary uppercase">
@@ -67,8 +69,8 @@ export default async function VerificationHubPage() {
           <CardHeader>
             <CardTitle>Badges obtenus</CardTitle>
             <CardDescription>
-              Affichables sur votre profil public. Le score interne reste réservé
-              à la modération.
+              Affichables sur votre profil public. Le score interne reste
+              réservé à la modération.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -152,9 +154,7 @@ export default async function VerificationHubPage() {
                       size="sm"
                       className="min-h-11"
                       nativeButton={false}
-                      render={
-                        <Link href={`/espace/verification/${item.id}`} />
-                      }
+                      render={<Link href={`/espace/verification/${item.id}`} />}
                     >
                       Ouvrir
                     </Button>

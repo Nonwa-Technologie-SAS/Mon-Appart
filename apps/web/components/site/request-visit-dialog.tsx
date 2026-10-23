@@ -140,9 +140,9 @@ function RequestVisitForm({
         <DialogHeader>
           <DialogTitle>Demande envoyée</DialogTitle>
           <DialogDescription>
-            Votre demande pour « {propertyTitle} » a bien été transmise.
-            L&apos;agence vous contactera sur WhatsApp pour confirmer le
-            créneau.
+            Votre demande pour « {propertyTitle} » a bien été transmise. Le
+            responsable confirmera ou proposera un autre créneau dans votre
+            conversation.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -227,7 +227,11 @@ function RequestVisitForm({
             >
               Annuler
             </Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={pending}
+            >
               {pending ? "Envoi…" : "Envoyer la demande"}
             </Button>
           </DialogFooter>
