@@ -260,6 +260,17 @@ export class MessageResponseDto {
 
   @ApiProperty()
   createdAt: string
+
+  @ApiProperty({
+    type: "array",
+    description:
+      "Avertissements préventifs. Un code n'est pas une preuve de fraude.",
+  })
+  safetyHints: Array<{
+    code: string
+    severity: string
+    userMessage: string
+  }>
 }
 
 export class MessagePageResponseDto {

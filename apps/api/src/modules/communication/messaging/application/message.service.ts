@@ -33,6 +33,7 @@ import {
   repetitionKey,
   type SystemCode,
 } from "../domain/message-rules"
+import { scanMessageSafety, trustRuleForHint } from "../domain/message-safety"
 import {
   ConversationRepository,
   messageSelect,
@@ -464,6 +465,22 @@ export class MessageService {
       messageId: message.publicId,
       type: message.type,
     })
+    if (message.type !== "SYSTEM" && message.body) {
+      for (const hint of scanMessageSafety(message.body)) {
+        if (hint.severity !== "HIGH") continue
+        const rule = trustRuleForHint(hint.code)
+        if (!rule) continue
+        this.activity.emit(
+          CommunicationEvent.MESSAGE_SAFETY_ALERT,
+          conversation.publicId,
+          {
+            conversationId: conversation.publicId,
+            messageId: message.publicId,
+            rule,
+          },
+        )
+      }
+    }
     if (posted.recipients.length > 0) {
       this.activity.emit(
         CommunicationEvent.DELIVERIES_QUEUED,

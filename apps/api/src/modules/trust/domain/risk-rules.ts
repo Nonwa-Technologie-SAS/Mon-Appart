@@ -24,6 +24,16 @@ export const RiskRule = {
   REPORT_REVIEW_REQUESTED: "REPORT_REVIEW_REQUESTED",
   /** Création rapide de nombreuses annonces par un même compte (revue, pas de sanction auto). */
   ACCOUNT_BURST_ACTIVITY: "ACCOUNT_BURST_ACTIVITY",
+  /** Même bien, même type d'offre, plusieurs annonces publiées. */
+  DUPLICATE_LISTING_SAME_PROPERTY: "DUPLICATE_LISTING_SAME_PROPERTY",
+  /** Empreinte SHA-256 d'une photo déjà envoyée par un autre compte. */
+  DUPLICATE_MEDIA_CROSS_ACCOUNT: "DUPLICATE_MEDIA_CROSS_ACCOUNT",
+  /** Modification notable d'une annonce déjà contrôlée (LISTING_CONSISTENCY). */
+  MATERIAL_CHANGE_AFTER_VERIFICATION: "MATERIAL_CHANGE_AFTER_VERIFICATION",
+  /** Message demandant un secret de connexion (OTP, mot de passe). */
+  MESSAGE_CREDENTIAL_HARVEST: "MESSAGE_CREDENTIAL_HARVEST",
+  /** Message se présentant comme le support officiel. */
+  MESSAGE_FAKE_SUPPORT: "MESSAGE_FAKE_SUPPORT",
 } as const
 
 export type RiskRule = (typeof RiskRule)[keyof typeof RiskRule]
@@ -36,6 +46,11 @@ export const RULE_SEVERITY: Record<RiskRule, TrustSignalSeverity> = {
   PRICE_CHANGE_ANOMALY: "MEDIUM",
   REPORT_REVIEW_REQUESTED: "HIGH",
   ACCOUNT_BURST_ACTIVITY: "MEDIUM",
+  DUPLICATE_LISTING_SAME_PROPERTY: "MEDIUM",
+  DUPLICATE_MEDIA_CROSS_ACCOUNT: "HIGH",
+  MATERIAL_CHANGE_AFTER_VERIFICATION: "MEDIUM",
+  MESSAGE_CREDENTIAL_HARVEST: "HIGH",
+  MESSAGE_FAKE_SUPPORT: "HIGH",
 }
 
 export interface Prechecks {

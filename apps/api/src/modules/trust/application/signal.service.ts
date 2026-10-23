@@ -7,8 +7,10 @@ import type {
   TrustSignalSeverity,
   TrustSignalStatus,
 } from "../../../generated/prisma/enums"
+import { CommunicationEvent } from "../../communication"
 import { can, type Actor, type ClientContext } from "../../identity"
 import { ListingEvent } from "../../listing"
+import { isMaterialListingChange } from "../domain/listing-risk"
 import {
   isListingBurst,
   isPriceChangeAnomaly,
@@ -70,6 +72,17 @@ interface ListingCreatedPayload {
   listingId: string
   propertyId: string
   listingType: string
+}
+
+interface ListingUpdatedPayload {
+  listingId: string
+  changedFields?: string[]
+}
+
+interface MessageSafetyPayload {
+  conversationId?: string
+  messageId?: string
+  rule?: string
 }
 
 /**
@@ -271,25 +284,113 @@ export class SignalService {
         createdAt: { gte: since },
       },
     })
-    if (
-      !isListingBurst(createdInWindow, this.config.listingBurstThreshold)
-    ) {
-      return
+    if (isListingBurst(createdInWindow, this.config.listingBurstThreshold)) {
+      const dayKey = since.toISOString().slice(0, 10)
+      const id = await this.trust.raiseSignal(
+        {
+          ruleCode: RiskRule.ACCOUNT_BURST_ACTIVITY,
+          severity: RULE_SEVERITY.ACCOUNT_BURST_ACTIVITY,
+          dedupKey: `${RiskRule.ACCOUNT_BURST_ACTIVITY}:${listing.createdById}:${dayKey}`,
+          userId: listing.createdById,
+          listingId: listing.id,
+          details: {
+            listingId: listing.publicId,
+            createdInWindow,
+            threshold: this.config.listingBurstThreshold,
+            windowHours: this.config.listingBurstWindowHours,
+          },
+        },
+        this.trust.client,
+      )
+      if (id) {
+        this.activity.emit(TrustEvent.SIGNAL_RAISED, id, {
+          signalId: id,
+          ruleCode: RiskRule.ACCOUNT_BURST_ACTIVITY,
+        })
+      }
     }
+    await this.raiseDuplicateListing(
+      listing.id,
+      listing.publicId,
+      listing.createdById,
+    )
+    await this.raiseReusedMedia(
+      listing.id,
+      listing.publicId,
+      listing.createdById,
+    )
+  }
 
-    const dayKey = since.toISOString().slice(0, 10)
+  @OnEvents([ListingEvent.PUBLISHED], {
+    async: true,
+    promisify: true,
+    suppressErrors: true,
+  })
+  async onListingPublished(
+    event: DomainEvent<{ listingId?: string }>,
+  ): Promise<void> {
+    const publicId = event.payload.listingId ?? event.aggregateId
+    const listing = await this.trust.client.listing.findFirst({
+      where: { publicId, deletedAt: null },
+      select: { id: true, publicId: true, createdById: true },
+    })
+    if (!listing) return
+    await this.raiseDuplicateListing(
+      listing.id,
+      listing.publicId,
+      listing.createdById,
+    )
+    await this.raiseReusedMedia(
+      listing.id,
+      listing.publicId,
+      listing.createdById,
+    )
+  }
+
+  @OnEvents([ListingEvent.UPDATED], {
+    async: true,
+    promisify: true,
+    suppressErrors: true,
+  })
+  async onListingUpdated(
+    event: DomainEvent<ListingUpdatedPayload>,
+  ): Promise<void> {
+    const fields = event.payload.changedFields ?? []
+    if (!isMaterialListingChange(fields)) return
+    const listing = await this.trust.client.listing.findFirst({
+      where: { publicId: event.payload.listingId, deletedAt: null },
+      select: { id: true, publicId: true, createdById: true },
+    })
+    if (!listing) return
+    const verified = await this.trust.client.verification.findFirst({
+      where: {
+        listingId: listing.id,
+        type: "LISTING_CONSISTENCY",
+        status: "VERIFIED",
+      },
+      select: { id: true },
+    })
+    if (!verified) return
     const id = await this.trust.raiseSignal(
       {
-        ruleCode: RiskRule.ACCOUNT_BURST_ACTIVITY,
-        severity: RULE_SEVERITY.ACCOUNT_BURST_ACTIVITY,
-        dedupKey: `${RiskRule.ACCOUNT_BURST_ACTIVITY}:${listing.createdById}:${dayKey}`,
+        ruleCode: RiskRule.MATERIAL_CHANGE_AFTER_VERIFICATION,
+        severity: RULE_SEVERITY.MATERIAL_CHANGE_AFTER_VERIFICATION,
+        dedupKey: `${RiskRule.MATERIAL_CHANGE_AFTER_VERIFICATION}:${listing.publicId}`,
         userId: listing.createdById,
         listingId: listing.id,
+        verificationId: verified.id,
         details: {
           listingId: listing.publicId,
-          createdInWindow,
-          threshold: this.config.listingBurstThreshold,
-          windowHours: this.config.listingBurstWindowHours,
+          fields: fields.filter((field) =>
+            [
+              "title",
+              "description",
+              "listingType",
+              "photos",
+              "location",
+              "contact",
+            ].includes(field),
+          ).length,
         },
       },
       this.trust.client,
@@ -297,7 +398,159 @@ export class SignalService {
     if (id) {
       this.activity.emit(TrustEvent.SIGNAL_RAISED, id, {
         signalId: id,
-        ruleCode: RiskRule.ACCOUNT_BURST_ACTIVITY,
+        ruleCode: RiskRule.MATERIAL_CHANGE_AFTER_VERIFICATION,
+      })
+    }
+  }
+
+  @OnEvents([CommunicationEvent.MESSAGE_SAFETY_ALERT], {
+    async: true,
+    promisify: true,
+    suppressErrors: true,
+  })
+  async onMessageSafety(
+    event: DomainEvent<MessageSafetyPayload>,
+  ): Promise<void> {
+    const rule = event.payload.rule
+    if (
+      rule !== RiskRule.MESSAGE_CREDENTIAL_HARVEST &&
+      rule !== RiskRule.MESSAGE_FAKE_SUPPORT
+    ) {
+      return
+    }
+    const conversationId = event.payload.conversationId
+    if (!conversationId || !UUID_PATTERN.test(conversationId)) return
+    const conversation = await this.trust.client.conversation.findFirst({
+      where: { publicId: conversationId },
+      select: {
+        id: true,
+        publicId: true,
+        listingId: true,
+        listing: { select: { publicId: true, createdById: true } },
+      },
+    })
+    if (!conversation) return
+    const id = await this.trust.raiseSignal(
+      {
+        ruleCode: rule,
+        severity: RULE_SEVERITY[rule],
+        dedupKey: `${rule}:${conversation.publicId}`,
+        userId: conversation.listing.createdById,
+        listingId: conversation.listingId,
+        details: {
+          conversationId: conversation.publicId,
+          listingId: conversation.listing.publicId,
+        },
+      },
+      this.trust.client,
+    )
+    if (id) {
+      this.activity.emit(TrustEvent.SIGNAL_RAISED, id, {
+        signalId: id,
+        ruleCode: rule,
+      })
+    }
+  }
+
+  private async raiseDuplicateListing(
+    listingId: bigint,
+    listingPublicId: string,
+    createdById: bigint | null,
+  ): Promise<void> {
+    const listing = await this.trust.client.listing.findUnique({
+      where: { id: listingId },
+      select: { propertyId: true, listingType: true, status: true },
+    })
+    if (!listing || listing.status !== "PUBLISHED") return
+    const others = await this.trust.client.listing.count({
+      where: {
+        propertyId: listing.propertyId,
+        listingType: listing.listingType,
+        status: "PUBLISHED",
+        deletedAt: null,
+        id: { not: listingId },
+      },
+    })
+    if (others < 1) return
+    const id = await this.trust.raiseSignal(
+      {
+        ruleCode: RiskRule.DUPLICATE_LISTING_SAME_PROPERTY,
+        severity: RULE_SEVERITY.DUPLICATE_LISTING_SAME_PROPERTY,
+        dedupKey: `${RiskRule.DUPLICATE_LISTING_SAME_PROPERTY}:${listing.propertyId}:${listing.listingType}`,
+        userId: createdById,
+        listingId,
+        details: {
+          listingId: listingPublicId,
+          otherPublished: others,
+        },
+      },
+      this.trust.client,
+    )
+    if (id) {
+      this.activity.emit(TrustEvent.SIGNAL_RAISED, id, {
+        signalId: id,
+        ruleCode: RiskRule.DUPLICATE_LISTING_SAME_PROPERTY,
+      })
+    }
+  }
+
+  private async raiseReusedMedia(
+    listingId: bigint,
+    listingPublicId: string,
+    createdById: bigint | null,
+  ): Promise<void> {
+    const listing = await this.trust.client.listing.findUnique({
+      where: { id: listingId },
+      select: { propertyId: true },
+    })
+    if (!listing) return
+    const hashes = (
+      await this.trust.client.media.findMany({
+        where: {
+          propertyId: listing.propertyId,
+          purpose: "PROPERTY",
+          contentSha256: { not: null },
+        },
+        select: { contentSha256: true },
+        take: 40,
+      })
+    )
+      .map((row) => row.contentSha256)
+      .filter((value): value is string => Boolean(value))
+    if (hashes.length === 0) return
+    const otherAccounts = await this.trust.client.media.findMany({
+      where: {
+        purpose: "PROPERTY",
+        contentSha256: { in: hashes },
+        propertyId: { not: listing.propertyId },
+        ...(createdById ? { uploadedById: { not: createdById } } : {}),
+      },
+      distinct: ["uploadedById"],
+      select: { uploadedById: true },
+      take: 5,
+    })
+    const count = otherAccounts.filter(
+      (row) => row.uploadedById !== null,
+    ).length
+    if (count < 1) return
+    const id = await this.trust.raiseSignal(
+      {
+        ruleCode: RiskRule.DUPLICATE_MEDIA_CROSS_ACCOUNT,
+        severity: RULE_SEVERITY.DUPLICATE_MEDIA_CROSS_ACCOUNT,
+        dedupKey: `${RiskRule.DUPLICATE_MEDIA_CROSS_ACCOUNT}:${listingPublicId}`,
+        userId: createdById,
+        listingId,
+        details: {
+          listingId: listingPublicId,
+          otherAccounts: count,
+        },
+      },
+      this.trust.client,
+    )
+    if (id) {
+      this.activity.emit(TrustEvent.SIGNAL_RAISED, id, {
+        signalId: id,
+        ruleCode: RiskRule.DUPLICATE_MEDIA_CROSS_ACCOUNT,
       })
     }
   }

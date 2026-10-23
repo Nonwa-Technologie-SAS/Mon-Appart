@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ListingContactBar } from "@/components/site/listing-contact-bar"
 import { ListingGrowthActions } from "@/components/site/listing-growth-actions"
+import { ListingReportForm } from "@/components/site/listing-report-form"
+import { ListingSafetyNotice } from "@/components/site/listing-safety-notice"
 import { PriceDisplay } from "@/components/site/price-display"
 import { PropertyImageGallery } from "@/components/site/property-image-gallery"
 import { VirtualTourButton } from "@/components/site/virtual-tour-button"
@@ -126,7 +128,10 @@ export default async function ListingPage({ params }: PageProps) {
         </>
       ) : null}
 
-      <nav aria-label="Fil d’Ariane" className="mb-4 text-sm text-muted-foreground">
+      <nav
+        aria-label="Fil d’Ariane"
+        className="mb-4 text-sm text-muted-foreground"
+      >
         <ol className="flex flex-wrap items-center gap-1">
           <li>
             <Link href="/" className="hover:text-foreground">
@@ -188,6 +193,8 @@ export default async function ListingPage({ params }: PageProps) {
             isAuthenticated={Boolean(session)}
           />
 
+          <ListingSafetyNotice />
+
           <p className="leading-relaxed text-foreground/90">
             {property.description}
           </p>
@@ -217,6 +224,12 @@ export default async function ListingPage({ params }: PageProps) {
               ) : null}
             </div>
           ) : null}
+
+          <ListingReportForm
+            listingId={property.id}
+            isAuthenticated={Boolean(session)}
+            returnPath={listingPath(property.title, property.id)}
+          />
 
           <div className="flex flex-col gap-3">
             {images.length > 0 || virtualTour ? (
