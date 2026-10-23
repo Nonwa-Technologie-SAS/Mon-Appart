@@ -230,6 +230,33 @@ enum InquiryStatus {
   @@map("inquiry_status")
 }
 
+/// Pipeline commercial du contact (Inquiry = lead). Distinct de InquiryStatus
+/// (ouvert / en cours / clos côté messagerie).
+enum InquiryLeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VISIT_PLANNED
+  VISIT_DONE
+  FOLLOW_UP
+  CONVERTED
+  LOST
+  ARCHIVED
+
+  @@map("inquiry_lead_stage")
+}
+
+enum InquiryLostReason {
+  BUDGET
+  LOCATION
+  TIMING
+  NO_RESPONSE
+  PROPERTY_UNAVAILABLE
+  OTHER
+
+  @@map("inquiry_lost_reason")
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -411,6 +438,51 @@ enum NotificationCategory {
   @@map("notification_category")
 }
 
+/// Fréquence d'alerte d'une recherche sauvegardée. PAUSED coupe les envois
+/// sans supprimer la recherche.
+enum SavedSearchFrequency {
+  DAILY
+  WEEKLY
+  PAUSED
+
+  @@map("saved_search_frequency")
+}
+
+/// Statut déclaré du projet immobilier. Jamais inféré d'une baisse d'activité.
+enum UserProjectStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+
+  @@map("user_project_status")
+}
+
+/// Résultat déclaré après une visite réalisée. Distinct du statut technique
+/// de la visite et du pipeline commercial du lead.
+enum VisitFeedbackOutcome {
+  PENDING_DECISION
+  STILL_INTERESTED
+  NEED_INFO
+  WANT_ANOTHER_VISIT
+  NOT_A_FIT
+  UNAVAILABLE
+  PROJECT_ABANDONED
+  PROJECT_COMPLETED
+
+  @@map("visit_feedback_outcome")
+}
+
+enum VisitFeedbackReason {
+  PRICE
+  LOCATION
+  SURFACE
+  FEATURES
+  UNAVAILABLE
+  OTHER
+
+  @@map("visit_feedback_reason")
+}
+
 enum NotificationChannel {
   IN_APP
   EMAIL
@@ -577,9 +649,14 @@ model User {
   propertyViews           PropertyView[]
   inquiriesSent           Inquiry[]                 @relation("InquirySender")
   inquiriesReceived       Inquiry[]                 @relation("InquiryOwner")
+  inquiriesAssigned       Inquiry[]                 @relation("InquiryAssignee")
+  inquiryNotes            InquiryNote[]
+  inquiryStageChanges     InquiryStageHistory[]
   appointmentsRequested   Appointment[]             @relation("AppointmentRequester")
   appointmentsHosted      Appointment[]             @relation("AppointmentOwner")
   searches                Search[]
+  savedSearches           SavedSearch[]
+  visitFeedbacks          VisitFeedback[]
   preference              UserPreference?
   behaviorProfile         UserBehaviorProfile?
   recommendations         Recommendation[]
@@ -621,6 +698,9 @@ model User {
   refundsDecided          PaymentRefund[]           @relation("RefundDecider")
   billingIncidentsSolved  BillingIncident[]
   partnersCreated         Partner[]                 @relation("PartnerCreatedBy")
+  supplyLeadsCreated      SupplyLead[]              @relation("SupplyLeadCreatedBy")
+  supplyLeadsAssigned     SupplyLead[]              @relation("SupplyLeadAssignee")
+  supplyLeadInteractions  SupplyLeadInteraction[]   @relation("SupplyLeadInteractionAuthor")
 
   @@unique([email], map: "users_email_active_key", where: raw("deleted_at IS NULL"))
   @@unique([phone], map: "users_phone_active_key", where: raw("deleted_at IS NULL"))
@@ -901,6 +981,7 @@ model Property {
   verifications   Verification[]
   events          UserEvent[]
   conversations   Conversation[]
+  visitFeedbacks  VisitFeedback[]
 
   @@index([propertyTypeId])
   @@index([neighborhoodId])
@@ -994,6 +1075,7 @@ model Listing {
   conversations   Conversation[]
   analyticsEvents AnalyticsEvent[]
   analyticsDaily  AnalyticsListingDaily[]
+  visitFeedbacks  VisitFeedback[]
 
   /// Cible des clés étrangères composites (listing_id, property_id).
   @@unique([id, propertyId])
@@ -1196,33 +1278,83 @@ model PropertyView {
 }
 
 model Inquiry {
-  id         BigInt        @id @default(autoincrement())
-  publicId   String        @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
-  userId     BigInt        @map("user_id")
-  propertyId BigInt        @map("property_id")
-  listingId  BigInt        @map("listing_id")
+  id         BigInt           @id @default(autoincrement())
+  publicId   String           @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId     BigInt           @map("user_id")
+  propertyId BigInt           @map("property_id")
+  listingId  BigInt           @map("listing_id")
   /// Destinataire au moment de la demande (propriétaire ou agent).
-  ownerId    BigInt        @map("owner_id")
+  ownerId    BigInt           @map("owner_id")
   type       InquiryType
   message    String?
-  status     InquiryStatus @default(OPEN)
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  status     InquiryStatus    @default(OPEN)
+  /// Pipeline commercial (CRM). NEW par défaut ; une inscription n'est pas une conversion.
+  stage      InquiryLeadStage @default(NEW)
+  /// Collaborateur courant du bien, pas un tiers.
+  assigneeId BigInt?          @map("assignee_id")
+  nextActionAt DateTime?      @map("next_action_at") @db.Timestamptz(6)
+  nextAction   String?        @map("next_action") @db.VarChar(255)
+  /// Budget déclaré par le prospect (XOF entiers), jamais inventé.
+  budgetAmount BigInt?        @map("budget_amount")
+  desiredZone  String?        @map("desired_zone") @db.VarChar(120)
+  desiredMoveAt DateTime?     @map("desired_move_at") @db.Timestamptz(6)
+  lostReason   InquiryLostReason? @map("lost_reason")
+  firstRespondedAt DateTime?  @map("first_responded_at") @db.Timestamptz(6)
+  qualifiedAt  DateTime?      @map("qualified_at") @db.Timestamptz(6)
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   user         User          @relation("InquirySender", fields: [userId], references: [id], onDelete: Restrict)
   owner        User          @relation("InquiryOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  assignee     User?         @relation("InquiryAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   property     Property      @relation(fields: [propertyId], references: [id], onDelete: Restrict)
   /// Clé composite : l'annonce doit appartenir au bien.
   listing      Listing       @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
   /// Conversation ouverte par cette demande (contact ou visite).
   conversation Conversation?
   appointments Appointment[]
+  notes        InquiryNote[]
+  stageHistory InquiryStageHistory[]
 
   @@index([ownerId, status, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
   @@index([listingId, propertyId])
   @@index([propertyId])
+  @@index([stage, nextActionAt])
+  @@index([assigneeId, stage])
   @@map("inquiries")
+}
+
+/// Note interne propriétaire/agence : jamais visible du prospect, jamais copiée en message.
+model InquiryNote {
+  id        BigInt   @id @default(autoincrement())
+  publicId  String   @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  inquiryId BigInt   @map("inquiry_id")
+  authorId  BigInt   @map("author_id")
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([inquiryId, createdAt(sort: Desc)])
+  @@map("inquiry_notes")
+}
+
+model InquiryStageHistory {
+  id        BigInt            @id @default(autoincrement())
+  inquiryId BigInt            @map("inquiry_id")
+  fromStage InquiryLeadStage? @map("from_stage")
+  toStage   InquiryLeadStage  @map("to_stage")
+  authorId  BigInt            @map("author_id")
+  reason    String?           @db.VarChar(200)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([inquiryId, createdAt(sort: Desc)])
+  @@map("inquiry_stage_history")
 }
 
 /// Visite d'un bien. `scheduled_at` est un instant UTC ; `timezone` (IANA)
@@ -1261,8 +1393,9 @@ model Appointment {
   listing      Listing       @relation(fields: [listingId, propertyId], references: [id, propertyId], onDelete: Restrict)
   conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   inquiry      Inquiry?      @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
-  proposedBy   User?         @relation("AppointmentProposer", fields: [proposedById], references: [id], onDelete: SetNull)
-  cancelledBy  User?         @relation("AppointmentCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  proposedBy     User?          @relation("AppointmentProposer", fields: [proposedById], references: [id], onDelete: SetNull)
+  cancelledBy    User?          @relation("AppointmentCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  visitFeedback  VisitFeedback?
 
   /// Une seule visite en cours par client et par annonce.
   @@unique([listingId, userId], map: "appointments_one_active_per_listing_key", where: raw("status = ANY (ARRAY['PENDING'::appointment_status, 'CONFIRMED'::appointment_status, 'RESCHEDULE_REQUESTED'::appointment_status])"))
@@ -1314,6 +1447,60 @@ model Search {
   @@map("searches")
 }
 
+/// Recherche persistante, distincte de l'historique `searches`.
+/// Les alertes ne partent que si `alerts_enabled` et `frequency != PAUSED`.
+model SavedSearch {
+  id                BigInt               @id @default(autoincrement())
+  publicId          String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  userId            BigInt               @map("user_id")
+  name              String               @db.VarChar(80)
+  /// Paramètres d'URL de `GET /search` (clés autorisées seulement).
+  params            Json
+  listingType       ListingType?         @map("listing_type")
+  minPrice          Decimal?             @map("min_price") @db.Decimal(14, 2)
+  maxPrice          Decimal?             @map("max_price") @db.Decimal(14, 2)
+  currency          String               @default("XOF") @db.Char(3)
+  alertsEnabled     Boolean              @default(true) @map("alerts_enabled")
+  frequency         SavedSearchFrequency @default(DAILY)
+  lastCheckedAt     DateTime?            @map("last_checked_at") @db.Timestamptz(6)
+  lastAlertedAt     DateTime?            @map("last_alerted_at") @db.Timestamptz(6)
+  cursorPublishedAt DateTime?            @map("cursor_published_at") @db.Timestamptz(6)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt], map: "saved_searches_user_created_idx")
+  @@index([alertsEnabled, frequency, lastCheckedAt], map: "saved_searches_alert_due_idx")
+  @@map("saved_searches")
+}
+
+/// Retour facultatif du prospect après une visite réalisée.
+/// `private_note` n'est jamais lu côté annonce.
+model VisitFeedback {
+  id                    BigInt               @id @default(autoincrement())
+  publicId              String               @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  appointmentId         BigInt               @unique @map("appointment_id")
+  userId                BigInt               @map("user_id")
+  listingId             BigInt               @map("listing_id")
+  propertyId            BigInt               @map("property_id")
+  outcome               VisitFeedbackOutcome
+  reason                VisitFeedbackReason?
+  privateNote           String?              @map("private_note") @db.VarChar(1000)
+  shareOutcomeWithOwner Boolean              @default(false) @map("share_outcome_with_owner")
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing     Listing     @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([listingId])
+  @@map("visit_feedbacks")
+}
+
 // ---------------------------------------------------------------------------
 // RECOMMENDATION : déclaré (preferences), déduit (behavior_profiles),
 // produit (recommendations). Trois tables, trois cycles de vie.
@@ -1334,11 +1521,15 @@ model UserPreference {
   minSurface            Decimal?      @map("min_surface") @db.Decimal(10, 2)
   maxSurface            Decimal?      @map("max_surface") @db.Decimal(10, 2)
   /// Point de référence (travail, école...) et rayon, renseignés ensemble (CHECK).
-  latitude              Decimal?      @db.Decimal(9, 6)
-  longitude             Decimal?      @db.Decimal(9, 6)
-  radiusM               Int?          @map("radius_m")
-  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  latitude              Decimal?           @db.Decimal(9, 6)
+  longitude             Decimal?           @db.Decimal(9, 6)
+  radiusM               Int?               @map("radius_m")
+  /// Déclaré par l'utilisateur ; une inactivité ne le bascule jamais.
+  projectStatus         UserProjectStatus  @default(ACTIVE) @map("project_status")
+  projectCompletedAt    DateTime?          @map("project_completed_at") @db.Timestamptz(6)
+  lastReactivationAt    DateTime?          @map("last_reactivation_at") @db.Timestamptz(6)
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   user          User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyTypes UserPreferredPropertyType[]
@@ -2603,6 +2794,7 @@ model Partner {
   deliveries   PartnerDelivery[]
   listingLinks PartnerListingLink[]
   imports      PartnerImportBatch[]
+  supplyLeads  SupplyLead[]
 
   @@index([category, commercialStatus])
   @@index([createdAt(sort: Desc), id(sort: Desc)])
@@ -2702,4 +2894,122 @@ model PartnerImportBatch {
 
   @@index([partnerId, createdAt(sort: Desc)])
   @@map("partner_import_batches")
+}
+
+// ---------------------------------------------------------------------------
+// SUPPLY LEADS : pipeline commercial terrain (acquisition d'offre).
+// Distinct du registre Partner (intégrations). Peut lier un Partner une fois
+// l'accord formalisé. Pas de faux leads en seed.
+// ---------------------------------------------------------------------------
+
+enum SupplyLeadSegment {
+  OWNER
+  SMALL_AGENCY
+  ESTABLISHED_AGENCY
+  DEVELOPER
+  PROPERTY_MANAGER
+  LAND_SPECIALIST
+  OTHER
+
+  @@map("supply_lead_segment")
+}
+
+/// Étapes pipeline commercial — inscription ≠ activation.
+enum SupplyLeadStage {
+  IDENTIFIED
+  TO_CONTACT
+  CONTACTED
+  QUALIFIED
+  DEMO
+  REGISTERED
+  LISTINGS_SUBMITTED
+  VERIFICATION
+  FIRST_PUBLISHED
+  ACTIVATED
+  NURTURE
+  REFUSED
+  CHURN_RISK
+
+  @@map("supply_lead_stage")
+}
+
+enum SupplyLeadSource {
+  DIRECT
+  REFERRAL
+  DIRECTORY
+  EVENT
+  WEBSITE
+  SOCIAL
+  OTHER
+
+  @@map("supply_lead_source")
+}
+
+enum SupplyLeadInteractionKind {
+  CALL
+  WHATSAPP
+  EMAIL
+  VISIT
+  DEMO
+  NOTE
+  STATUS_CHANGE
+
+  @@map("supply_lead_interaction_kind")
+}
+
+/// Prospect / partenaire commercial pour constitution du stock d'annonces.
+model SupplyLead {
+  id                 BigInt            @id @default(autoincrement())
+  publicId           String            @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  segment            SupplyLeadSegment
+  stage              SupplyLeadStage   @default(IDENTIFIED)
+  displayName        String            @map("display_name") @db.VarChar(160)
+  organizationName   String?           @map("organization_name") @db.VarChar(160)
+  phone              String?           @db.VarChar(32)
+  email              String?           @db.VarChar(255)
+  zoneCodes          String[]          @default([]) @map("zone_codes")
+  propertyCategories String[]          @default([]) @map("property_categories")
+  source             SupplyLeadSource  @default(DIRECT)
+  estimatedListings  Int?              @map("estimated_listings") @db.SmallInt
+  submittedListings  Int               @default(0) @map("submitted_listings") @db.SmallInt
+  approvedListings   Int               @default(0) @map("approved_listings") @db.SmallInt
+  activeListings     Int               @default(0) @map("active_listings") @db.SmallInt
+  nextActionAt       DateTime?         @map("next_action_at") @db.Timestamptz(6)
+  nextAction         String?           @map("next_action") @db.VarChar(255)
+  refusalReason      String?           @map("refusal_reason") @db.VarChar(500)
+  notes              String?           @db.VarChar(2000)
+  /// Lien optionnel vers le registre Partner (intégrations) — pas un doublon CRM.
+  partnerId          BigInt?           @map("partner_id")
+  createdById        BigInt            @map("created_by_id")
+  assigneeId         BigInt?           @map("assignee_id")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  partner       Partner?                 @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  createdBy     User                     @relation("SupplyLeadCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignee      User?                    @relation("SupplyLeadAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  interactions  SupplyLeadInteraction[]
+
+  @@index([stage, nextActionAt])
+  @@index([segment, stage])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([partnerId])
+  @@map("supply_leads")
+}
+
+model SupplyLeadInteraction {
+  id        BigInt                     @id @default(autoincrement())
+  publicId  String                     @unique @default(dbgenerated("gen_random_uuid()")) @map("public_id") @db.Uuid
+  leadId    BigInt                     @map("lead_id")
+  kind      SupplyLeadInteractionKind
+  summary   String                     @db.VarChar(500)
+  detail    String?                    @db.VarChar(2000)
+  authorId  BigInt                     @map("author_id")
+  createdAt DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  lead   SupplyLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User       @relation("SupplyLeadInteractionAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@map("supply_lead_interactions")
 }
