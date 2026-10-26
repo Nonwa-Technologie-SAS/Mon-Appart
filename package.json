@@ -37,6 +37,8 @@
     "docker:build:workers": "docker build -f services/workers/Dockerfile -t mon-appart-workers:local .",
     "docker:build:recommendation": "docker build -f services/recommendation/Dockerfile -t mon-appart-recommendation:local .",
     "smoke:health": "node scripts/smoke-health.mjs",
+    "secrets:check": "node scripts/assert-no-tracked-env.mjs",
+    "secrets:local": "node scripts/generate-local-secrets.mjs",
     "load:smoke": "k6 run -e BASE_URL=http://127.0.0.1:4000 scripts/load/k6-smoke.js",
     "load:ramp": "k6 run -e BASE_URL=http://127.0.0.1:4000 scripts/load/k6-ramp.js",
     "prepare": "husky"

@@ -23,6 +23,22 @@ env:
   REDIS_URL: redis://127.0.0.1:6379
 
 jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: No tracked .env files
+        run: node scripts/assert-no-tracked-env.mjs
+      - name: Gitleaks (working tree)
+        run: |
+          docker run --rm -v "$PWD:/src:ro" ghcr.io/gitleaks/gitleaks:v8.24.3 \
+            detect --source /src --no-git --redact \
+            --config /src/.gitleaks.toml --exit-code 1
+
   verify:
     name: Lint, types, unit tests, build
     runs-on: ubuntu-latest

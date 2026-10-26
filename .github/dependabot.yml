@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      lint-and-format:
+        patterns:
+          - prettier
+          - eslint*
+          - "@typescript-eslint/*"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+  - package-ecosystem: pip
+    directory: "/services/recommendation"
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies

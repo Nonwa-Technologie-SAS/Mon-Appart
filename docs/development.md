@@ -12,7 +12,7 @@
 
 ## Environnement
 
-Copier `.env.example` vers `.env` à la racine. Aucun secret réel ne va dans Git.
+Copier `.env.example` vers `.env` à la racine (`pnpm secrets:local` pour des JWT distincts). Aucun secret réel ne va dans Git (`pnpm secrets:check`). Détail : [environment-strategy.md](./environment-strategy.md), [secrets-management.md](./secrets-management.md).
 
 Le site `apps/web` ne lit pas ce fichier pour le métier : il a besoin de `apps/web/.env.local` avec `NEST_API_URL` / `NEXT_PUBLIC_NEST_API_URL=same-origin` (rewrite vers Nest). Plus de `DATABASE_URL` legacy côté web — voir [web-nest-cutover.md](./web-nest-cutover.md).
 
