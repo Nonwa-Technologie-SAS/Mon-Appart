@@ -2,3 +2,14 @@ packages:
   - "apps/*"
   - "packages/*"
   - "services/workers"
+
+# pnpm 12 ne lit plus package.json#pnpm.onlyBuiltDependencies
+onlyBuiltDependencies:
+  - "@parcel/watcher"
+  - "@prisma/engines"
+  - "@swc/core"
+  - esbuild
+  - msgpackr-extract
+  - prisma
+  - sharp
+  - unrs-resolver
