@@ -200,6 +200,50 @@ export class MetricsService implements OnModuleInit {
       labelNames: ["outcome"],
       registers: [this.registry],
     }),
+    shadow: new Counter({
+      name: "recommendation_shadow_total",
+      help: "Comparaisons shadow du moteur distant (sans exposition)",
+      labelNames: ["outcome"],
+      registers: [this.registry],
+    }),
+  }
+
+  readonly assistant = {
+    requests: new Counter({
+      name: "assistant_requests_total",
+      help: "Tours assistant servis",
+      labelNames: ["mode", "provider"],
+      registers: [this.registry],
+    }),
+    latency: new Histogram({
+      name: "assistant_latency_ms",
+      help: "Durée d'un tour assistant, en millisecondes",
+      labelNames: ["mode"],
+      buckets: [10, 25, 50, 100, 200, 400, 800, 1600, 3200, 8000],
+      registers: [this.registry],
+    }),
+    empty: new Counter({
+      name: "assistant_empty_total",
+      help: "Tours Search sans annonce",
+      registers: [this.registry],
+    }),
+    fallbacks: new Counter({
+      name: "assistant_fallback_total",
+      help: "Replis (Search en erreur ou OpenAI indisponible)",
+      labelNames: ["reason"],
+      registers: [this.registry],
+    }),
+    injection: new Counter({
+      name: "assistant_injection_suspected_total",
+      help: "Messages ressemblant à une injection de prompt (non bloqués)",
+      registers: [this.registry],
+    }),
+    feedback: new Counter({
+      name: "assistant_feedback_total",
+      help: "Retours utilisateur sur l'assistant",
+      labelNames: ["rating"],
+      registers: [this.registry],
+    }),
   }
 
   readonly media = {
@@ -454,6 +498,61 @@ export class MetricsService implements OnModuleInit {
       name: "billing_job_runs_total",
       help: "Passages de la réconciliation",
       labelNames: ["outcome"],
+      registers: [this.registry],
+    }),
+  }
+
+  readonly outbox = {
+    published: new Counter({
+      name: "outbox_events_published_total",
+      help: "Événements de domaine publiés depuis l'outbox",
+      labelNames: ["event_type"],
+      registers: [this.registry],
+    }),
+    retries: new Counter({
+      name: "outbox_events_retries_total",
+      help: "Reprises de publication Outbox",
+      labelNames: ["event_type", "reason"],
+      registers: [this.registry],
+    }),
+    dead: new Counter({
+      name: "outbox_events_dead_total",
+      help: "Événements Outbox envoyés en file morte",
+      labelNames: ["event_type"],
+      registers: [this.registry],
+    }),
+    pending: new Gauge({
+      name: "outbox_events_pending",
+      help: "Événements Outbox en attente ou en cours de publication",
+      registers: [this.registry],
+    }),
+    deadLetters: new Gauge({
+      name: "outbox_events_dead_letters",
+      help: "Événements Outbox en file morte",
+      registers: [this.registry],
+    }),
+    oldestAgeSeconds: new Gauge({
+      name: "outbox_oldest_pending_age_seconds",
+      help: "Âge du plus ancien événement Outbox non publié",
+      registers: [this.registry],
+    }),
+    publishLatency: new Histogram({
+      name: "outbox_publish_latency_ms",
+      help: "Latence de publication d'un événement Outbox",
+      labelNames: ["event_type"],
+      buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500],
+      registers: [this.registry],
+    }),
+    consumed: new Counter({
+      name: "domain_events_consumed_total",
+      help: "Événements de domaine traités par un consommateur",
+      labelNames: ["consumer", "event_type"],
+      registers: [this.registry],
+    }),
+    deduplicated: new Counter({
+      name: "domain_events_deduplicated_total",
+      help: "Livraisons ignorées car déjà traitées (inbox)",
+      labelNames: ["consumer"],
       registers: [this.registry],
     }),
   }

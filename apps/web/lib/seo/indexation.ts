@@ -71,6 +71,7 @@ export const PRIVATE_PATH_PREFIXES = [
   "/inscription",
   "/espace",
   "/profil",
+  "/favoris",
   "/admin",
   "/api",
 ] as const

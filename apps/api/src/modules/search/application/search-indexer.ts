@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common"
 import type { DomainEvent } from "../../../common/events/domain-event"
+import { InboxService } from "../../../common/events/inbox.service"
 import { OnEvents } from "../../../common/events/on-events.decorator"
 import { safeErrorMessage } from "../../../common/http/safe-error"
 import { MetricsService } from "../../../observability/metrics.service"
@@ -50,6 +51,7 @@ export class SearchIndexer {
     private readonly cache: SearchCache,
     private readonly suggestions: SuggestionProvider,
     private readonly metrics: MetricsService,
+    private readonly inbox: InboxService,
   ) {}
 
   @OnEvents(LISTING_EVENTS, {
@@ -58,7 +60,9 @@ export class SearchIndexer {
     suppressErrors: true,
   })
   async onListingEvent(event: DomainEvent<object>): Promise<void> {
+    if (await this.seen("search.indexer", event.id)) return
     await this.syncListing(event.aggregateId)
+    await this.remember("search.indexer", event.id, event.name)
   }
 
   @OnEvents(PROPERTY_EVENTS, {
@@ -67,7 +71,29 @@ export class SearchIndexer {
     suppressErrors: true,
   })
   async onPropertyEvent(event: DomainEvent<object>): Promise<void> {
+    if (await this.seen("search.indexer", event.id)) return
     await this.syncProperty(event.aggregateId)
+    await this.remember("search.indexer", event.id, event.name)
+  }
+
+  private async seen(consumer: string, eventId: string): Promise<boolean> {
+    if (await this.inbox.alreadyProcessed(consumer, eventId)) {
+      this.metrics.outbox.deduplicated.inc({ consumer })
+      return true
+    }
+    return false
+  }
+
+  private async remember(
+    consumer: string,
+    eventId: string,
+    eventType: string,
+  ): Promise<void> {
+    await this.inbox.claim(consumer, eventId)
+    this.metrics.outbox.consumed.inc({
+      consumer,
+      event_type: eventType.split(".").slice(0, 2).join("."),
+    })
   }
 
   /** Indexe ou retire une annonce selon son état actuel en base. */

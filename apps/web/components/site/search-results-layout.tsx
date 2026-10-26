@@ -19,8 +19,7 @@ import { AROUND_RADIUS_KM, NEARBY_RADIUS_KM, haversineKm } from "@/lib/geo"
 import { cn } from "@/lib/utils"
 
 const PropertyMap = dynamic(
-  () =>
-    import("@/components/site/property-map").then((m) => m.PropertyMap),
+  () => import("@/components/site/property-map").then((m) => m.PropertyMap),
   {
     ssr: false,
     loading: () => (
@@ -28,7 +27,7 @@ const PropertyMap = dynamic(
         Chargement de la carte…
       </div>
     ),
-  }
+  },
 )
 
 type SearchResultsLayoutProps = {
@@ -39,12 +38,13 @@ type SearchResultsLayoutProps = {
   initialMaxPrice?: string
   initialLat?: string
   initialLng?: string
+  signedIn?: boolean
 }
 
 function withClientDistance(
   properties: PropertyListItem[],
   lat: number | null,
-  lng: number | null
+  lng: number | null,
 ) {
   if (lat == null || lng == null) return properties
 
@@ -55,7 +55,7 @@ function withClientDistance(
       ...property,
       distanceKm: haversineKm(
         { lat, lng },
-        { lat: property.latitude, lng: property.longitude }
+        { lat: property.latitude, lng: property.longitude },
       ),
     }
   })
@@ -69,10 +69,13 @@ export function SearchResultsLayout({
   initialMaxPrice,
   initialLat,
   initialLng,
+  signedIn = false,
 }: SearchResultsLayoutProps) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [showMap, setShowMap] = useState(false)
-  const [sort, setSort] = useState(initialLat && initialLng ? "distance" : "newest")
+  const [sort, setSort] = useState(
+    initialLat && initialLng ? "distance" : "newest",
+  )
   const geoEnabled = !initialQ?.trim()
   const location = useVisitorLocation({
     enabled: geoEnabled,
@@ -88,14 +91,17 @@ export function SearchResultsLayout({
 
   const locatedProperties = useMemo(
     () => withClientDistance(properties, location.lat, location.lng),
-    [location.lat, location.lng, properties]
+    [location.lat, location.lng, properties],
   )
 
   const sortedProperties = useMemo(() => {
     return [...locatedProperties].toSorted((a, b) => {
       if (sort === "price-asc") return a.price - b.price
       if (sort === "price-desc") return b.price - a.price
-      if (sort === "distance" || (sort === "newest" && location.status === "ready")) {
+      if (
+        sort === "distance" ||
+        (sort === "newest" && location.status === "ready")
+      ) {
         if (a.distanceKm == null) return 1
         if (b.distanceKm == null) return -1
         return a.distanceKm - b.distanceKm
@@ -105,16 +111,18 @@ export function SearchResultsLayout({
   }, [locatedProperties, location.status, sort])
 
   const nearby = sortedProperties.filter(
-    (property) => property.distanceKm != null && property.distanceKm <= NEARBY_RADIUS_KM
+    (property) =>
+      property.distanceKm != null && property.distanceKm <= NEARBY_RADIUS_KM,
   )
   const around = sortedProperties.filter(
     (property) =>
       property.distanceKm != null &&
       property.distanceKm > NEARBY_RADIUS_KM &&
-      property.distanceKm <= AROUND_RADIUS_KM
+      property.distanceKm <= AROUND_RADIUS_KM,
   )
   const further = sortedProperties.filter(
-    (property) => property.distanceKm == null || property.distanceKm > AROUND_RADIUS_KM
+    (property) =>
+      property.distanceKm == null || property.distanceKm > AROUND_RADIUS_KM,
   )
 
   const showGeoGroups =
@@ -200,7 +208,9 @@ export function SearchResultsLayout({
             </p>
           ) : null}
 
-          {geoEnabled && (location.status === "denied" || location.status === "unavailable") ? (
+          {geoEnabled &&
+          (location.status === "denied" ||
+            location.status === "unavailable") ? (
             <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm sm:flex-row sm:items-center">
               <p className="flex-1 text-muted-foreground">
                 Activez la localisation pour voir les logements près de vous, ou
@@ -294,6 +304,7 @@ export function SearchResultsLayout({
                         q: initialQ,
                         type: initialType,
                         maxPrice: initialMaxPrice,
+                        signedIn,
                       }
                     : undefined
                 }
@@ -344,6 +355,7 @@ export function SearchResultsLayout({
                       q: initialQ,
                       type: initialType,
                       maxPrice: initialMaxPrice,
+                      signedIn,
                     }
                   : undefined
               }
@@ -412,7 +424,12 @@ function PropertyList({
     label: string
     variant?: "default" | "outline" | "secondary"
   }[]
-  saveCriteria?: { q?: string; type?: string; maxPrice?: string }
+  saveCriteria?: {
+    q?: string
+    type?: string
+    maxPrice?: string
+    signedIn?: boolean
+  }
 }) {
   if (properties.length === 0) {
     return (
@@ -436,6 +453,7 @@ function PropertyList({
             q={saveCriteria.q}
             type={saveCriteria.type}
             maxPrice={saveCriteria.maxPrice}
+            signedIn={saveCriteria.signedIn}
           />
         ) : null}
       </div>
@@ -486,13 +504,13 @@ function FilterSwitch({
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         "relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-        checked ? "bg-primary" : "bg-muted"
+        checked ? "bg-primary" : "bg-muted",
       )}
     >
       <span
         className={cn(
           "absolute top-0.5 left-0.5 size-6 rounded-full bg-white shadow-sm transition-transform",
-          checked && "translate-x-5"
+          checked && "translate-x-5",
         )}
       />
     </button>

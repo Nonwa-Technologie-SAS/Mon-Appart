@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common"
 import {
   budgetBucket,
   EXPLICIT_FEEDBACK,
+  VISIT_FEEDBACK_OUTCOMES,
   type ConversionKind,
   type ExplicitFeedback,
 } from "@mon-appart/analytics"
@@ -18,12 +19,18 @@ import {
   type FavoriteChangedPayload,
 } from "../../interaction"
 import {
+  AssistantEvent,
+  type AssistantFeedbackPayload,
+  type AssistantTurnPayload,
+} from "../../ai-assistant"
+import {
   RecommendationEvent,
   type RecommendationFeedbackPayload,
   type RecommendationServedPayload,
 } from "../../recommendation"
 import {
   SEARCH_PERFORMED_EVENT,
+  SearchRetentionEvent,
   type SearchPerformedPayload,
 } from "../../search"
 import { TrustEvent } from "../../trust"
@@ -46,6 +53,14 @@ const FIELD = /^[a-zA-Z]{1,40}$/
 const CODE = /^[A-Z0-9_]{1,40}$/
 const LISTING_TYPE_SET = new Set<string>(LISTING_TYPES)
 const EXPLICIT = new Set<string>(EXPLICIT_FEEDBACK)
+const VISIT_OUTCOMES = new Set<string>(VISIT_FEEDBACK_OUTCOMES)
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function clampCount(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0
+  return Math.min(Math.max(Math.floor(value), 0), 100_000)
+}
 
 async function knownCode(
   code: string | null,
@@ -298,6 +313,51 @@ export class BusinessEventListener {
       "recommendation_feedback_submitted",
       { ...common, feedback: type as ExplicitFeedback },
       context,
+    )
+  }
+
+  @OnEvents([AssistantEvent.TURN_COMPLETED], ASYNC)
+  async onAssistantTurn(
+    event: DomainEvent<AssistantTurnPayload>,
+  ): Promise<void> {
+    const payload = event.payload
+    await this.tracker.track(
+      "assistant_turn_completed",
+      {
+        mode: payload.mode,
+        provider: payload.provider,
+        promptVersion: payload.promptVersion,
+        listingCount: payload.listingCount,
+        fallback: payload.fallback,
+        injectionSuspected: payload.injectionSuspected,
+      },
+      {
+        eventId: deterministicEventId(
+          "assistant_turn_completed",
+          payload.conversationId,
+          event.occurredAt,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([AssistantEvent.FEEDBACK], ASYNC)
+  async onAssistantFeedback(
+    event: DomainEvent<AssistantFeedbackPayload>,
+  ): Promise<void> {
+    await this.tracker.track(
+      "assistant_feedback_submitted",
+      {
+        rating: event.payload.rating,
+        promptVersion: event.payload.promptVersion,
+      },
+      {
+        eventId: deterministicEventId("assistant_feedback_submitted", event.id),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
     )
   }
 
@@ -700,6 +760,264 @@ export class BusinessEventListener {
         userId,
         listingId,
         occurredAt,
+      },
+    )
+  }
+
+  @OnEvents(
+    [
+      SearchRetentionEvent.SAVED_SEARCH_CREATED,
+      SearchRetentionEvent.SAVED_SEARCH_UPDATED,
+    ],
+    ASYNC,
+  )
+  async onSavedSearch(
+    event: DomainEvent<{ alertsEnabled?: boolean }>,
+  ): Promise<void> {
+    const name =
+      event.name === SearchRetentionEvent.SAVED_SEARCH_CREATED
+        ? "saved_search_created"
+        : "saved_search_updated"
+    await this.tracker.track(
+      name,
+      { alertsEnabled: event.payload.alertsEnabled === true },
+      {
+        eventId: deterministicEventId(name, event.aggregateId),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([SearchRetentionEvent.SEARCH_RESUMED], ASYNC)
+  async onSearchResumed(
+    event: DomainEvent<{ savedSearchId?: string }>,
+  ): Promise<void> {
+    const savedSearchId = event.payload.savedSearchId ?? event.aggregateId
+    if (!UUID.test(savedSearchId)) return
+    await this.tracker.track(
+      "search_resumed",
+      { savedSearchId },
+      {
+        eventId: deterministicEventId(
+          "search_resumed",
+          savedSearchId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([SearchRetentionEvent.PROPERTY_ALERT_ELIGIBLE], ASYNC)
+  async onAlertEligible(
+    event: DomainEvent<{
+      savedSearchId?: string
+      exactCount?: number
+      nearCount?: number
+    }>,
+  ): Promise<void> {
+    const savedSearchId = event.payload.savedSearchId ?? event.aggregateId
+    if (!UUID.test(savedSearchId)) return
+    await this.tracker.track(
+      "property_alert_eligible",
+      {
+        savedSearchId,
+        exactCount: clampCount(event.payload.exactCount),
+        nearCount: clampCount(event.payload.nearCount),
+      },
+      {
+        eventId: deterministicEventId(
+          "property_alert_eligible",
+          savedSearchId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents(
+    [
+      SearchRetentionEvent.PROPERTY_ALERT_SENT,
+      SearchRetentionEvent.REACTIVATION_SENT,
+    ],
+    ASYNC,
+  )
+  async onAlertSent(
+    event: DomainEvent<{
+      savedSearchId?: string
+      listingCount?: number
+      reactivation?: boolean
+    }>,
+  ): Promise<void> {
+    const savedSearchId = event.payload.savedSearchId ?? event.aggregateId
+    if (!UUID.test(savedSearchId)) return
+    const reactivation =
+      event.name === SearchRetentionEvent.REACTIVATION_SENT ||
+      event.payload.reactivation === true
+    const name = reactivation ? "reactivation_sent" : "property_alert_sent"
+    await this.tracker.track(
+      name,
+      {
+        savedSearchId,
+        listingCount: clampCount(event.payload.listingCount),
+        reactivation,
+      },
+      {
+        eventId: deterministicEventId(name, savedSearchId, event.id),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([SearchRetentionEvent.REACTIVATION_ELIGIBLE], ASYNC)
+  async onReactivationEligible(
+    event: DomainEvent<{ savedSearchId?: string }>,
+  ): Promise<void> {
+    const savedSearchId = event.payload.savedSearchId ?? event.aggregateId
+    if (!UUID.test(savedSearchId)) return
+    await this.tracker.track(
+      "reactivation_eligible",
+      { savedSearchId },
+      {
+        eventId: deterministicEventId(
+          "reactivation_eligible",
+          savedSearchId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([SearchRetentionEvent.PROJECT_STATUS_CHANGED], ASYNC)
+  async onProjectStatus(
+    event: DomainEvent<{ status?: string }>,
+  ): Promise<void> {
+    if (event.payload.status !== "COMPLETED") return
+    await this.tracker.track(
+      "project_marked_completed",
+      {},
+      {
+        eventId: deterministicEventId(
+          "project_marked_completed",
+          event.aggregateId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([CommunicationEvent.VISIT_FEEDBACK_SUBMITTED], ASYNC)
+  async onVisitFeedback(
+    event: DomainEvent<{
+      appointmentId: string
+      listingId: string
+      outcome: string
+      shared: boolean
+    }>,
+  ): Promise<void> {
+    const { appointmentId, outcome, shared } = event.payload
+    if (!VISIT_OUTCOMES.has(outcome)) return
+    const appointment = await this.facts.appointment(appointmentId)
+    if (!appointment) return
+    await this.tracker.track(
+      "post_visit_feedback_submitted",
+      {
+        listingId: appointment.listing.publicId,
+        appointmentId,
+        outcome: outcome as (typeof VISIT_FEEDBACK_OUTCOMES)[number],
+        shared: shared === true,
+      },
+      {
+        eventId: deterministicEventId(
+          "post_visit_feedback_submitted",
+          appointmentId,
+        ),
+        userId: appointment.userId,
+        listingId: appointment.listingId,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+    if (outcome === "PROJECT_COMPLETED") {
+      await this.tracker.track(
+        "project_marked_completed",
+        {},
+        {
+          eventId: deterministicEventId(
+            "project_marked_completed",
+            event.aggregateId,
+            event.id,
+          ),
+          userId: appointment.userId,
+          occurredAt: new Date(event.occurredAt),
+        },
+      )
+    }
+  }
+
+  @OnEvents([CommunicationEvent.NOTIFICATION_PREFERENCES_UPDATED], ASYNC)
+  async onPreferencesUpdated(
+    event: DomainEvent<{ marketingDisabled?: boolean }>,
+  ): Promise<void> {
+    await this.tracker.track(
+      "notification_preferences_updated",
+      { marketingDisabled: event.payload.marketingDisabled === true },
+      {
+        eventId: deterministicEventId(
+          "notification_preferences_updated",
+          event.aggregateId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([CommunicationEvent.MARKETING_UNSUBSCRIBED], ASYNC)
+  async onMarketingUnsubscribed(
+    event: DomainEvent<Record<string, never>>,
+  ): Promise<void> {
+    await this.tracker.track(
+      "marketing_unsubscribed",
+      {},
+      {
+        eventId: deterministicEventId(
+          "marketing_unsubscribed",
+          event.aggregateId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
+      },
+    )
+  }
+
+  @OnEvents([SearchRetentionEvent.PROPERTY_MARKED_UNAVAILABLE], ASYNC)
+  async onPropertyUnavailable(
+    event: DomainEvent<{ listingId?: string }>,
+  ): Promise<void> {
+    const listingId = event.payload.listingId ?? event.aggregateId
+    if (!UUID.test(listingId)) return
+    await this.tracker.track(
+      "property_marked_unavailable",
+      { listingId },
+      {
+        eventId: deterministicEventId(
+          "property_marked_unavailable",
+          listingId,
+          event.id,
+        ),
+        userId: null,
+        occurredAt: new Date(event.occurredAt),
       },
     )
   }

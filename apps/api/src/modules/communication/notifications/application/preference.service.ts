@@ -10,6 +10,7 @@ import { CommunicationActivity } from "../../communication-activity"
 import { communicationError } from "../../domain/communication-errors"
 import {
   CommunicationAuditAction,
+  CommunicationEvent,
   USER_ENTITY,
 } from "../../domain/communication-events"
 import {
@@ -122,6 +123,23 @@ export class PreferenceService {
           tx,
         )
       })
+    }
+    if (effective.length > 0) {
+      const marketingDisabled = effective.some(
+        (change) => change.category === "MARKETING" && !change.enabled,
+      )
+      this.activity.emit(
+        CommunicationEvent.NOTIFICATION_PREFERENCES_UPDATED,
+        actor.publicId,
+        { marketingDisabled },
+      )
+      if (marketingDisabled) {
+        this.activity.emit(
+          CommunicationEvent.MARKETING_UNSUBSCRIBED,
+          actor.publicId,
+          {},
+        )
+      }
     }
     return this.matrix(actor.userId)
   }

@@ -151,11 +151,23 @@ export class ConversationService {
           client,
           tx,
         )
-        return this.messages.post(tx, access, actor, {
+        const posted = await this.messages.post(tx, access, actor, {
           body,
           attachmentIds: [],
           clientMessageId: input.clientMessageId,
         })
+        await this.activity.enqueue(tx, {
+          name: CommunicationEvent.CONVERSATION_CREATED,
+          producer: "communication",
+          aggregateType: CONVERSATION_ENTITY,
+          aggregateId: access.conversation.publicId,
+          payload: {
+            conversationId: access.conversation.publicId,
+            listingId: listing.publicId,
+          },
+          correlationId: client.requestId,
+        })
+        return posted
       })
     } catch (error) {
       if (!isUniqueViolation(error)) throw error
@@ -173,14 +185,7 @@ export class ConversationService {
     this.activity.metrics.communication.conversationsCreated.inc({
       type: "PROPERTY_INQUIRY",
     })
-    this.activity.emit(
-      CommunicationEvent.CONVERSATION_CREATED,
-      posted.conversation.publicId,
-      {
-        conversationId: posted.conversation.publicId,
-        listingId: listing.publicId,
-      },
-    )
+    await this.activity.flush()
     return {
       conversation: await this.get(actor, posted.conversation.publicId),
       message,

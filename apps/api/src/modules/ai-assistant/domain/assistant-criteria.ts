@@ -4,11 +4,7 @@ import type { ListingType } from "@mon-appart/types"
 export type PricePeriod = "MONTH" | "DAY" | "TOTAL" | "UNKNOWN"
 
 export type SoftPreference =
-  | "CALM_AREA"
-  | "QUICK_MOVE_IN"
-  | "FAMILY"
-  | "NEAR_SHOPS"
-  | "OUTDOOR_SPACE"
+  "CALM_AREA" | "QUICK_MOVE_IN" | "FAMILY" | "NEAR_SHOPS" | "OUTDOOR_SPACE"
 
 export interface AssistantCriteria {
   listingTypes: ListingType[]
@@ -62,5 +58,6 @@ export interface AssistantTurnResult {
   listings: AssistantListingCard[]
   suggestions: string[]
   provider: "rules" | "openai" | "degraded"
+  promptVersion: string
   conversationId: string
 }

@@ -1,5 +1,8 @@
+import type { ConfigService } from "@nestjs/config"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { DomainEventPublisher } from "../../../common/events/domain-event.publisher"
+import { MetricsService } from "../../../observability/metrics.service"
 import { AssistantService } from "./assistant.service"
 import { AiAssistantConfig } from "../ai-assistant.config"
 import { ConversationStore } from "../infrastructure/conversation.store"
@@ -69,6 +72,8 @@ describe("AssistantService", () => {
       search as never,
       rules,
       new OpenAiTextProvider(config, rules),
+      new MetricsService({ get: () => "false" } as unknown as ConfigService),
+      { publish: vi.fn() } as unknown as DomainEventPublisher,
     )
   })
 
@@ -107,9 +112,9 @@ describe("AssistantService", () => {
     expect(result.listings[0]!.listingId).toBe(
       "11111111-1111-4111-8111-111111111111",
     )
-    expect(result.listings[0]!.matchReasons.some((r) => /budget/i.test(r))).toBe(
-      true,
-    )
+    expect(
+      result.listings[0]!.matchReasons.some((r) => /budget/i.test(r)),
+    ).toBe(true)
   })
 
   it("isole les conversations par session", async () => {

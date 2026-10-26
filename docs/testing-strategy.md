@@ -17,18 +17,20 @@ Jest n’est **pas** utilisé. OpenSearch n’est **pas** requis pour la suite s
 
 ## Modules et couverture (cartographie)
 
-| Module                | Critiques                                       | Tests existants                                      | Manques / risques              | Priorité            |
-| --------------------- | ----------------------------------------------- | ---------------------------------------------------- | ------------------------------ | ------------------- |
-| Identity              | register/login, sessions, OTP, RBAC, rate-limit | unit + `test/identity/*.db-spec.ts`                  | MFA absent (produit)           | Haute — déjà solide |
-| Properties / Listings | transitions, prix XOF, publication              | domain specs + `catalog/*.db-spec.ts`                | concurrence fine multi-clients | Haute               |
-| Search                | filtres, geo, pagination                        | domain + `search.db-spec.ts`                         | OpenSearch réel = futur        | Haute               |
-| Recommendation        | budget strict, diversité, score                 | domain + `recommendation.db-spec.ts` + pytest Python | eval offline prod              | Haute               |
-| Media                 | upload local, variants                          | domain + `media.db-spec.ts`                          | R2/S3 réel hors CI             | Moyenne             |
-| Trust                 | transitions, badges                             | domain + `trust.db-spec.ts`                          | —                              | Moyenne             |
-| Communication         | messages, RDV, notifs mock                      | domain + `communication.db-spec.ts`                  | WebSocket CI                   | Moyenne             |
-| Billing               | mock provider, webhooks                         | domain + `billing.db-spec.ts`                        | jamais de PSP réel en CI       | Haute               |
-| Admin / antifraude    | RBAC admin                                      | domain + `admin.db-spec.ts`                          | fuzz règles                    | Moyenne             |
-| Web public            | recherche, SEO                                  | node:test SEO + Playwright smoke                     | parcours auth/publication E2E  | Haute UX            |
+| Module                | Critiques                                       | Tests existants                                          | Manques / risques              | Priorité            |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------- | ------------------------------ | ------------------- |
+| Identity              | register/login, sessions, OTP, RBAC, rate-limit | unit + `test/identity/*.db-spec.ts`                      | MFA absent (produit)           | Haute — déjà solide |
+| Properties / Listings | transitions, prix XOF, publication              | domain specs + `catalog/*.db-spec.ts`                    | concurrence fine multi-clients | Haute               |
+| Search                | filtres, geo, pagination                        | domain + `search.db-spec.ts`                             | OpenSearch réel = futur        | Haute               |
+| Recommendation        | budget strict, diversité, score                 | domain + `recommendation.db-spec.ts` + pytest Python     | eval offline prod              | Haute               |
+| Media                 | upload local, variants                          | domain + `media.db-spec.ts`                              | R2/S3 réel hors CI             | Moyenne             |
+| Trust                 | transitions, badges                             | domain + `trust.db-spec.ts`                              | —                              | Moyenne             |
+| Communication         | messages, RDV, notifs mock                      | domain + `communication.db-spec.ts`                      | WebSocket CI                   | Moyenne             |
+| Billing               | mock provider, webhooks                         | domain + `billing.db-spec.ts`                            | jamais de PSP réel en CI       | Haute               |
+| Config / secrets      | boot Zod, `.env` non suivi                      | `packages/config` env.test + `pnpm secrets:check`        | Gitleaks historique            | Haute               |
+| Events / Outbox       | atomicité TX, SKIP LOCKED, inbox                | unit `event-schema.spec.ts` + `test/events/*.db-spec.ts` | Kafka non applicable           | Haute               |
+| Admin / antifraude    | RBAC admin                                      | domain + `admin.db-spec.ts`                              | fuzz règles                    | Moyenne             |
+| Web public            | recherche, SEO                                  | node:test SEO + Playwright smoke                         | parcours auth/publication E2E  | Haute UX            |
 
 ## Protections environnement
 

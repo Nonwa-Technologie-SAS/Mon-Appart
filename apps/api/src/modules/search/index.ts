@@ -14,3 +14,4 @@ export {
   SEARCH_PERFORMED_EVENT,
   type SearchPerformedPayload,
 } from "./application/search.service"
+export { SearchRetentionEvent } from "./domain/saved-search-events"

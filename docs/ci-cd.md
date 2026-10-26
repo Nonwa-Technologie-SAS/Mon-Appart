@@ -2,10 +2,10 @@
 
 ## Workflows présents
 
-| Fichier | Déclencheur | Rôle |
-| --- | --- | --- |
-| `.github/workflows/ci.yml` | push `main`/`develop`, PR | Lint, typecheck, tests, build, intégration PostGIS, drift migrations, build Docker (sans push) |
-| `.github/workflows/deploy-staging.yml` | `workflow_dispatch` | Garde manuelle + build image ; **push/deploy à brancher** après choix Cloud |
+| Fichier                                | Déclencheur               | Rôle                                                                                                                  |
+| -------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml`             | push `main`/`develop`, PR | Lint, typecheck, tests, build, intégration PostGIS, drift migrations, scan secrets/Gitleaks, build Docker (sans push) |
+| `.github/workflows/deploy-staging.yml` | `workflow_dispatch`       | Garde manuelle + build image ; **push/deploy à brancher** après choix Cloud                                           |
 
 ## Pipeline PR (obligatoire)
 

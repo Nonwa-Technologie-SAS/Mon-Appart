@@ -21,6 +21,8 @@
 
 Résumé de critères + titres / prix / lieux / raisons des cartes Search (max 8). Pas de tokens d’auth, pas d’emails, pas de prompts système utilisateur.
 
+Contrôles d’injection et sanitization extraits : `output-sanitize.ts`. Détail : `ai-security-and-prompt-injection.md`.
+
 ## Limites restantes
 
 - Store en mémoire (pas multi-instance).

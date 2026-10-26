@@ -3,7 +3,9 @@ import { randomUUID } from "node:crypto"
 
 import type { Db } from "../../database/database.service"
 import { insertAuditLog, type AuditEntry } from "../audit/audit-log"
+import type { OutboxDraft } from "../events/event-schema"
 import type { DomainEventPublisher } from "../events/domain-event.publisher"
+import type { OutboxService } from "../events/outbox.service"
 
 export interface RequestContext {
   ip: string | null
@@ -24,6 +26,7 @@ export class ActivityRecorder {
   constructor(
     private readonly logger: LoggerService,
     private readonly events: DomainEventPublisher,
+    private readonly outbox?: OutboxService,
   ) {}
 
   /** Toujours dans la transaction de l'opération : un audit raté l'annule. */
@@ -40,6 +43,30 @@ export class ActivityRecorder {
     })
   }
 
+  /**
+   * Enregistre l'événement dans l'outbox de la transaction courante.
+   * Appeler `flush()` après le commit pour le publier vers le bus.
+   */
+  enqueue(tx: Db, draft: OutboxDraft): Promise<string> {
+    if (!this.outbox) {
+      throw new Error("OutboxService non configuré pour ce module")
+    }
+    return this.outbox.append(tx, {
+      ...draft,
+      correlationId: draft.correlationId ?? null,
+    })
+  }
+
+  flush(): Promise<number> {
+    if (!this.outbox) return Promise.resolve(0)
+    return this.outbox.flush()
+  }
+
+  /**
+   * Publication directe, hors outbox : signaux de contrôle (réveil worker)
+   * ou événements non critiques (connexion). Ne pas utiliser pour une
+   * mutation dont les projections doivent survivre à un crash.
+   */
   emit<TPayload extends object>(
     name: string,
     aggregateId: string,

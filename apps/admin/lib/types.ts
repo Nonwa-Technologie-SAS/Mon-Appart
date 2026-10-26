@@ -196,6 +196,19 @@ export interface ReportItem {
     reported: boolean
     createdAt: string
   }>
+  relatedSignals?: Array<{
+    id: string
+    ruleCode: string
+    severity: string
+    status: string
+  }>
+  listingRisk?: {
+    version: string
+    level: string
+    recommendedAction: string
+    humanReviewRequired: boolean
+    signals: Array<{ rule: string; severity: string }>
+  }
 }
 
 export interface SignalItem {

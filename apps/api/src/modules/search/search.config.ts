@@ -16,6 +16,7 @@ export class SearchConfig {
   readonly priceFacetBounds: number[]
   readonly synonyms: SynonymMap
   readonly indexVersion: number
+  readonly maxSavedSearches: number
   readonly opensearch: {
     node: string | null
     username: string | null
@@ -50,6 +51,7 @@ export class SearchConfig {
       maxLimit: Math.min(100, num("SEARCH_MAX_LIMIT", 100)),
       maxRadiusKm: num("SEARCH_MAX_RADIUS_KM", 50),
     }
+    this.maxSavedSearches = Math.min(50, num("SEARCH_MAX_SAVED_SEARCHES", 20))
     this.cacheTtlSeconds = num("SEARCH_CACHE_TTL_SECONDS", 60)
     this.reindexBatchSize = num("SEARCH_REINDEX_BATCH_SIZE", 500)
     this.priceFacetBounds = str(

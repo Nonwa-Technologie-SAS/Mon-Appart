@@ -35,7 +35,8 @@ export async function toggleFavorite(
     return {
       favorited: false,
       requiresAuth: true,
-      error: "Connectez-vous pour enregistrer un favori.",
+      error:
+        "Créez un compte ou connectez-vous pour enregistrer un favori.",
     }
   }
 

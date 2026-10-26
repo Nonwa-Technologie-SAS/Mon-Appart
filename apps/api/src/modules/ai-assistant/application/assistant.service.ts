@@ -1,7 +1,10 @@
 import { HttpStatus, Injectable, Logger } from "@nestjs/common"
 import { randomUUID } from "node:crypto"
+import { performance } from "node:perf_hooks"
 
+import { DomainEventPublisher } from "../../../common/events/domain-event.publisher"
 import { AppException } from "../../../common/http/app-exception"
+import { MetricsService } from "../../../observability/metrics.service"
 import type { AuthenticatedUser } from "../../identity"
 import { SearchService } from "../../search/application/search.service"
 import { AiAssistantConfig } from "../ai-assistant.config"
@@ -9,7 +12,14 @@ import type {
   AssistantCriteria,
   AssistantTurnResult,
 } from "../domain/assistant-criteria"
+import {
+  AssistantEvent,
+  type AssistantFeedbackPayload,
+  type AssistantTurnPayload,
+} from "../domain/assistant-events"
 import { extractCriteria, mergeCriteria } from "../domain/criteria-extractor"
+import { looksLikePromptInjection } from "../domain/output-sanitize"
+import { ASSISTANT_REPLY_PROMPT_VERSION } from "../domain/prompt-governance"
 import {
   criteriaToSearchParams,
   searchParamsAsRecord,
@@ -43,6 +53,8 @@ export class AssistantService {
     private readonly search: SearchService,
     private readonly rules: RulesAiProvider,
     private readonly openai: OpenAiTextProvider,
+    private readonly metrics: MetricsService,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   createConversation(ctx: AssistantTurnContext): { conversationId: string } {
@@ -126,6 +138,13 @@ export class AssistantService {
 
     this.pushMessage(conv, "user", trimmed)
 
+    const injectionSuspected = looksLikePromptInjection(trimmed)
+    if (injectionSuspected) {
+      this.metrics.assistant.injection.inc()
+    }
+
+    const started = performance.now()
+
     let criteria: AssistantCriteria = conv.criteria
       ? mergeCriteria(conv.criteria, trimmed)
       : extractCriteria(trimmed)
@@ -151,7 +170,13 @@ export class AssistantService {
 
     // Clarification avant Search (sauf forceSearch / overrides accept*).
     if (criteria.clarificationQuestion && !options?.forceSearch) {
-      return this.finishClarify(conv, criteria, provider)
+      return this.finishClarify(
+        conv,
+        criteria,
+        provider,
+        started,
+        injectionSuspected,
+      )
     }
 
     const searchParams = criteriaToSearchParams(
@@ -191,42 +216,55 @@ export class AssistantService {
       this.pushMessage(conv, "assistant", messageOut)
       this.store.save(conv)
 
-      return {
-        mode,
-        message: messageOut,
-        criteria,
-        searchParams: paramsRecord,
-        listings: cards,
-        suggestions:
-          mode === "empty"
-            ? emptySuggestions(criteria)
-            : [
-                "Affiner le budget",
-                "Changer de commune",
-                "Comparer deux biens sélectionnés",
-              ],
-        provider: provider.name,
-        conversationId: conv.id,
-      }
+      if (mode === "empty") this.metrics.assistant.empty.inc()
+
+      return this.observeTurn(
+        {
+          mode,
+          message: messageOut,
+          criteria,
+          searchParams: paramsRecord,
+          listings: cards,
+          suggestions:
+            mode === "empty"
+              ? emptySuggestions(criteria)
+              : [
+                  "Affiner le budget",
+                  "Changer de commune",
+                  "Comparer deux biens sélectionnés",
+                ],
+          provider: provider.name,
+          promptVersion: ASSISTANT_REPLY_PROMPT_VERSION,
+          conversationId: conv.id,
+        },
+        started,
+        injectionSuspected,
+      )
     } catch (err) {
       this.logger.warn(
         `Search via assistant échoué: ${err instanceof Error ? err.message : "error"}`,
       )
+      this.metrics.assistant.fallbacks.inc({ reason: "search" })
       conv.criteria = criteria
       const degradedMessage =
         "La recherche intelligente a rencontré un problème. Vos critères sont conservés ; utilisez la recherche classique avec les filtres ci-dessous."
       this.pushMessage(conv, "assistant", degradedMessage)
       this.store.save(conv)
-      return {
-        mode: "error",
-        message: degradedMessage,
-        criteria,
-        searchParams: paramsRecord,
-        listings: [],
-        suggestions: ["Ouvrir la recherche classique"],
-        provider: "degraded",
-        conversationId: conv.id,
-      }
+      return this.observeTurn(
+        {
+          mode: "error",
+          message: degradedMessage,
+          criteria,
+          searchParams: paramsRecord,
+          listings: [],
+          suggestions: ["Ouvrir la recherche classique"],
+          provider: "degraded",
+          promptVersion: ASSISTANT_REPLY_PROMPT_VERSION,
+          conversationId: conv.id,
+        },
+        started,
+        injectionSuspected,
+      )
     }
   }
 
@@ -262,19 +300,40 @@ export class AssistantService {
       listings: [],
       suggestions: ["Affiner la recherche"],
       provider: "rules",
+      promptVersion: ASSISTANT_REPLY_PROMPT_VERSION,
       conversationId: conv.id,
     }
+  }
+
+  recordFeedback(rating: AssistantFeedbackPayload["rating"]): {
+    accepted: true
+    rating: AssistantFeedbackPayload["rating"]
+  } {
+    this.assertEnabled()
+    this.metrics.assistant.feedback.inc({ rating })
+    this.events.publish({
+      id: randomUUID(),
+      name: AssistantEvent.FEEDBACK,
+      occurredAt: new Date().toISOString(),
+      aggregateId: rating,
+      payload: {
+        rating,
+        promptVersion: ASSISTANT_REPLY_PROMPT_VERSION,
+      } satisfies AssistantFeedbackPayload,
+    })
+    return { accepted: true, rating }
   }
 
   private async finishClarify(
     conv: AssistantConversation,
     criteria: AssistantCriteria,
     provider: AiTextProvider,
+    started: number,
+    injectionSuspected: boolean,
   ): Promise<AssistantTurnResult> {
     conv.criteria = criteria
     const base =
-      criteria.clarificationQuestion ??
-      "Pouvez-vous préciser votre recherche ?"
+      criteria.clarificationQuestion ?? "Pouvez-vous préciser votre recherche ?"
     const message = await provider.composeReply({
       mode: "clarify",
       baseMessage: base,
@@ -283,18 +342,62 @@ export class AssistantService {
     })
     this.pushMessage(conv, "assistant", message)
     this.store.save(conv)
-    return {
-      mode: "clarify",
-      message,
-      criteria,
-      searchParams: searchParamsAsRecord(
-        criteriaToSearchParams(criteria, this.config.searchLimit),
-      ),
-      listings: [],
-      suggestions: this.clarifySuggestions(criteria),
-      provider: provider.name,
-      conversationId: conv.id,
-    }
+    return this.observeTurn(
+      {
+        mode: "clarify",
+        message,
+        criteria,
+        searchParams: searchParamsAsRecord(
+          criteriaToSearchParams(criteria, this.config.searchLimit),
+        ),
+        listings: [],
+        suggestions: this.clarifySuggestions(criteria),
+        provider: provider.name,
+        promptVersion: ASSISTANT_REPLY_PROMPT_VERSION,
+        conversationId: conv.id,
+      },
+      started,
+      injectionSuspected,
+    )
+  }
+
+  private observeTurn(
+    result: AssistantTurnResult,
+    started: number,
+    injectionSuspected: boolean,
+  ): AssistantTurnResult {
+    const elapsed = Math.max(0, performance.now() - started)
+    this.metrics.assistant.requests.inc({
+      mode: result.mode,
+      provider: result.provider,
+    })
+    this.metrics.assistant.latency.observe({ mode: result.mode }, elapsed)
+    this.events.publish({
+      id: randomUUID(),
+      name: AssistantEvent.TURN_COMPLETED,
+      occurredAt: new Date().toISOString(),
+      aggregateId: result.conversationId,
+      payload: {
+        conversationId: result.conversationId,
+        mode: result.mode,
+        provider: result.provider,
+        promptVersion: result.promptVersion,
+        listingCount: result.listings.length,
+        fallback: result.provider === "degraded",
+        injectionSuspected,
+      } satisfies AssistantTurnPayload,
+    })
+    this.logger.log(
+      JSON.stringify({
+        action: "assistant_turn",
+        mode: result.mode,
+        provider: result.provider,
+        promptVersion: result.promptVersion,
+        listingCount: result.listings.length,
+        injectionSuspected,
+      }),
+    )
+    return result
   }
 
   private clarifySuggestions(c: AssistantCriteria): string[] {

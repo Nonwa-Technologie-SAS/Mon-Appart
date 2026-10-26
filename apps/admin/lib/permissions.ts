@@ -27,6 +27,11 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Business Intelligence",
     anyOf: ["analytics:admin"],
   },
+  {
+    href: "/ai",
+    label: "Gouvernance IA",
+    anyOf: ["ai:admin"],
+  },
   { href: "/users", label: "Utilisateurs", anyOf: ["user:read"] },
   {
     href: "/listings",
@@ -45,7 +50,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Partenaires",
     anyOf: ["partner:read", "partner:manage"],
   },
+  {
+    href: "/supply-leads",
+    label: "Acquisition offre",
+    anyOf: ["partner:read", "partner:manage"],
+  },
   { href: "/audit", label: "Journal d'audit", anyOf: ["audit_log:read"] },
+  { href: "/events", label: "Événements", anyOf: ["ops:events"] },
   { href: "/roles", label: "Rôles", anyOf: ["role:read"] },
   {
     href: "/settings/reasons",

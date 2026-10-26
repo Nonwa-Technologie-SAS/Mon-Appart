@@ -9,7 +9,8 @@ export function proxy(request: NextRequest) {
   const needsAuth =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/espace") ||
-    pathname.startsWith("/profil")
+    pathname.startsWith("/profil") ||
+    pathname.startsWith("/favoris")
 
   if (!needsAuth) {
     return NextResponse.next()
@@ -30,5 +31,13 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/espace", "/espace/:path*", "/profil", "/profil/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/espace",
+    "/espace/:path*",
+    "/profil",
+    "/profil/:path*",
+    "/favoris",
+    "/favoris/:path*",
+  ],
 }

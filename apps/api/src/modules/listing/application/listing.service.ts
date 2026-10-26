@@ -145,14 +145,21 @@ export class ListingService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: ListingEvent.CREATED,
+        producer: "listing",
+        aggregateType: LISTING_ENTITY,
+        aggregateId: listing.publicId,
+        payload: {
+          listingId: listing.publicId,
+          propertyId: property.publicId,
+          listingType: input.listingType,
+        },
+        correlationId: context.requestId,
+      })
       return listing
     })
-
-    this.activity.emit(ListingEvent.CREATED, created.publicId, {
-      listingId: created.publicId,
-      propertyId: property.publicId,
-      listingType: input.listingType,
-    })
+    await this.activity.flush()
     this.activity.metrics.catalog.listingCreated.inc({
       listing_type: input.listingType,
     })
@@ -226,14 +233,19 @@ export class ListingService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: ListingEvent.UPDATED,
+        producer: "listing",
+        aggregateType: LISTING_ENTITY,
+        aggregateId: state.publicId,
+        payload: { listingId: state.publicId, changedFields: fields },
+        correlationId: context.requestId,
+      })
       return fields
     })
 
     if (changed.length === 0) return
-    this.activity.emit(ListingEvent.UPDATED, publicId, {
-      listingId: publicId,
-      changedFields: changed,
-    })
+    await this.activity.flush()
     this.activity.log("listing.updated", context, {
       user_id: actor.publicId,
       listing_id: publicId,
@@ -300,17 +312,25 @@ export class ListingService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: ListingEvent.PRICE_CHANGED,
+        producer: "listing",
+        aggregateType: LISTING_ENTITY,
+        aggregateId: state.publicId,
+        payload: {
+          listingId: state.publicId,
+          oldAmount: before?.amount ?? null,
+          newAmount: priceJson(next).amount,
+          currency: next.currency,
+          period: next.period,
+        },
+        correlationId: context.requestId,
+      })
       return { before, after: priceJson(next) }
     })
 
     if (!change) return
-    this.activity.emit(ListingEvent.PRICE_CHANGED, publicId, {
-      listingId: publicId,
-      oldAmount: change.before?.amount ?? null,
-      newAmount: change.after.amount,
-      currency: change.after.currency,
-      period: change.after.period,
-    })
+    await this.activity.flush()
     this.activity.metrics.catalog.listingPriceChanged.inc()
     this.activity.log("listing.price_changed", context, {
       user_id: actor.publicId,
@@ -360,7 +380,7 @@ export class ListingService {
     publicId: string,
     context: RequestContext,
   ): Promise<void> {
-    const previous = await this.db.transaction(async (tx) => {
+    await this.db.transaction(async (tx) => {
       const { state, manager } = await this.lockForManager(
         actor,
         publicId,
@@ -399,13 +419,21 @@ export class ListingService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: ListingEvent.DELETED,
+        producer: "listing",
+        aggregateType: LISTING_ENTITY,
+        aggregateId: state.publicId,
+        payload: {
+          listingId: state.publicId,
+          previousStatus: state.status,
+        },
+        correlationId: context.requestId,
+      })
       return state.status
     })
 
-    this.activity.emit(ListingEvent.DELETED, publicId, {
-      listingId: publicId,
-      previousStatus: previous,
-    })
+    await this.activity.flush()
     this.activity.log("listing.deleted", context, {
       user_id: actor.publicId,
       listing_id: publicId,
@@ -536,6 +564,19 @@ export class ListingService {
         from: state.status,
         to: target,
       })
+      await this.activity.enqueue(tx, {
+        name: eventForStatus(target),
+        producer: "listing",
+        aggregateType: LISTING_ENTITY,
+        aggregateId: state.publicId,
+        payload: {
+          listingId: state.publicId,
+          propertyId: state.property.publicId,
+          from: state.status,
+          to: target,
+        },
+        correlationId: context.requestId,
+      })
       return {
         from: state.status,
         to: target,
@@ -543,12 +584,7 @@ export class ListingService {
       }
     })
 
-    this.activity.emit(eventForStatus(result.to), publicId, {
-      listingId: publicId,
-      propertyId: result.propertyId,
-      from: result.from,
-      to: result.to,
-    })
+    await this.activity.flush()
     this.activity.metrics.catalog.listingStatusChanged.inc({ to: result.to })
     this.activity.log(`listing.${result.to.toLowerCase()}`, context, {
       user_id: actor.publicId,

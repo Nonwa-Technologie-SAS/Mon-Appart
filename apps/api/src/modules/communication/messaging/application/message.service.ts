@@ -33,6 +33,7 @@ import {
   repetitionKey,
   type SystemCode,
 } from "../domain/message-rules"
+import { scanMessageSafety, trustRuleForHint } from "../domain/message-safety"
 import {
   ConversationRepository,
   messageSelect,
@@ -43,6 +44,7 @@ import {
   ConversationAccessService,
   type ConversationAccessContext,
 } from "./conversation-access.service"
+import { InquiryService } from "../../inquiries/application/inquiry.service"
 import { messageView, type MessageView } from "./messaging-views"
 
 export interface PostInput {
@@ -90,6 +92,7 @@ export class MessageService {
     private readonly realtime: RealtimePublisher,
     private readonly activity: CommunicationActivity,
     private readonly config: CommunicationConfig,
+    private readonly inquiries: InquiryService,
     @Inject(MEDIA_ATTACHMENT_ACCESS)
     private readonly media: MediaAttachmentAccess,
   ) {}
@@ -226,6 +229,11 @@ export class MessageService {
         where: { id: conversation.inquiryId, status: "OPEN" },
         data: { status: "IN_PROGRESS" },
       })
+      await this.inquiries.markFirstResponse(
+        conversation.inquiryId,
+        actor.userId,
+        tx,
+      )
     }
 
     await this.conversations.syncListingSide(conversation, tx)
@@ -457,6 +465,22 @@ export class MessageService {
       messageId: message.publicId,
       type: message.type,
     })
+    if (message.type !== "SYSTEM" && message.body) {
+      for (const hint of scanMessageSafety(message.body)) {
+        if (hint.severity !== "HIGH") continue
+        const rule = trustRuleForHint(hint.code)
+        if (!rule) continue
+        this.activity.emit(
+          CommunicationEvent.MESSAGE_SAFETY_ALERT,
+          conversation.publicId,
+          {
+            conversationId: conversation.publicId,
+            messageId: message.publicId,
+            rule,
+          },
+        )
+      }
+    }
     if (posted.recipients.length > 0) {
       this.activity.emit(
         CommunicationEvent.DELIVERIES_QUEUED,

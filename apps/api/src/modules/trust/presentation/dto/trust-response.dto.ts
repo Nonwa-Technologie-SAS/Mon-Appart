@@ -436,6 +436,29 @@ export class ReviewReportResponseDto {
   })
   conversationExcerpt?: ConversationExcerptMessageDto[]
 
+  @ApiPropertyOptional({
+    description:
+      "Alertes ouvertes liées à l'annonce. Un code n'est pas une preuve de fraude.",
+  })
+  relatedSignals?: Array<{
+    id: string
+    ruleCode: string
+    severity: string
+    status: string
+  }>
+
+  @ApiPropertyOptional({
+    description:
+      "Évaluation listing-risk-v1 : recommandation d'examen, distincte du statut public et de la décision.",
+  })
+  listingRisk?: {
+    version: string
+    level: string
+    recommendedAction: string
+    humanReviewRequired: boolean
+    signals: Array<{ rule: string; severity: string }>
+  }
+
   @ApiProperty()
   createdAt: string
 

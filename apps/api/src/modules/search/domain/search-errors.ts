@@ -11,6 +11,9 @@ export const SearchErrorCode = {
   INVALID_CURSOR: "INVALID_CURSOR",
   SEARCH_ENGINE_UNAVAILABLE: "SEARCH_ENGINE_UNAVAILABLE",
   SEARCH_TIMEOUT: "SEARCH_TIMEOUT",
+  SAVED_SEARCH_NOT_FOUND: "SAVED_SEARCH_NOT_FOUND",
+  SAVED_SEARCH_LIMIT: "SAVED_SEARCH_LIMIT",
+  INVALID_SAVED_SEARCH: "INVALID_SAVED_SEARCH",
 } as const
 
 export type SearchErrorCode =
@@ -36,6 +39,18 @@ const DEFINITIONS: Record<SearchErrorCode, [HttpStatus, string]> = {
   SEARCH_TIMEOUT: [
     HttpStatus.SERVICE_UNAVAILABLE,
     "La recherche a pris trop de temps",
+  ],
+  SAVED_SEARCH_NOT_FOUND: [
+    HttpStatus.NOT_FOUND,
+    "Recherche enregistrée introuvable",
+  ],
+  SAVED_SEARCH_LIMIT: [
+    HttpStatus.CONFLICT,
+    "Limite de recherches enregistrées atteinte",
+  ],
+  INVALID_SAVED_SEARCH: [
+    HttpStatus.BAD_REQUEST,
+    "Recherche enregistrée invalide",
   ],
 }
 

@@ -95,6 +95,16 @@ export const EXPLICIT_FEEDBACK = [
   "WRONG_BUDGET",
   "WRONG_LOCATION",
 ] as const
+export const VISIT_FEEDBACK_OUTCOMES = [
+  "PENDING_DECISION",
+  "STILL_INTERESTED",
+  "NEED_INFO",
+  "WANT_ANOTHER_VISIT",
+  "NOT_A_FIT",
+  "UNAVAILABLE",
+  "PROJECT_ABANDONED",
+  "PROJECT_COMPLETED",
+] as const
 
 export type BudgetBucket = (typeof BUDGET_BUCKETS)[number]
 export type LeadRule = (typeof LEAD_RULES)[number]
@@ -159,6 +169,7 @@ export type EventCategory =
   | "navigation"
   | "interest"
   | "recommendation"
+  | "assistant"
   | "listing"
   | "account"
   | "conversion"
@@ -477,6 +488,33 @@ export const EVENTS = {
     listingKey: "listingId",
   }),
 
+  assistant_turn_completed: event({
+    origin: "server",
+    category: "assistant",
+    description:
+      "Tour assistant terminé (mode, provider, volume). Jamais le texte du message.",
+    version: 1,
+    schema: z.strictObject({
+      mode: z.enum(["clarify", "results", "empty", "error"]),
+      provider: z.enum(["rules", "openai", "degraded"]),
+      promptVersion: algorithmVersion,
+      listingCount: counter,
+      fallback: z.boolean(),
+      injectionSuspected: z.boolean(),
+    }),
+  }),
+  assistant_feedback_submitted: event({
+    origin: "server",
+    category: "assistant",
+    description:
+      "Retour explicite sur un tour (code, pas de commentaire libre).",
+    version: 1,
+    schema: z.strictObject({
+      rating: z.enum(["helpful", "not_helpful", "wrong_results"]),
+      promptVersion: algorithmVersion,
+    }),
+  }),
+
   // D. Publication et gestion des annonces (backend uniquement)
   listing_creation_started: event({
     origin: "client",
@@ -734,6 +772,142 @@ export const EVENTS = {
     description: "Remboursement confirmé par le prestataire, relu en base.",
     version: 1,
     schema: z.strictObject({ refundId: publicId, paymentId: publicId }),
+  }),
+
+  // H. Rétention (identifiants publics et codes, jamais de note privée)
+  saved_search_created: event({
+    origin: "server",
+    category: "interest",
+    description: "Recherche persistante créée par l'utilisateur.",
+    version: 1,
+    schema: z.strictObject({ alertsEnabled: z.boolean() }),
+  }),
+  saved_search_updated: event({
+    origin: "server",
+    category: "interest",
+    description: "Recherche persistante modifiée.",
+    version: 1,
+    schema: z.strictObject({ alertsEnabled: z.boolean() }),
+  }),
+  property_alert_eligible: event({
+    origin: "server",
+    category: "interest",
+    description:
+      "Annonces pertinentes détectées pour une recherche sauvegardée.",
+    version: 1,
+    schema: z.strictObject({
+      savedSearchId: publicId,
+      exactCount: counter,
+      nearCount: counter,
+    }),
+  }),
+  property_alert_sent: event({
+    origin: "server",
+    category: "interest",
+    description:
+      "Digest d'alertes créé (préférences et déduplication respectées).",
+    version: 1,
+    schema: z.strictObject({
+      savedSearchId: publicId,
+      listingCount: counter,
+      reactivation: z.boolean(),
+    }),
+  }),
+  property_alert_opened: event({
+    origin: "client",
+    category: "interest",
+    description: "Ouverture d'une alerte immobilière.",
+    version: 1,
+    instrumented: false,
+    schema: z.strictObject({ savedSearchId: publicId }),
+  }),
+  property_alert_clicked: event({
+    origin: "client",
+    category: "interest",
+    description: "Clic vers une annonce depuis une alerte.",
+    version: 1,
+    instrumented: false,
+    schema: z.strictObject({
+      savedSearchId: publicId,
+      listingId: publicId,
+    }),
+    listingKey: "listingId",
+  }),
+  post_visit_feedback_submitted: event({
+    origin: "server",
+    category: "conversion",
+    description: "Retour facultatif après une visite réalisée.",
+    version: 1,
+    schema: z.strictObject({
+      ...listingRef,
+      appointmentId: publicId,
+      outcome: z.enum(VISIT_FEEDBACK_OUTCOMES),
+      shared: z.boolean(),
+    }),
+    listingKey: "listingId",
+  }),
+  search_resumed: event({
+    origin: "server",
+    category: "interest",
+    description: "Reprise d'une recherche enregistrée.",
+    version: 1,
+    schema: z.strictObject({ savedSearchId: publicId }),
+  }),
+  reactivation_eligible: event({
+    origin: "server",
+    category: "interest",
+    description:
+      "Utilisateur éligible à une réactivation (annonces pertinentes).",
+    version: 1,
+    schema: z.strictObject({ savedSearchId: publicId }),
+  }),
+  reactivation_sent: event({
+    origin: "server",
+    category: "interest",
+    description: "Digest de réactivation créé.",
+    version: 1,
+    schema: z.strictObject({
+      savedSearchId: publicId,
+      listingCount: counter,
+      reactivation: z.boolean(),
+    }),
+  }),
+  reactivation_returned: event({
+    origin: "client",
+    category: "interest",
+    description: "Retour sur le site après une réactivation.",
+    version: 1,
+    instrumented: false,
+    schema: empty,
+  }),
+  notification_preferences_updated: event({
+    origin: "server",
+    category: "account",
+    description: "Préférences de notification modifiées.",
+    version: 1,
+    schema: z.strictObject({ marketingDisabled: z.boolean() }),
+  }),
+  marketing_unsubscribed: event({
+    origin: "server",
+    category: "account",
+    description: "Désactivation d'au moins un canal marketing.",
+    version: 1,
+    schema: empty,
+  }),
+  property_marked_unavailable: event({
+    origin: "server",
+    category: "listing",
+    description: "Notification d'indisponibilité d'un bien suivi.",
+    version: 1,
+    schema: z.strictObject({ ...listingRef }),
+    listingKey: "listingId",
+  }),
+  project_marked_completed: event({
+    origin: "server",
+    category: "account",
+    description: "Projet immobilier déclaré terminé par l'utilisateur.",
+    version: 1,
+    schema: empty,
   }),
 } as const satisfies Record<string, EventDefinition>
 

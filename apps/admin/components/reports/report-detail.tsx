@@ -128,6 +128,45 @@ function ReportView({
           )}
         </Section>
 
+        {report.listingRisk ? (
+          <Section title="Évaluation de risque (annonce)">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+              <dt className="text-stone-500">Version</dt>
+              <dd>{report.listingRisk.version}</dd>
+              <dt className="text-stone-500">Niveau</dt>
+              <dd>
+                <Badge value={report.listingRisk.level} />
+              </dd>
+              <dt className="text-stone-500">Action recommandée</dt>
+              <dd>{report.listingRisk.recommendedAction}</dd>
+              <dt className="text-stone-500">Revue humaine</dt>
+              <dd>{report.listingRisk.humanReviewRequired ? "Oui" : "Non"}</dd>
+            </dl>
+            <p className="mt-3 text-xs text-stone-500">
+              Recommandation d&apos;examen, distincte du statut public et de la
+              décision. Un signal isolé ne suffit pas à sanctionner.
+            </p>
+          </Section>
+        ) : null}
+
+        {report.relatedSignals && report.relatedSignals.length > 0 ? (
+          <Section title="Alertes ouvertes liées">
+            <ul className="flex flex-col gap-2 text-sm">
+              {report.relatedSignals.map((signal) => (
+                <li key={signal.id}>
+                  <Link
+                    href={`/reports?tab=signals`}
+                    className="underline underline-offset-2"
+                  >
+                    {signal.ruleCode}
+                  </Link>{" "}
+                  <Badge value={signal.severity} /> · {signal.status}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
+
         {report.conversationExcerpt ? (
           <Section title="Extrait de conversation (borné)">
             <ol className="flex flex-col gap-2 text-sm">

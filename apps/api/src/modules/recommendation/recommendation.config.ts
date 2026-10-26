@@ -33,6 +33,11 @@ export class RecommendationConfig {
   readonly weights: RecommendationWeights
   /** Rayon maximal d'un point de préférence (aligné sur la recherche). */
   readonly maxRadiusKm: number
+  /**
+   * Appeler le moteur distant sans servir ses résultats
+   * (uniquement si `engine === "rules"`).
+   */
+  readonly shadowRemote: boolean
 
   constructor(config: ConfigService) {
     const str = (key: string, fallback: string) => {
@@ -74,6 +79,9 @@ export class RecommendationConfig {
       str("RECOMMENDATION_WEIGHTS", DEFAULT_RECOMMENDATION_WEIGHTS),
     )
     this.maxRadiusKm = num("SEARCH_MAX_RADIUS_KM", 50)
+    this.shadowRemote =
+      str("RECOMMENDATION_SHADOW", "false") === "true" &&
+      this.engine === "rules"
   }
 }
 

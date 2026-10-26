@@ -14,23 +14,24 @@ Décision d'architecture : [ADR 0012](./decisions/0012-admin-backoffice.md).
 
 Codes `ressource:action` existants conservés ; les rôles `SUPPORT` et `ANALYST` et les permissions manquantes sont ajoutés par le seed `reference` (ajout seulement, aucun retrait).
 
-| Permission             | Effet                                                               |
-| ---------------------- | ------------------------------------------------------------------- |
-| `admin:access`         | Entrer dans le back-office                                          |
-| `user:read`            | Rechercher des comptes, consulter une fiche (coordonnées masquées)  |
-| `user:pii`             | Voir e-mail et téléphone complets ; chaque consultation est auditée |
-| `user:suspend`         | Suspendre un compte                                                 |
-| `user:ban`             | Bannir un compte                                                    |
-| `user:reactivate`      | Réactiver un compte suspendu ou banni                               |
-| `user:revoke_sessions` | Déconnecter un compte de tous ses appareils                         |
-| `role:read`            | Consulter la matrice des rôles                                      |
-| `role:manage`          | Attribuer ou retirer un rôle                                        |
-| `admin_note:create`    | Ajouter une note interne                                            |
-| `audit_log:read`       | Consulter le journal d'audit                                        |
-| `settings:manage`      | Créer, modifier, désactiver un motif de modération                  |
-| `listing:moderate`     | Valider, refuser, demander des corrections                          |
-| `listing:suspend`      | Suspendre, republier                                                |
-| `analytics:admin`      | Indicateurs globaux                                                 |
+| Permission             | Effet                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `admin:access`         | Entrer dans le back-office                                                                    |
+| `user:read`            | Rechercher des comptes, consulter une fiche (coordonnées masquées)                            |
+| `user:pii`             | Voir e-mail et téléphone complets ; chaque consultation est auditée                           |
+| `user:suspend`         | Suspendre un compte                                                                           |
+| `user:ban`             | Bannir un compte                                                                              |
+| `user:reactivate`      | Réactiver un compte suspendu ou banni                                                         |
+| `user:revoke_sessions` | Déconnecter un compte de tous ses appareils                                                   |
+| `role:read`            | Consulter la matrice des rôles                                                                |
+| `role:manage`          | Attribuer ou retirer un rôle                                                                  |
+| `admin_note:create`    | Ajouter une note interne                                                                      |
+| `audit_log:read`       | Consulter le journal d'audit                                                                  |
+| `ops:events`           | Consulter l'outbox de domaine et rejouer un événement `DEAD`/`FAILED` (payload jamais exposé) |
+| `settings:manage`      | Créer, modifier, désactiver un motif de modération                                            |
+| `listing:moderate`     | Valider, refuser, demander des corrections                                                    |
+| `listing:suspend`      | Suspendre, republier                                                                          |
+| `analytics:admin`      | Indicateurs globaux                                                                           |
 
 Matrice par défaut :
 
@@ -80,6 +81,9 @@ Préfixe `/api/v1/admin`. Erreurs au format commun `{ statusCode, code, message,
 | POST    | `/moderation-reasons`                  | `settings:manage`                       |
 | PATCH   | `/moderation-reasons/:code`            | `settings:manage`                       |
 | GET     | `/audit-logs`                          | `audit_log:read`                        |
+| GET     | `/events/outbox`                       | `ops:events`                            |
+| GET     | `/events/outbox/stats`                 | `ops:events`                            |
+| POST    | `/events/outbox/:eventId/replay`       | `ops:events`                            |
 
 Vérifications, signalements, alertes et score : `/api/v1/admin/trust/*` ([trust-and-verification.md](./trust-and-verification.md)). Indicateurs : `/api/v1/admin/analytics/*` ([analytics-and-tracking.md](./analytics-and-tracking.md)).
 

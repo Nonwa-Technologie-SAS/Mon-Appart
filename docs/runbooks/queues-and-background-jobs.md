@@ -1,12 +1,18 @@
-# Runbook — Files BullMQ / workers
+# Runbook — Files et workers
 
 ## Contexte dépôt
 
-- Workers : `services/workers` (Queue/Worker `systemPing` minimal).
+- Workers BullMQ : `services/workers` (Queue/Worker `systemPing` minimal). Redis requis (`REDIS_URL`).
+- Files métier **dans PostgreSQL**, servies par l’API :
+  - `notification_deliveries` (e-mail / SMS / in-app)
+  - `partner_deliveries`
+  - jobs médias (`next_attempt_at`)
+  - **`outbox_events`** (événements de domaine, ADR 0014)
+- Dispatcher Outbox : `OUTBOX_WORKER_ENABLED` (défaut true), poll `OUTBOX_WORKER_POLL_MS`.
+- Expiration d’annonces : `LISTING_EXPIRY_WORKER_ENABLED`.
 - Health workers : `http://127.0.0.1:${WORKER_PORT:-4001}/health/live|ready`
-- Redis requis (`REDIS_URL`).
 
-D’autres jobs métier peuvent être ajoutés dans l’API ; ce runbook reste valide pour backlog Redis/BullMQ.
+Les traitements métier critiques **ne dépendent pas** de BullMQ.
 
 ## Symptômes
 

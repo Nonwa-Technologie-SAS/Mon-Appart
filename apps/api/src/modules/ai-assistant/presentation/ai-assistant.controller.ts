@@ -125,7 +125,9 @@ export class AiAssistantController {
   @OptionalAuth()
   @ApiBearerAuth()
   @Throttle({ default: { limit: aiAssistantRateLimit, ttl: MINUTE_MS } })
-  @ApiOperation({ summary: "Détail d’une conversation (isolation session/user)" })
+  @ApiOperation({
+    summary: "Détail d’une conversation (isolation session/user)",
+  })
   @ApiErrors(404, 429, 503)
   getOne(
     @Param("conversationId", uuid) conversationId: string,
@@ -178,14 +180,19 @@ export class AiAssistantController {
     @Client() client: ClientContext,
     @Headers("x-assistant-session") sessionHeader?: string,
   ) {
-    return this.assistant.turn(conversationId, body.message, {
-      user,
-      requestId: client.requestId,
-      sessionKey: sessionKeyFrom(sessionHeader, client, user),
-    }, {
-      forceSearch: body.forceSearch,
-      compareListingIds: body.compareListingIds,
-    })
+    return this.assistant.turn(
+      conversationId,
+      body.message,
+      {
+        user,
+        requestId: client.requestId,
+        sessionKey: sessionKeyFrom(sessionHeader, client, user),
+      },
+      {
+        forceSearch: body.forceSearch,
+        compareListingIds: body.compareListingIds,
+      },
+    )
   }
 
   @Post("search")
@@ -203,11 +210,16 @@ export class AiAssistantController {
     @Client() client: ClientContext,
     @Headers("x-assistant-session") sessionHeader?: string,
   ) {
-    return this.assistant.turn(null, body.query, {
-      user,
-      requestId: client.requestId,
-      sessionKey: sessionKeyFrom(sessionHeader, client, user),
-    }, { forceSearch: body.forceSearch })
+    return this.assistant.turn(
+      null,
+      body.query,
+      {
+        user,
+        requestId: client.requestId,
+        sessionKey: sessionKeyFrom(sessionHeader, client, user),
+      },
+      { forceSearch: body.forceSearch },
+    )
   }
 
   @Post("conversations/:conversationId/compare")
@@ -242,11 +254,11 @@ export class AiAssistantController {
   })
   @ApiErrors(400, 429, 503)
   feedback(@Body() body: AssistantFeedbackDto) {
-    // Pas de persistance durable en V1 — acceptation pour télémétrie future.
+    const accepted = this.assistant.recordFeedback(body.rating)
     return {
       accepted: true,
       feedbackId: randomUUID(),
-      rating: body.rating,
+      rating: accepted.rating,
     }
   }
 }
