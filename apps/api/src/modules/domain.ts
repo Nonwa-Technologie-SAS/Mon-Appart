@@ -1,5 +1,6 @@
 import { AdminModule } from "./admin/admin.module"
 import { AiAssistantModule } from "./ai-assistant/ai-assistant.module"
+import { AiGovernanceModule } from "./ai-governance/ai-governance.module"
 import { AnalyticsModule } from "./analytics/analytics.module"
 import { BillingModule } from "./billing/billing.module"
 import { CommunicationModule } from "./communication/communication.module"
@@ -24,6 +25,7 @@ export const domainModules = [
   MediaModule,
   SearchModule,
   AiAssistantModule,
+  AiGovernanceModule,
   InteractionModule,
   RecommendationModule,
   TrustModule,

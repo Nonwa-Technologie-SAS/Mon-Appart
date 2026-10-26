@@ -124,6 +124,9 @@ export async function nestRegister(input: {
   password: string
   firstName?: string
   lastName?: string
+  accountType?: "CUSTOMER" | "OWNER" | "AGENCY"
+  organizationName?: string
+  organizationAddress?: string
 }): Promise<void> {
   const response = await fetch(nestApiUrl(`${API_PREFIX}/auth/register`), {
     method: "POST",

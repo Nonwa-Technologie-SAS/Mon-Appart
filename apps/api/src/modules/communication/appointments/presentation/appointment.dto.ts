@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
 import { Type } from "class-transformer"
 import {
+  IsBoolean,
   IsDate,
   IsIn,
   IsInt,
@@ -74,10 +75,13 @@ export class CancelVisitDto {
 }
 
 export class AppointmentQueryDto {
-  @ApiPropertyOptional({ enum: ["upcoming", "past"], default: "upcoming" })
+  @ApiPropertyOptional({
+    enum: ["upcoming", "past", "all"],
+    default: "upcoming",
+  })
   @IsOptional()
-  @IsIn(["upcoming", "past"])
-  scope?: "upcoming" | "past"
+  @IsIn(["upcoming", "past", "all"])
+  scope?: "upcoming" | "past" | "all"
 
   @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 50 })
   @IsOptional()
@@ -153,6 +157,63 @@ export class AppointmentResponseDto {
 
   @ApiProperty({ enum: APPOINTMENT_ACTIONS, isArray: true })
   actions: string[]
+
+  @ApiProperty({
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      submitted: { type: "boolean" },
+      outcome: { type: "string", nullable: true },
+    },
+    description:
+      "Retour post-visite. L'issue n'est visible côté annonce que si le prospect l'a partagée.",
+  })
+  feedback: { submitted: boolean; outcome: string | null }
+}
+
+export class SubmitVisitFeedbackDto {
+  @ApiProperty({
+    enum: [
+      "PENDING_DECISION",
+      "STILL_INTERESTED",
+      "NEED_INFO",
+      "WANT_ANOTHER_VISIT",
+      "NOT_A_FIT",
+      "UNAVAILABLE",
+      "PROJECT_ABANDONED",
+      "PROJECT_COMPLETED",
+    ],
+  })
+  @IsIn([
+    "PENDING_DECISION",
+    "STILL_INTERESTED",
+    "NEED_INFO",
+    "WANT_ANOTHER_VISIT",
+    "NOT_A_FIT",
+    "UNAVAILABLE",
+    "PROJECT_ABANDONED",
+    "PROJECT_COMPLETED",
+  ])
+  outcome!: string
+
+  @ApiPropertyOptional({
+    enum: ["PRICE", "LOCATION", "SURFACE", "FEATURES", "UNAVAILABLE", "OTHER"],
+  })
+  @IsOptional()
+  @IsIn(["PRICE", "LOCATION", "SURFACE", "FEATURES", "UNAVAILABLE", "OTHER"])
+  reason?: string
+
+  @ApiPropertyOptional({ maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  privateNote?: string
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  shareOutcomeWithOwner?: boolean
 }
 
 export class AppointmentListResponseDto {

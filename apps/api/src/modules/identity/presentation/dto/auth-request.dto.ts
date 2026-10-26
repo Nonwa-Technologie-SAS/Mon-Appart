@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
 import {
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -7,12 +8,14 @@ import {
   Length,
   Matches,
   MaxLength,
+  ValidateIf,
 } from "class-validator"
 
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "../../domain/password-policy"
+import { PUBLIC_REGISTER_ROLES } from "../../domain/register-account-type"
 
 class DeviceDto {
   @ApiPropertyOptional({
@@ -70,6 +73,37 @@ export class RegisterDto extends DeviceDto {
   @IsString()
   @MaxLength(100)
   lastName?: string
+
+  @ApiPropertyOptional({
+    enum: PUBLIC_REGISTER_ROLES,
+    default: "CUSTOMER",
+    description:
+      "CUSTOMER (défaut), OWNER (propriétaire) ou AGENCY (agence). Les rôles staff ne sont pas acceptés.",
+  })
+  @IsOptional()
+  @IsIn([...PUBLIC_REGISTER_ROLES])
+  accountType?: (typeof PUBLIC_REGISTER_ROLES)[number]
+
+  @ApiPropertyOptional({
+    example: "Immobilier Plateau SARL",
+    description: "Raison sociale — obligatoire si accountType = AGENCY",
+    maxLength: 160,
+  })
+  @ValidateIf((o: RegisterDto) => o.accountType === "AGENCY")
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  organizationName?: string
+
+  @ApiPropertyOptional({
+    example: "Cocody, Abidjan",
+    description: "Adresse de l'agence (optionnel)",
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  organizationAddress?: string
 }
 
 export class LoginDto extends DeviceDto {

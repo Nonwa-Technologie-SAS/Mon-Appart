@@ -158,10 +158,22 @@ export interface SearchMapMarker {
   price: { amount: number; currency: string } | null
 }
 
-/** Contrat préparé : recherches sauvegardées (sans alerte pour l'instant). */
+export const SAVED_SEARCH_FREQUENCIES = ["DAILY", "WEEKLY", "PAUSED"] as const
+
+export type SavedSearchFrequency = (typeof SAVED_SEARCH_FREQUENCIES)[number]
+
+/** Contrat de `GET /api/v1/saved-searches`. */
 export interface SavedSearchContract {
   id: string
   name: string
   params: Record<string, string>
+  listingType: ListingType | null
+  minPrice: number | null
+  maxPrice: number | null
+  currency: string
+  alertsEnabled: boolean
+  frequency: SavedSearchFrequency
+  resumePath: string
   createdAt: string
+  updatedAt: string
 }

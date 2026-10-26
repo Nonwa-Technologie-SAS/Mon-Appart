@@ -965,4 +965,90 @@ describe("Communication : messagerie, notifications, visites", () => {
       await expect(connect(user.token)).rejects.toThrow()
     })
   })
+
+  describe("CRM Inquiry (espace propriétaire)", () => {
+    let otherOwner: TestUser
+    let crmListingId: string
+    let crmInquiryId: string
+
+    beforeAll(async () => {
+      otherOwner = await userWithRoles(test, ["OWNER"])
+      const listing = await publishedListing(owner)
+      crmListingId = listing.listingId
+      const created = await start(customer, {
+        listingId: crmListingId,
+        message: "Le bien est-il encore libre ?",
+      }).expect(201)
+      const row = await test.db.query<{ public_id: string }>(
+        `SELECT i.public_id FROM inquiries i
+         JOIN conversations c ON c.inquiry_id = i.id
+         WHERE c.public_id = $1`,
+        [created.body.conversation.id],
+      )
+      crmInquiryId = row.rows[0]!.public_id
+    })
+
+    it("liste la demande au propriétaire, pas au prospect ni à un autre owner", async () => {
+      const inbox = await test.http
+        .get("/api/v1/inquiries")
+        .set(owner.auth)
+        .expect(200)
+      expect(
+        inbox.body.items.some(
+          (item: { id: string }) => item.id === crmInquiryId,
+        ),
+      ).toBe(true)
+      const asCustomer = await test.http
+        .get("/api/v1/inquiries")
+        .set(customer.auth)
+        .expect(200)
+      expect(
+        asCustomer.body.items.some(
+          (item: { id: string }) => item.id === crmInquiryId,
+        ),
+      ).toBe(false)
+      await test.http
+        .get(`/api/v1/inquiries/${crmInquiryId}`)
+        .set(otherOwner.auth)
+        .expect(404)
+      await test.http
+        .get(`/api/v1/inquiries/${crmInquiryId}`)
+        .set(customer.auth)
+        .expect(404)
+    })
+
+    it("refuse une conversion directe et une note au prospect", async () => {
+      await test.http
+        .patch(`/api/v1/inquiries/${crmInquiryId}`)
+        .set(owner.auth)
+        .send({ stage: "CONVERTED" })
+        .expect(422)
+      await test.http
+        .patch(`/api/v1/inquiries/${crmInquiryId}`)
+        .set(customer.auth)
+        .send({ stage: "QUALIFIED" })
+        .expect(404)
+      const noted = await test.http
+        .post(`/api/v1/inquiries/${crmInquiryId}/notes`)
+        .set(owner.auth)
+        .send({ body: "Relancer demain matin" })
+        .expect(201)
+      expect(noted.body.notes[0].body).toBe("Relancer demain matin")
+      await test.http
+        .post(`/api/v1/inquiries/${crmInquiryId}/notes`)
+        .set(customer.auth)
+        .send({ body: "Je lis vos notes" })
+        .expect(404)
+    })
+
+    it("calcule un tableau de bord sans chiffres de démonstration", async () => {
+      const dash = await test.http
+        .get("/api/v1/inquiries/dashboard")
+        .set(owner.auth)
+        .expect(200)
+      expect(dash.body.totals.inquiries).toBeGreaterThanOrEqual(1)
+      expect(dash.body.windowDays).toBe(7)
+      expect(Array.isArray(dash.body.topListings)).toBe(true)
+    })
+  })
 })

@@ -15,6 +15,8 @@ export type NestUser = {
   lastName: string | null
   status: string
   roles: string[]
+  emailVerified?: boolean
+  phoneVerified?: boolean
 }
 
 export type WebSessionUser = {

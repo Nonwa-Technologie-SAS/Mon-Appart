@@ -1,33 +1,40 @@
 "use client"
 
 import { useEffect, useState, useTransition } from "react"
-import Link from "next/link"
 import { Heart, Link2, Share2 } from "lucide-react"
 
 import {
   getFavoriteStatus,
   toggleFavorite,
 } from "@/app/actions/favorites"
+import { AuthRequiredCta } from "@/components/site/auth-required-cta"
 import { Button } from "@/components/ui/button"
 import { trackWebEvent } from "@/lib/analytics/tracker"
 
 /**
  * Actions croissance sur fiche : vue détail, favori, partage.
- * Les IDs web sont des property UUID (stack legacy) — documentés comme tels.
+ * Favori réservé aux comptes connectés (CUSTOMER ou éditeur).
  */
 export function ListingGrowthActions({
   propertyId,
   propertyTitle,
   available,
+  isAuthenticated,
 }: {
   propertyId: string
   propertyTitle: string
   available: boolean
+  isAuthenticated: boolean
 }) {
   const [favorited, setFavorited] = useState(false)
-  const [requiresAuth, setRequiresAuth] = useState(false)
+  const [showAuthGate, setShowAuthGate] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [returnPath, setReturnPath] = useState(`/annonces/${propertyId}`)
+
+  useEffect(() => {
+    setReturnPath(window.location.pathname)
+  }, [])
 
   useEffect(() => {
     if (!available) return
@@ -48,19 +55,23 @@ export function ListingGrowthActions({
   }, [available, propertyId])
 
   useEffect(() => {
-    if (!available) return
+    if (!available || !isAuthenticated) return
     startTransition(async () => {
       const status = await getFavoriteStatus(propertyId)
       setFavorited(status.favorited)
-      setRequiresAuth(Boolean(status.requiresAuth))
     })
-  }, [available, propertyId])
+  }, [available, propertyId, isAuthenticated])
 
   function onFavorite() {
+    if (!isAuthenticated) {
+      setShowAuthGate(true)
+      setMessage(null)
+      return
+    }
     startTransition(async () => {
       const result = await toggleFavorite(propertyId)
       if (result.requiresAuth) {
-        setRequiresAuth(true)
+        setShowAuthGate(true)
         setMessage(result.error ?? "Connexion requise.")
         return
       }
@@ -68,6 +79,7 @@ export function ListingGrowthActions({
         setMessage(result.error)
         return
       }
+      setShowAuthGate(false)
       setFavorited(result.favorited)
       setMessage(
         result.favorited ? "Ajouté aux favoris." : "Retiré des favoris.",
@@ -145,16 +157,11 @@ export function ListingGrowthActions({
           Copier le lien
         </Button>
       </div>
-      {requiresAuth ? (
-        <p className="text-xs text-muted-foreground">
-          <Link
-            href={`/connexion?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/")}`}
-            className="underline underline-offset-2"
-          >
-            Connectez-vous
-          </Link>{" "}
-          pour synchroniser vos favoris.
-        </p>
+      {showAuthGate ? (
+        <AuthRequiredCta
+          nextPath={returnPath}
+          reason="Créez un compte pour synchroniser vos favoris sur tous vos appareils."
+        />
       ) : null}
       {message ? (
         <p className="text-xs text-muted-foreground" role="status">

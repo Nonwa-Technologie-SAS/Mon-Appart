@@ -25,6 +25,8 @@ export default function robots(): MetadataRoute.Robots {
         "/espace/",
         "/profil",
         "/profil/",
+        "/favoris",
+        "/favoris/",
         "/connexion",
         "/inscription",
         "/inscription/",

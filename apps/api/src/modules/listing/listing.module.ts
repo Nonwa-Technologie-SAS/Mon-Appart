@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common"
 import { IdentityModule } from "../identity/identity.module"
 import { PropertyModule } from "../property/property.module"
 import { ListingActivity } from "./application/listing-activity"
+import { ListingExpiryRunner } from "./application/listing-expiry.runner"
 import { ListingQueryService } from "./application/listing-query.service"
 import { ListingService } from "./application/listing.service"
 import { ListingRepository } from "./infrastructure/listing.repository"
@@ -22,6 +23,7 @@ import { ListingController } from "./presentation/listing.controller"
     ListingActivity,
     ListingService,
     ListingQueryService,
+    ListingExpiryRunner,
   ],
   exports: [ListingService],
 })

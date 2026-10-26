@@ -37,6 +37,7 @@ import {
   CancelVisitDto,
   RequestVisitDto,
   RescheduleVisitDto,
+  SubmitVisitFeedbackDto,
 } from "./appointment.dto"
 
 const uuid = new ParseUUIDPipe({ version: "4" })
@@ -175,6 +176,44 @@ export class AppointmentController {
     return serialize(
       await this.appointments.complete(actor, appointmentId, client),
     )
+  }
+
+  @Post(":appointmentId/feedback")
+  @HttpCode(HttpStatus.OK)
+  @Throttle(writeLimit)
+  @ApiOperation({
+    summary: "Retour facultatif après une visite réalisée",
+    description:
+      "Réservé au prospect. La note privée n'est jamais transmise au côté annonce. Ne bloque aucune autre fonctionnalité.",
+  })
+  @ApiOkResponse({ type: AppointmentResponseDto })
+  @CommunicationApiErrors(400, 401, 404, 409)
+  async submitFeedback(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("appointmentId", uuid) appointmentId: string,
+    @Body() dto: SubmitVisitFeedbackDto,
+    @Client() client: ClientContext,
+  ): Promise<AppointmentResponseDto> {
+    const actor = await this.actors.resolve(user)
+    return serialize(
+      await this.appointments.submitFeedback(actor, appointmentId, dto, client),
+    )
+  }
+
+  @Get(":appointmentId/feedback")
+  @ApiOperation({
+    summary: "Consulter le retour post-visite",
+    description:
+      "Le prospect voit son retour. Le côté annonce ne voit l'issue que si elle a été partagée, jamais la note privée.",
+  })
+  @ApiOkResponse()
+  @CommunicationApiErrors(400, 401, 404)
+  async getFeedback(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("appointmentId", uuid) appointmentId: string,
+  ) {
+    const actor = await this.actors.resolve(user)
+    return this.appointments.getFeedback(actor, appointmentId)
   }
 
   @Post(":appointmentId/no-show")

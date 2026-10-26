@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common"
 import { randomUUID } from "node:crypto"
 
+import type { OutboxDraft } from "../../../../common/events/event-schema"
 import { DomainEventPublisher } from "../../../../common/events/domain-event.publisher"
+import { OutboxService } from "../../../../common/events/outbox.service"
 import { safeErrorMessage } from "../../../../common/http/safe-error"
 import { MetricsService } from "../../../../observability/metrics.service"
 import type {
@@ -28,6 +30,7 @@ export class IdentityActivity {
   constructor(
     private readonly auditLogs: AuditRepository,
     private readonly events: DomainEventPublisher,
+    private readonly outbox: OutboxService,
     readonly metrics: MetricsService,
   ) {}
 
@@ -66,6 +69,14 @@ export class IdentityActivity {
         }),
       )
     }
+  }
+
+  enqueue(tx: Db, draft: OutboxDraft): Promise<string> {
+    return this.outbox.append(tx, draft)
+  }
+
+  flush(): Promise<number> {
+    return this.outbox.flush()
   }
 
   emit<TPayload extends object>(

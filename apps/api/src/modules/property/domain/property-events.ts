@@ -1,7 +1,6 @@
 /**
- * Événements de domaine, publiés en processus après commit. Charges utiles
- * minimales : identifiants publics et champs modifiés, jamais d'adresse ni de
- * donnée personnelle. Ils passeront par l'outbox puis Kafka (voir ADR 0005).
+ * Événements de domaine. Écrits dans l'outbox PostgreSQL dans la transaction
+ * métier, puis publiés vers le bus en processus (ADR 0005 / 0014).
  */
 export const PropertyEvent = {
   CREATED: "property.created",

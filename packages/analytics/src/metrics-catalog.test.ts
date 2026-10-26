@@ -25,4 +25,19 @@ describe("metrics catalog", () => {
     const acquisition = getMetric("growth.acquisition_by_channel")
     expect(acquisition?.limitations).toMatch(/causalité|dépenses/i)
   })
+
+  it("documente les taux vides reco et repli assistant", () => {
+    expect(getMetric("reco.empty_rate")?.limitations).toMatch(/vide/i)
+    expect(getMetric("assistant.fallback_rate")?.limitations).toMatch(
+      /hallucination|Coût/i,
+    )
+  })
+
+  it("documente la rétention sans CTR inventé", () => {
+    const alerts = getMetric("retention.alert_click_rate")
+    expect(alerts?.limitations).toMatch(/instrumenté/i)
+    expect(
+      getMetric("retention.post_visit_feedback_rate")?.limitations,
+    ).toMatch(/déclarées/i)
+  })
 })

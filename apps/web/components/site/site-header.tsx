@@ -12,6 +12,7 @@ const PUBLIC_NAV_ITEMS: { href: string; label: string; active?: boolean }[] = [
   { href: "/locations", label: "Locations" },
   { href: "/assistant", label: "Assistant" },
   { href: "/pour-vous", label: "Pour vous" },
+  { href: "/favoris", label: "Favoris" },
   { href: "/guides/eviter-les-arnaques", label: "Sécurité" },
 ]
 
@@ -20,6 +21,7 @@ const PUBLISHER_NAV_ITEMS: { href: string; label: string; active?: boolean }[] =
     { href: "/", label: "Annonces" },
     { href: "/espace", label: "Mon espace", active: true },
     { href: "/espace/publier", label: "Publier" },
+    { href: "/espace/verification", label: "Vérification" },
   ]
 
 export async function SiteHeader() {
@@ -50,7 +52,7 @@ export async function SiteHeader() {
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 item.active
                   ? "bg-accent text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               {item.label}

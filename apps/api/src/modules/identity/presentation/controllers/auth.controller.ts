@@ -71,7 +71,9 @@ export class AuthController {
   @Public()
   @ApiOperation({
     summary:
-      "Créer un compte client (rôle CUSTOMER, statut PENDING) et ouvrir une session",
+      "Créer un compte (CUSTOMER, OWNER ou AGENCY) en PENDING et ouvrir une session",
+    description:
+      "accountType=OWNER|AGENCY pour les éditeurs. AGENCY exige organizationName. Les rôles staff ne sont pas acceptés.",
   })
   @transportHeader
   @ApiCreatedResponse({ type: AuthResponseDto })

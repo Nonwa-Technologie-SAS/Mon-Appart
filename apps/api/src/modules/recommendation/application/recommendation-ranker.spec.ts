@@ -148,4 +148,34 @@ describe("RecommendationRanker", () => {
       1,
     )
   })
+
+  it("compare le remote en shadow sans changer le classement servi", async () => {
+    const fetcher = respond({
+      items: [
+        { listingId: candidate(3).publicId, score: 0.9 },
+        { listingId: candidate(1).publicId, score: 0.4 },
+      ],
+    })
+    const remote = new RemoteRecommendationEngine(
+      "http://rec.local",
+      500,
+      fetcher,
+    )
+    const registry = metrics()
+    const result = await new RecommendationRanker(null, registry, remote).rank(
+      input,
+    )
+    expect(result.algorithmVersion).toBe(RULES_ENGINE_VERSION)
+    expect(result.degraded).toBe(false)
+    expect(result.items.map((item) => item.candidate.listingId)).toEqual([
+      1n,
+      2n,
+      3n,
+    ])
+    await vi.waitFor(async () => {
+      const shadow = await registry.recommendation.shadow.get()
+      expect(shadow.values.reduce((sum, value) => sum + value.value, 0)).toBe(1)
+    })
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
 })

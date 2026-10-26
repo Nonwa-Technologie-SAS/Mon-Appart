@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { SearchResultsLayout } from "@/components/site/search-results-layout"
+import { getSession } from "@/lib/auth-session"
 import { searchAvailableProperties } from "@/lib/properties"
 import {
   buildPageMetadata,
@@ -48,7 +49,10 @@ export default async function HomePage({
   searchParams: Promise<HomeParams>
 }) {
   const params = await searchParams
-  const properties = await searchAvailableProperties(params)
+  const [properties, session] = await Promise.all([
+    searchAvailableProperties(params),
+    getSession(),
+  ])
   const hasFilters = Boolean(params.q || params.type || params.maxPrice)
 
   return (
@@ -61,6 +65,7 @@ export default async function HomePage({
         initialMaxPrice={params.maxPrice}
         initialLat={params.lat}
         initialLng={params.lng}
+        signedIn={Boolean(session)}
       />
     </main>
   )

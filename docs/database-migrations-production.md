@@ -1,5 +1,7 @@
 # Migrations PostgreSQL / Prisma en production
 
+Stratégie détaillée : [database-migration-strategy.md](./database-migration-strategy.md).
+
 Complète [database.md](./database.md).
 
 ## Commande autorisée hors local

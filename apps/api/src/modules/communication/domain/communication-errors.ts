@@ -57,6 +57,27 @@ const DEFINITIONS = {
     "Horaire de visite invalide",
   ],
   INVALID_CURSOR: [HttpStatus.BAD_REQUEST, "Curseur invalide"],
+  INQUIRY_NOT_FOUND: [HttpStatus.NOT_FOUND, "Demande introuvable"],
+  INQUIRY_INVALID_TRANSITION: [
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    "Transition commerciale invalide",
+  ],
+  INQUIRY_ASSIGNEE_INVALID: [
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    "Le responsable doit gérer actuellement ce bien",
+  ],
+  INQUIRY_NOTE_INVALID: [
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    "Note interne invalide",
+  ],
+  VISIT_FEEDBACK_NOT_ALLOWED: [
+    HttpStatus.CONFLICT,
+    "Un retour n'est possible qu'après une visite réalisée, par le prospect",
+  ],
+  VISIT_FEEDBACK_EXISTS: [
+    HttpStatus.CONFLICT,
+    "Un retour a déjà été enregistré pour cette visite",
+  ],
 } as const satisfies Record<string, readonly [HttpStatus, string]>
 
 export type CommunicationErrorCode = keyof typeof DEFINITIONS

@@ -51,6 +51,14 @@ export class CommunicationConfig {
     minNoticeMinutes: number
     maxDaysAhead: number
   }
+  readonly alerts: {
+    batchSize: number
+    dailyMinHours: number
+    weeklyMinDays: number
+    reactivationIdleDays: number
+    reactivationCooldownDays: number
+    maxListingsPerDigest: number
+  }
   readonly webAppUrl: string | null
 
   constructor(config: ConfigService) {
@@ -116,6 +124,14 @@ export class CommunicationConfig {
       reminderHours: num("APPOINTMENT_REMINDER_HOURS", 24),
       minNoticeMinutes: num("APPOINTMENT_MIN_NOTICE_MINUTES", 60),
       maxDaysAhead: num("APPOINTMENT_MAX_DAYS_AHEAD", 90),
+    }
+    this.alerts = {
+      batchSize: Math.min(100, num("SAVED_SEARCH_ALERT_BATCH", 25)),
+      dailyMinHours: num("SAVED_SEARCH_DAILY_MIN_HOURS", 20),
+      weeklyMinDays: num("SAVED_SEARCH_WEEKLY_MIN_DAYS", 6),
+      reactivationIdleDays: num("REACTIVATION_IDLE_DAYS", 7),
+      reactivationCooldownDays: num("REACTIVATION_COOLDOWN_DAYS", 14),
+      maxListingsPerDigest: Math.min(10, num("SAVED_SEARCH_DIGEST_MAX", 5)),
     }
     this.webAppUrl = str("WEB_APP_URL")?.replace(/\/+$/, "") ?? null
   }

@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { EspaceNav } from "@/components/espace/espace-nav"
 import { PublishPropertyForm } from "@/components/espace/publish-property-form"
 import { Button } from "@/components/ui/button"
 import { requirePublisherPage } from "@/lib/auth-session"
@@ -9,6 +10,7 @@ export default async function PublishPropertyPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:py-14">
+      <EspaceNav current="/espace/publier" />
       <div>
         <Button
           variant="ghost"
@@ -22,8 +24,8 @@ export default async function PublishPropertyPage() {
           Publier un bien
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Ajoutez vos photos et indiquez dans quelle pièce chacune se trouve.
-          La visite en ligne suivra ce parcours.
+          Ajoutez vos photos et indiquez dans quelle pièce chacune se trouve. La
+          visite en ligne suivra ce parcours.
         </p>
       </div>
       <PublishPropertyForm />

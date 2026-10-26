@@ -94,6 +94,7 @@ export class PreferenceRepository {
       await tx.userPreference.upsert({
         where: { userId },
         create: { userId, ...data },
+        // projectStatus / lastReactivationAt restent hors du profil de reco.
         update: { ...data, updatedAt: new Date() },
       })
       await Promise.all([

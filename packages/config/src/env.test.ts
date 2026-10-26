@@ -157,6 +157,97 @@ describe("configuration Billing", () => {
   })
 })
 
+describe("garde-fous staging/production", () => {
+  const deployedSecrets = {
+    JWT_SECRET: "production-grade-jwt-secret-key-32ok",
+    JWT_REFRESH_SECRET: "production-grade-refresh-secret-32ok",
+  }
+  const deployed = {
+    ...deployedSecrets,
+    APP_ENV: "production",
+    NODE_ENV: "production",
+    DATABASE_URL: "postgresql://u:p@db.internal:5432/mon_appart",
+    REDIS_URL: "redis://redis.internal:6379",
+    WEB_APP_URL: "https://www.example.ci",
+    MEDIA_STORAGE_PROVIDER: "s3",
+    S3_BUCKET: "mon-appart-media-test",
+    S3_ACCESS_KEY: "test-access-key-not-real",
+    S3_SECRET_KEY: "test-secret-key-not-real",
+  }
+
+  it("accepte une configuration de production minimale dédiée", () => {
+    const env = parseApiEnv(deployed)
+    expect(env.APP_ENV).toBe("production")
+    expect(env.DATABASE_URL).toContain("db.internal")
+  })
+
+  it("exige DATABASE_URL hors local", () => {
+    expect(() =>
+      parseApiEnv({
+        ...deployedSecrets,
+        APP_ENV: "staging",
+        NODE_ENV: "production",
+      }),
+    ).toThrow(/DATABASE_URL/)
+  })
+
+  it("refuse un hôte loopback en production", () => {
+    expect(() =>
+      parseApiEnv({
+        ...deployed,
+        DATABASE_URL: "postgresql://u:p@127.0.0.1:5432/mon_appart",
+      }),
+    ).toThrow(/DATABASE_URL/)
+  })
+
+  it("refuse une base *_test en production", () => {
+    expect(() =>
+      parseApiEnv({
+        ...deployed,
+        DATABASE_URL: "postgresql://u:p@db.internal:5432/mon_appart_test",
+      }),
+    ).toThrow(/DATABASE_URL/)
+  })
+
+  it("refuse les placeholders locaux en staging", () => {
+    expect(() =>
+      parseApiEnv({
+        ...deployed,
+        APP_ENV: "staging",
+        JWT_SECRET: "dev-only-change-me-please-32chars-min",
+      }),
+    ).toThrow(/JWT_SECRET/)
+  })
+
+  it("refuse deux secrets JWT identiques", () => {
+    expect(() =>
+      parseApiEnv({
+        JWT_SECRET: "same-secret-value-must-be-32chars-min",
+        JWT_REFRESH_SECRET: "same-secret-value-must-be-32chars-min",
+      }),
+    ).toThrow(/JWT_REFRESH_SECRET/)
+  })
+
+  it("refuse NODE_ENV=development avec APP_ENV=production", () => {
+    expect(() => parseApiEnv({ ...deployed, NODE_ENV: "development" })).toThrow(
+      /NODE_ENV/,
+    )
+  })
+
+  it("n'inclut pas la valeur du secret dans l'erreur", () => {
+    try {
+      parseApiEnv({
+        ...deployed,
+        DATABASE_URL:
+          "postgresql://secret-user:super-secret@127.0.0.1/mon_appart",
+      })
+    } catch (error) {
+      expect((error as Error).message).not.toContain("super-secret")
+      expect((error as Error).message).not.toContain("secret-user")
+    }
+  })
+})
+
 describe("parseDuration", () => {
   it("convertit les unités usuelles", () => {
     expect(parseDuration("15m")).toBe(900_000)

@@ -1,10 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common"
 
 import { AiAssistantConfig } from "../ai-assistant.config"
-import type {
-  AiTextProvider,
-  ComposeReplyInput,
-} from "./ai-provider"
+import type { AiTextProvider, ComposeReplyInput } from "./ai-provider"
+import { composeAssistantSystemPrompt } from "../domain/prompt-governance"
+import { sanitizeAssistantReply } from "../domain/output-sanitize"
 import { RulesAiProvider } from "./rules-ai.provider"
 
 /**
@@ -36,14 +35,7 @@ export class OpenAiTextProvider implements AiTextProvider {
       matchReasons: l.matchReasons,
     }))
 
-    const system = [
-      "Tu es l’assistant immobilier Mon Appart (Côte d’Ivoire).",
-      "Tu reformules UNIQUEMENT à partir des données fournies.",
-      "Interdit : inventer une annonce, un prix, une disponibilité ou un quartier.",
-      "Interdit : citer un listingId hors de la liste autorisée.",
-      "Réponds en français, concis (4 phrases max).",
-      `listingIds autorisés : ${allowedIds.join(", ") || "(aucun)"}`,
-    ].join(" ")
+    const system = composeAssistantSystemPrompt(allowedIds)
 
     const user = JSON.stringify({
       mode: input.mode,
@@ -60,10 +52,7 @@ export class OpenAiTextProvider implements AiTextProvider {
 
     try {
       const controller = new AbortController()
-      const timer = setTimeout(
-        () => controller.abort(),
-        this.config.timeoutMs,
-      )
+      const timer = setTimeout(() => controller.abort(), this.config.timeoutMs)
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         signal: controller.signal,
@@ -94,29 +83,16 @@ export class OpenAiTextProvider implements AiTextProvider {
       const content = json.choices?.[0]?.message?.content?.trim()
       if (!content) return this.fallback.composeReply(input)
 
-      return this.sanitize(content, new Set(allowedIds), input.baseMessage)
+      return sanitizeAssistantReply(
+        content,
+        new Set(allowedIds),
+        input.baseMessage,
+      )
     } catch (err) {
       this.logger.warn(
         `OpenAI indisponible — repli rules (${err instanceof Error ? err.message : "error"})`,
       )
       return this.fallback.composeReply(input)
     }
-  }
-
-  private sanitize(
-    content: string,
-    allowed: Set<string>,
-    fallback: string,
-  ): string {
-    const uuidRe =
-      /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi
-    let out = content
-    for (const match of content.matchAll(uuidRe)) {
-      if (!allowed.has(match[0]!)) {
-        out = out.replaceAll(match[0]!, "")
-      }
-    }
-    const cleaned = out.replace(/\s{2,}/g, " ").trim()
-    return cleaned.length > 20 ? cleaned : fallback
   }
 }

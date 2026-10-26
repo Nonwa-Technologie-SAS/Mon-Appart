@@ -1,8 +1,8 @@
 import type { ListingStatus } from "../../../generated/prisma/enums"
 
 /**
- * Événements de domaine (en processus, après commit). Charges utiles minimales
- * à base d'identifiants publics ; outbox puis Kafka plus tard (ADR 0005).
+ * Événements de domaine. Écrits dans l'outbox PostgreSQL dans la transaction
+ * métier, puis publiés vers le bus en processus (ADR 0005 / 0014).
  */
 export const ListingEvent = {
   CREATED: "listing.created",

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { MessageCircleIcon, SearchIcon, ShieldCheckIcon } from "lucide-react"
 
 /**
- * Arguments produits honnêtes — pas de badge « vérifié » sans backend Trust.
+ * Arguments produits honnêtes — badges Trust uniquement après examen humain.
  */
 export function TrustStrip() {
   const items = [
@@ -18,10 +18,17 @@ export function TrustStrip() {
     },
     {
       icon: ShieldCheckIcon,
-      title: "Prudence avant paiement",
+      title: "Vérification propriétaire",
       body: (
         <>
-          Consultez notre{" "}
+          Les éditeurs peuvent{" "}
+          <Link
+            href="/espace/verification"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            vérifier identité et agence
+          </Link>
+          . Consultez aussi le{" "}
           <Link
             href="/guides/eviter-les-arnaques"
             className="font-medium text-primary underline-offset-2 hover:underline"

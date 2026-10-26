@@ -1,18 +1,20 @@
 # Environnements
 
+Détail et matrice complète : [environment-strategy.md](./environment-strategy.md).
+
 ## Matrice
 
-| | local | test (CI) | staging | production |
-| --- | --- | --- | --- | --- |
-| `APP_ENV` | `local` | `test` | `staging` | `production` |
-| `NODE_ENV` | `development` | `test` | `production` | `production` |
-| Base métier | Compose `mon_appart` | `mon_appart_test` | instance dédiée | instance dédiée |
-| Redis | Compose `:6380` | service CI ou mock | managé dédié | managé dédié |
-| Secrets | `.env` local | secrets CI de test | GitHub Environment `staging` | GitHub Environment `production` |
-| Seed | `development` (défaut) | `reference` | `reference` | `reference` |
-| Swagger | oui | n/a | non (sauf override) | non |
-| Paiement mock | autorisé | autorisé | **refusé** | **refusé** |
-| `AUTH_DEV_PRINT_CODES` | possible | non | **refusé** | **refusé** |
+|                        | local                  | test (CI)          | staging                      | production                      |
+| ---------------------- | ---------------------- | ------------------ | ---------------------------- | ------------------------------- |
+| `APP_ENV`              | `local`                | `test`             | `staging`                    | `production`                    |
+| `NODE_ENV`             | `development`          | `test`             | `production`                 | `production`                    |
+| Base métier            | Compose `mon_appart`   | `mon_appart_test`  | instance dédiée              | instance dédiée                 |
+| Redis                  | Compose `:6380`        | service CI ou mock | managé dédié                 | managé dédié                    |
+| Secrets                | `.env` local           | secrets CI de test | GitHub Environment `staging` | GitHub Environment `production` |
+| Seed                   | `development` (défaut) | `reference`        | `reference`                  | `reference`                     |
+| Swagger                | oui                    | n/a                | non (sauf override)          | non                             |
+| Paiement mock          | autorisé               | autorisé           | **refusé**                   | **refusé**                      |
+| `AUTH_DEV_PRINT_CODES` | possible               | non                | **refusé**                   | **refusé**                      |
 
 ## Règles anti-contamination
 

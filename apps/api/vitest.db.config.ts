@@ -34,6 +34,7 @@ export default defineConfig({
       "test/analytics/**/*.db-spec.ts",
       "test/admin/**/*.db-spec.ts",
       "test/billing/**/*.db-spec.ts",
+      "test/events/**/*.db-spec.ts",
     ],
     setupFiles: ["./test/database/setup.ts"],
     fileParallelism: false,
@@ -79,6 +80,8 @@ export default defineConfig({
       LISTING_PUBLICATION_REQUIREMENTS: "",
       // Livraisons déclenchées explicitement (runOnce), fournisseurs simulés.
       NOTIFICATION_WORKER_ENABLED: "false",
+      OUTBOX_WORKER_ENABLED: "false",
+      LISTING_EXPIRY_WORKER_ENABLED: "false",
       EMAIL_PROVIDER: "none",
       SMS_PROVIDER: "none",
       NOTIFICATION_FALLBACKS: "",

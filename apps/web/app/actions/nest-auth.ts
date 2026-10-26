@@ -10,7 +10,10 @@ import {
   primaryRole,
   type NestUser,
 } from "@/lib/nest-session"
-import { isPublisherRole, safeInternalPath } from "@/lib/auth-session"
+import {
+  isPublisherRole,
+  safeInternalPath,
+} from "@/lib/auth-session"
 
 const API_PREFIX = "/api/v1"
 
@@ -119,12 +122,42 @@ export async function nestRegisterCustomer(
   _prev: NestAuthActionState,
   formData: FormData,
 ): Promise<NestAuthActionState> {
+  return nestRegisterAccount(_prev, formData, "CUSTOMER")
+}
+
+export async function nestRegisterOwner(
+  _prev: NestAuthActionState,
+  formData: FormData,
+): Promise<NestAuthActionState> {
+  return nestRegisterAccount(_prev, formData, "OWNER")
+}
+
+export async function nestRegisterAgency(
+  _prev: NestAuthActionState,
+  formData: FormData,
+): Promise<NestAuthActionState> {
+  return nestRegisterAccount(_prev, formData, "AGENCY")
+}
+
+async function nestRegisterAccount(
+  _prev: NestAuthActionState,
+  formData: FormData,
+  accountType: "CUSTOMER" | "OWNER" | "AGENCY",
+): Promise<NestAuthActionState> {
   const name = String(formData.get("name") ?? "").trim()
   const email = String(formData.get("email") ?? "").trim()
   const password = String(formData.get("password") ?? "")
+  const phone = String(formData.get("phone") ?? "").trim()
+  const organizationName = String(formData.get("agencyName") ?? "").trim()
+  const organizationAddress = String(formData.get("address") ?? "").trim()
+
   if (!email || !password) {
     return { error: "Email et mot de passe requis" }
   }
+  if (accountType === "AGENCY" && !organizationName) {
+    return { error: "Le nom de l'agence est requis" }
+  }
+
   const [firstName, ...rest] = name.split(/\s+/)
   const lastName = rest.join(" ") || undefined
 
@@ -139,18 +172,23 @@ export async function nestRegisterCustomer(
       password,
       firstName: firstName || undefined,
       lastName,
+      accountType,
+      ...(phone ? { phone } : {}),
+      ...(organizationName ? { organizationName } : {}),
+      ...(organizationAddress ? { organizationAddress } : {}),
     }),
     cache: "no-store",
   })
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
-      message?: string
+      message?: string | string[]
     } | null
+    const message = Array.isArray(body?.message)
+      ? body.message[0]
+      : body?.message
     return {
-      error:
-        body?.message ??
-        "Impossible de créer le compte. Le rôle éditeur (OWNER) doit être attribué côté API/admin après inscription.",
+      error: message ?? "Impossible de créer le compte. Réessayez plus tard.",
     }
   }
 
@@ -161,9 +199,13 @@ export async function nestRegisterCustomer(
   }
   await persistNestAccessToken(body.accessToken)
 
-  // Compte CUSTOMER : pas d'espace éditeur tant que le rôle n'est pas élevé.
+  const session = nestUserToSession(body.user)
+  const nextPath = safeInternalPath(formData.get("next"))
+  if (isPublisherRole(session.user.role)) {
+    redirect(nextPath ?? "/espace")
+  }
   void primaryRole(body.user.roles)
-  redirect("/connexion?registered=1")
+  redirect(nextPath ?? "/profil")
 }
 
 export async function syncNestAccessToken(accessToken: string): Promise<void> {

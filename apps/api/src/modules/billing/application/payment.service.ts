@@ -445,11 +445,13 @@ export class PaymentService {
             payment.id,
             now,
           )
-          return {
+          const retry = {
             result: ignored("ALREADY_SUCCEEDED", payment.id),
             fulfilled,
             order,
           }
+          await this.enqueuePaymentEvents(tx, retry)
+          return retry
         }
         return {
           result: ignored(
@@ -526,12 +528,14 @@ export class PaymentService {
             tx,
           )
         }
-        return {
+        const failedEffect = {
           result: applied(decision.next, payment.id),
           status: decision.next,
           payment,
           order,
         }
+        await this.enqueuePaymentEvents(tx, failedEffect)
+        return failedEffect
       }
 
       if (decision.lateSuccess) {
@@ -546,12 +550,14 @@ export class PaymentService {
           orderStatus: order.status,
           source,
         })
-        return {
+        const duplicate = {
           result: applied("SUCCEEDED_DUPLICATE", payment.id),
           status: "SUCCEEDED" as const,
           payment,
           order,
         }
+        await this.enqueuePaymentEvents(tx, duplicate)
+        return duplicate
       }
       await tx.billingOrder.update({
         where: { id: order.id },
@@ -574,16 +580,18 @@ export class PaymentService {
         payment.id,
         now,
       )
-      return {
+      const succeededEffect = {
         result: applied("SUCCEEDED", payment.id),
         status: "SUCCEEDED" as const,
         payment,
         order,
         fulfilled,
       }
+      await this.enqueuePaymentEvents(tx, succeededEffect)
+      return succeededEffect
     })
 
-    this.afterApply(providerCode, effects)
+    await this.afterApply(providerCode, effects)
     return effects.result
   }
 
@@ -605,8 +613,66 @@ export class PaymentService {
     }
   }
 
-  /** Événements et métriques, après validation de la transaction. */
-  private afterApply(
+  private async enqueuePaymentEvents(
+    tx: Tx,
+    effects: {
+      status?: PaymentStatus
+      payment?: { publicId: string }
+      order?: { publicId: string }
+      fulfilled?: FulfillmentResult
+    },
+  ): Promise<void> {
+    const { status, payment, order, fulfilled } = effects
+    if (status && payment && order) {
+      if (status === "SUCCEEDED") {
+        await this.activity.enqueue(tx, {
+          name: BillingEvent.PAYMENT_SUCCEEDED,
+          producer: "billing",
+          aggregateType: "payment",
+          aggregateId: payment.publicId,
+          payload: {
+            paymentId: payment.publicId,
+            orderId: order.publicId,
+          },
+        })
+      } else if (status !== "PENDING") {
+        await this.activity.enqueue(tx, {
+          name: BillingEvent.PAYMENT_FAILED,
+          producer: "billing",
+          aggregateType: "payment",
+          aggregateId: payment.publicId,
+          payload: {
+            paymentId: payment.publicId,
+            orderId: order.publicId,
+            status,
+          },
+        })
+      }
+    }
+    if (
+      fulfilled &&
+      fulfilled.outcome !== "ALREADY" &&
+      fulfilled.outcome !== "CONFLICT" &&
+      order
+    ) {
+      const started = fulfilled.outcome === "STARTED"
+      await this.activity.enqueue(tx, {
+        name: started
+          ? BillingEvent.SUBSCRIPTION_STARTED
+          : BillingEvent.SUBSCRIPTION_RENEWED,
+        producer: "billing",
+        aggregateType: "subscription",
+        aggregateId: fulfilled.subscriptionPublicId,
+        payload: {
+          subscriptionId: fulfilled.subscriptionPublicId,
+          orderId: order.publicId,
+        },
+      })
+    }
+  }
+
+  /** Métriques après validation de la transaction ; l'outbox est déjà écrite. */
+  private async afterApply(
     providerCode: string,
     effects: {
       result: ApplyResult
@@ -615,25 +681,13 @@ export class PaymentService {
       order?: { publicId: string; buyerId: bigint }
       fulfilled?: FulfillmentResult
     },
-  ): void {
+  ): Promise<void> {
     const { status, payment, order, fulfilled } = effects
     if (status && payment && order) {
       this.activity.metrics.billing.paymentResults.inc({
         provider: providerCode,
         status,
       })
-      if (status === "SUCCEEDED") {
-        this.activity.emit(BillingEvent.PAYMENT_SUCCEEDED, payment.publicId, {
-          paymentId: payment.publicId,
-          orderId: order.publicId,
-        })
-      } else if (status !== "PENDING") {
-        this.activity.emit(BillingEvent.PAYMENT_FAILED, payment.publicId, {
-          paymentId: payment.publicId,
-          orderId: order.publicId,
-          status,
-        })
-      }
       this.activity.log("billing.payment_status", null, {
         payment_id: payment.publicId,
         order_id: order.publicId,
@@ -651,17 +705,8 @@ export class PaymentService {
       this.activity.metrics.billing.subscriptionChanges.inc({
         change: started ? "started" : "renewed",
       })
-      this.activity.emit(
-        started
-          ? BillingEvent.SUBSCRIPTION_STARTED
-          : BillingEvent.SUBSCRIPTION_RENEWED,
-        fulfilled.subscriptionPublicId,
-        {
-          subscriptionId: fulfilled.subscriptionPublicId,
-          orderId: order.publicId,
-        },
-      )
     }
+    await this.activity.flush()
   }
 }
 

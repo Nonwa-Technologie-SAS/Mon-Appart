@@ -2,18 +2,18 @@
 
 ## Jeu de requêtes (marché CI)
 
-| Cas | Attendu |
-| --- | --- |
+| Cas                                 | Attendu                                             |
+| ----------------------------------- | --------------------------------------------------- |
 | Maison 3 ch. louer Cocody 250k/mois | Search avec RENT, HOUSE, COCODY, maxPrice, bedrooms |
-| Appartement louer Abidjan | Clarification commune ou budget |
-| Terrain Cocody | Clarification achat vs location |
-| Location sans budget | Clarification ; « Sans budget » → Search |
-| 250k ambigu | Période MONTH si location seule |
-| Localité inconnue | Pas d’ID inventé ; freeText ou clarification |
-| Soft « calme » | Hint unverifiable, pas de filtre faux |
-| Search vide | Mode `empty` + suggestions d’élargissement |
-| Correction budget | `mergeCriteria` conserve lieu / type |
-| Session étrangère | 404 conversation |
+| Appartement louer Abidjan           | Clarification commune ou budget                     |
+| Terrain Cocody                      | Clarification achat vs location                     |
+| Location sans budget                | Clarification ; « Sans budget » → Search            |
+| 250k ambigu                         | Période MONTH si location seule                     |
+| Localité inconnue                   | Pas d’ID inventé ; freeText ou clarification        |
+| Soft « calme »                      | Hint unverifiable, pas de filtre faux               |
+| Search vide                         | Mode `empty` + suggestions d’élargissement          |
+| Correction budget                   | `mergeCriteria` conserve lieu / type                |
+| Session étrangère                   | 404 conversation                                    |
 
 ## Tests automatisés
 
@@ -26,6 +26,8 @@ Couverture : extracteur, fusion, service (Search mocké), isolation session.
 ## Mesures produit (à instrumenter plus tard)
 
 Taux de clarification, échecs Search, latence p50/p95, erreurs fournisseur, conversion favoris/contact. Ne pas afficher de chiffres avant collecte réelle.
+
+Voir aussi le cadre étendu : `ai-governance-framework.md`, `llm-evaluation-and-prompt-governance.md`, jeu golden `assistant-eval-synthetic-v1`.
 
 ## Production
 

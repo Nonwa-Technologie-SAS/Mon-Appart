@@ -1,0 +1,29 @@
+# Détection de secrets dans l'arbre courant (CI : --no-git).
+# Les placeholders documentés et mots de passe Compose locaux sont autorisés.
+title = "Mon Appart"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fichiers d'exemple et CI de test (placeholders, pas des secrets réels)"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''^\.github/workflows/ci\.yml$''',
+  '''^infrastructure/docker/compose\.yaml$''',
+  '''^infrastructure/docker/README\.md$''',
+  '''^apps/api/prisma/seed/development\.ts$''',
+  '''^docs/web-nest-cutover\.md$''',
+  '''^packages/config/src/env\.test\.ts$''',
+]
+
+[[allowlists]]
+description = "Valeurs explicitement marquées local/test dans le dépôt"
+regexes = [
+  '''dev-only-change-me-please-32chars-min''',
+  '''dev-only-refresh-change-me-32chars''',
+  '''test-only-jwt-secret-not-for-production-use''',
+  '''test-only-refresh-secret-not-for-production''',
+  '''Demo-Password-2026!''',
+  '''mon_appart_dev''',
+]

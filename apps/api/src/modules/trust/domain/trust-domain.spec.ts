@@ -20,6 +20,8 @@ import {
   isListingBurst,
   isPriceChangeAnomaly,
   reportThresholdReached,
+  RiskRule,
+  RULE_SEVERITY,
   runPrechecks,
   type PrecheckInput,
 } from "./risk-rules"
@@ -334,6 +336,12 @@ describe("règles de risque", () => {
     expect(isListingBurst(7, 8)).toBe(false)
     expect(isListingBurst(8, 8)).toBe(true)
     expect(isListingBurst(10, 0)).toBe(false)
+  })
+
+  it("chaque règle de risque a une sévérité explicite", () => {
+    for (const rule of Object.values(RiskRule)) {
+      expect(RULE_SEVERITY[rule]).toMatch(/^(LOW|MEDIUM|HIGH)$/)
+    }
   })
 })
 

@@ -254,6 +254,39 @@ export class ListingRepository {
     await tx.listing.update({ where: { id }, data })
   }
 
+  /**
+   * Annonces publiées échues, verrouillées (SKIP LOCKED). Plusieurs workers
+   * peuvent tourner sans se voler les mêmes lignes.
+   */
+  async claimExpired(
+    limit: number,
+    tx: Tx,
+  ): Promise<
+    Array<{
+      id: bigint
+      publicId: string
+      propertyPublicId: string
+      status: ListingStatus
+    }>
+  > {
+    return tx.$queryRaw`
+      SELECT l.id, l.public_id AS "publicId", p.public_id AS "propertyPublicId",
+             l.status
+        FROM listings l
+        JOIN properties p ON p.id = l.property_id
+       WHERE l.id IN (
+         SELECT id FROM listings
+          WHERE status = 'PUBLISHED'
+            AND expires_at IS NOT NULL
+            AND expires_at <= now()
+            AND deleted_at IS NULL
+          ORDER BY expires_at, id
+          LIMIT ${limit}
+          FOR UPDATE SKIP LOCKED
+       )
+    `
+  }
+
   async addHistory(
     entry: {
       listingId: bigint

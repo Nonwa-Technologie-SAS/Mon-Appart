@@ -13,6 +13,10 @@ import {
   type MessageStatus,
   type ParticipantSide,
 } from "../domain/message-rules"
+import {
+  scanMessageSafety,
+  type MessageSafetyHint,
+} from "../domain/message-safety"
 import type {
   ConversationRow,
   MessageRow,
@@ -51,6 +55,8 @@ export interface MessageView {
   attachments: AttachmentView[]
   deleted: boolean
   createdAt: Date
+  /** Avertissements préventifs ; jamais une preuve de fraude. */
+  safetyHints: MessageSafetyHint[]
 }
 
 export interface ConversationView {
@@ -143,6 +149,8 @@ export function messageView(
         }),
     deleted,
     createdAt: row.createdAt,
+    safetyHints:
+      deleted || row.type === "SYSTEM" ? [] : scanMessageSafety(row.body),
   }
 }
 

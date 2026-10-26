@@ -8,10 +8,12 @@ import { AdminAuditService } from "./application/admin-audit.service"
 import { AdminDashboardService } from "./application/admin-dashboard.service"
 import { AdminListingService } from "./application/admin-listing.service"
 import { AdminNoteService } from "./application/admin-note.service"
+import { AdminOutboxService } from "./application/admin-outbox.service"
 import { AdminUserService } from "./application/admin-user.service"
 import { ModerationReasonService } from "./application/moderation-reason.service"
 import { AdminAccessGuard } from "./presentation/admin-access.guard"
 import { AdminListingController } from "./presentation/admin-listing.controller"
+import { AdminOutboxController } from "./presentation/admin-outbox.controller"
 import { AdminUserController } from "./presentation/admin-user.controller"
 import { AdminController } from "./presentation/admin.controller"
 
@@ -23,7 +25,12 @@ import { AdminController } from "./presentation/admin.controller"
  */
 @Module({
   imports: [IdentityModule, ListingModule, CommunicationModule],
-  controllers: [AdminController, AdminUserController, AdminListingController],
+  controllers: [
+    AdminController,
+    AdminUserController,
+    AdminListingController,
+    AdminOutboxController,
+  ],
   providers: [
     AdminAccessGuard,
     AdminActivity,
@@ -33,6 +40,7 @@ import { AdminController } from "./presentation/admin.controller"
     AdminDashboardService,
     AdminUserService,
     AdminListingService,
+    AdminOutboxService,
   ],
 })
 export class AdminModule {}

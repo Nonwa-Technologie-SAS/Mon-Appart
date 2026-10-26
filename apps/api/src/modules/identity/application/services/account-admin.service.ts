@@ -192,6 +192,14 @@ export class AccountAdminService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: IdentityEvent.AccountStatusChanged,
+        producer: "identity",
+        aggregateType: "user",
+        aggregateId: target.publicId,
+        payload: { from: current.status, to: next },
+        correlationId: context?.requestId ?? null,
+      })
       return { from: current.status, to: next, families }
     })
 
@@ -202,10 +210,7 @@ export class AccountAdminService {
       context,
       { audit: false },
     )
-    this.activity.emit(IdentityEvent.AccountStatusChanged, target.publicId, {
-      from: result.from,
-      to: result.to,
-    })
+    await this.activity.flush()
     return {
       from: result.from,
       to: result.to,

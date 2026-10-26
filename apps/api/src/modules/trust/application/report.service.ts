@@ -18,6 +18,10 @@ import {
 import type { Actor, ClientContext } from "../../identity"
 import { ListingService } from "../../listing"
 import {
+  assessListingRisk,
+  type ListingRiskAssessment,
+} from "../domain/listing-risk"
+import {
   reportThresholdReached,
   RiskRule,
   RULE_SEVERITY,
@@ -88,6 +92,14 @@ export interface ReviewReportView {
    * message visé, ou les derniers messages), jamais la conversation entière.
    */
   conversationExcerpt?: ModerationExcerptMessage[]
+  /** Alertes ouvertes liées à l'annonce : indices, pas une preuve. */
+  relatedSignals?: Array<{
+    id: string
+    ruleCode: string
+    severity: string
+    status: string
+  }>
+  listingRisk?: ListingRiskAssessment
   createdAt: Date
   resolvedAt: Date | null
   history: {
@@ -594,10 +606,7 @@ export class ReportService {
       messageId: null,
       signalUserId: null,
     }
-    if (
-      input.targetType === "MESSAGE" ||
-      input.targetType === "CONVERSATION"
-    ) {
+    if (input.targetType === "MESSAGE" || input.targetType === "CONVERSATION") {
       const forMessage = input.targetType === "MESSAGE"
       if (
         !input.conversationId ||
@@ -725,33 +734,73 @@ export class ReportService {
       conversationId: row.conversationId,
       messageId: row.messageId,
     })
-    const [reporters, events, excerpt] = await Promise.all([
-      this.trust.client.report.findMany({
-        where: {
-          status: { in: OPEN_REPORT_STATUSES },
-          reporterId: { not: null },
-          ...targetWhere,
-        },
-        distinct: ["reporterId"],
-        select: { reporterId: true },
-      }),
-      withHistory
-        ? this.trust.client.reportEvent.findMany({
-            where: { reportId: row.id },
-            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-            select: {
-              action: true,
-              toStatus: true,
-              internalNote: true,
-              createdAt: true,
-              actor: { select: { publicId: true } },
-            },
+    const listingInternalId = row.listingId
+    const [reporters, events, excerpt, openSignals, confirmedIncidents] =
+      await Promise.all([
+        this.trust.client.report.findMany({
+          where: {
+            status: { in: OPEN_REPORT_STATUSES },
+            reporterId: { not: null },
+            ...targetWhere,
+          },
+          distinct: ["reporterId"],
+          select: { reporterId: true },
+        }),
+        withHistory
+          ? this.trust.client.reportEvent.findMany({
+              where: { reportId: row.id },
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                action: true,
+                toStatus: true,
+                internalNote: true,
+                createdAt: true,
+                actor: { select: { publicId: true } },
+              },
+            })
+          : Promise.resolve([]),
+        withHistory && row.conversationId !== null
+          ? this.conversations.excerpt(row.conversationId, row.messageId)
+          : Promise.resolve(undefined),
+        withHistory && listingInternalId
+          ? this.trust.client.trustSignal.findMany({
+              where: { listingId: listingInternalId, status: "OPEN" },
+              orderBy: [{ createdAt: "desc" }],
+              take: 20,
+              select: {
+                publicId: true,
+                ruleCode: true,
+                severity: true,
+                status: true,
+              },
+            })
+          : Promise.resolve([]),
+        withHistory && listingInternalId
+          ? this.trust.client.trustSignal.count({
+              where: {
+                listingId: listingInternalId,
+                status: "CONFIRMED",
+              },
+            })
+          : Promise.resolve(0),
+      ])
+    const relatedSignals = openSignals.map((signal) => ({
+      id: signal.publicId,
+      ruleCode: signal.ruleCode,
+      severity: signal.severity,
+      status: signal.status,
+    }))
+    const listingRisk =
+      withHistory && listingInternalId
+        ? assessListingRisk({
+            openSignals: openSignals.map((signal) => ({
+              rule: signal.ruleCode,
+              severity: signal.severity,
+            })),
+            distinctReporters: reporters.length,
+            confirmedIncidents,
           })
-        : Promise.resolve([]),
-      withHistory && row.conversationId !== null
-        ? this.conversations.excerpt(row.conversationId, row.messageId)
-        : Promise.resolve(undefined),
-    ])
+        : undefined
     return {
       id: row.publicId,
       targetType: row.targetType,
@@ -765,6 +814,7 @@ export class ReportService {
       assignedTo: row.assignedTo?.publicId ?? null,
       openReportsOnTarget: reporters.length,
       ...(excerpt ? { conversationExcerpt: excerpt } : {}),
+      ...(withHistory ? { relatedSignals, listingRisk } : {}),
       createdAt: row.createdAt,
       resolvedAt: row.resolvedAt,
       history: events.map((event) => ({

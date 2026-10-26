@@ -32,16 +32,19 @@ import { RecommendationConfig } from "./recommendation.config"
     {
       provide: RecommendationRanker,
       inject: [RecommendationConfig, MetricsService],
-      useFactory: (config: RecommendationConfig, metrics: MetricsService) =>
-        new RecommendationRanker(
-          config.engine === "remote" && config.remote.url
-            ? new RemoteRecommendationEngine(
-                config.remote.url,
-                config.remote.timeoutMs,
-              )
-            : null,
+      useFactory: (config: RecommendationConfig, metrics: MetricsService) => {
+        const remoteEngine = config.remote.url
+          ? new RemoteRecommendationEngine(
+              config.remote.url,
+              config.remote.timeoutMs,
+            )
+          : null
+        return new RecommendationRanker(
+          config.engine === "remote" ? remoteEngine : null,
           metrics,
-        ),
+          config.shadowRemote ? remoteEngine : null,
+        )
+      },
     },
     PreferenceRepository,
     BehaviorRepository,

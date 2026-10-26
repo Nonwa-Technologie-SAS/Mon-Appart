@@ -12,11 +12,11 @@ pnpm --filter @mon-appart/api db:migrate         # migrate deploy
 pnpm --filter @mon-appart/api db:seed            # référentiels (+ données fictives en local)
 ```
 
-| Base                | Usage                                 | Variable              |
-| ------------------- | ------------------------------------- | --------------------- |
-| `mon_appart`        | API, développement local              | `DATABASE_URL`        |
-| `mon_appart_test`   | Tests d'intégration base de données   | `TEST_DATABASE_URL`   |
-| `mon_appart_legacy` | Résidu historique (plus utilisé par `apps/web`) | — |
+| Base                | Usage                                           | Variable            |
+| ------------------- | ----------------------------------------------- | ------------------- |
+| `mon_appart`        | API, développement local                        | `DATABASE_URL`      |
+| `mon_appart_test`   | Tests d'intégration base de données             | `TEST_DATABASE_URL` |
+| `mon_appart_legacy` | Résidu historique (plus utilisé par `apps/web`) | —                   |
 
 Staging et production ont chacun leur propre serveur et leurs propres identifiants, injectés par l'hébergeur. Aucune URL de staging ou de production n'est écrite dans le dépôt.
 
@@ -41,6 +41,7 @@ Le script `infrastructure/docker/init/01-postgis.sh` crée `mon_appart_legacy` e
 | Billing        | `billing_products`, `billing_prices`, `billing_orders`, `payment_transactions`, `payment_events`, `payment_refunds`, `subscriptions`, `subscription_periods`, `billing_incidents` (voir [billing-payments-monetization.md](./billing-payments-monetization.md)) |
 | Audit          | `audit_logs`                                                                                                                                                                                                                                                    |
 | Events         | `user_events` (héritée, non alimentée : la mesure d'usage passe par `analytics_events`)                                                                                                                                                                         |
+| Domain events  | `outbox_events`, `inbox_events` (ADR [0014](./decisions/0014-event-driven-outbox.md), [architecture événementielle](./architecture/event-driven-architecture.md))                                                                                               |
 
 Règles structurantes :
 
@@ -170,7 +171,10 @@ apps/api/prisma/migrations/
   20261013090000_analytics/                 # événements, agrégats, consentements, checkpoints
   20261013093000_analytics_updated_at/      # triggers updated_at des tables Analytics
   20261013120000_admin_backoffice/          # motifs de modération, notes internes en ajout seul, index trigrammes sur les noms
+  20261026120000_domain_outbox/             # outbox_events + inbox_events (événements de domaine)
 ```
+
+`20261026120000_domain_outbox` est additive. Elle crée les enums `outbox_event_status` / `inbox_event_status`, `outbox_events` (fait métier unique par `event_id`, index de dispatch SKIP LOCKED) et `inbox_events` (déduplication `(consumer_name, event_id)`). Les files métier `notification_deliveries` et `partner_deliveries` restent distinctes. Détail : [transactional-outbox-pattern.md](./architecture/transactional-outbox-pattern.md).
 
 `20261013120000_admin_backoffice` est additive : aucune donnée existante n'est modifiée. Elle crée l'enum `moderation_action`, `moderation_reasons` (code unique au format `^[A-Z][A-Z0-9_]{1,63}$`, libellé et message non vides, trigger `updated_at`) et `admin_notes` (cible `user` ou `listing`, corps non vide, trigger `admin_notes_reject_update` : ajout seul), ainsi que deux index GIN `pg_trgm` sur `users.first_name` et `users.last_name` pour la recherche du back-office. Les motifs de référence et les rôles `SUPPORT` et `ANALYST` viennent du seed.
 
