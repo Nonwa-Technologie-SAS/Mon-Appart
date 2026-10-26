@@ -145,6 +145,14 @@ export class AuthService {
           context,
           tx,
         )
+        await this.activity.enqueue(tx, {
+          name: IdentityEvent.UserRegistered,
+          producer: "identity",
+          aggregateType: "user",
+          aggregateId: user.publicId,
+          payload: { channels, role },
+          correlationId: context.requestId,
+        })
         return user
       })
     } catch (error) {
@@ -158,10 +166,7 @@ export class AuthService {
     if (!user) throw new Error("Utilisateur introuvable après inscription")
     const issued = await this.sessions.open(user, input, context)
 
-    this.activity.emit(IdentityEvent.UserRegistered, user.publicId, {
-      channels,
-      role,
-    })
+    await this.activity.flush()
     this.activity.log("user_registered", context, {
       user_id: user.publicId,
       session_id: issued.sessionId,

@@ -253,6 +253,18 @@ export class AppointmentService {
           { scheduledAt: created.scheduledAt.toISOString() },
           client,
         )
+        await this.activity.enqueue(tx, {
+          name: CommunicationEvent.APPOINTMENT_CHANGED,
+          producer: "communication",
+          aggregateType: APPOINTMENT_ENTITY,
+          aggregateId: created.publicId,
+          payload: {
+            appointmentId: created.publicId,
+            status: created.status,
+            listingId: created.listing.publicId,
+          },
+          correlationId: client.requestId,
+        })
         return { appointment: created, message }
       })
     } catch (error) {
@@ -522,6 +534,18 @@ export class AppointmentService {
           tx,
         )
       }
+      await this.activity.enqueue(tx, {
+        name: CommunicationEvent.APPOINTMENT_CHANGED,
+        producer: "communication",
+        aggregateType: APPOINTMENT_ENTITY,
+        aggregateId: saved.publicId,
+        payload: {
+          appointmentId: saved.publicId,
+          status: saved.status,
+          listingId: saved.listing.publicId,
+        },
+        correlationId: client.requestId,
+      })
       return { appointment: saved, message: systemMessage, side }
     })
     await this.afterCommit(result)
@@ -649,14 +673,7 @@ export class AppointmentService {
         },
       )
     }
-    this.activity.emit(
-      CommunicationEvent.APPOINTMENT_CHANGED,
-      appointment.publicId,
-      {
-        appointmentId: appointment.publicId,
-        status: appointment.status,
-      },
-    )
+    await this.activity.flush()
     this.activity.emit(
       CommunicationEvent.DELIVERIES_QUEUED,
       appointment.publicId,

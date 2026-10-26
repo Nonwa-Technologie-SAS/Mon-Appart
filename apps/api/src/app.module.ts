@@ -35,8 +35,8 @@ import { RedisModule } from "./redis/redis.module"
     RedisModule,
     CacheModule,
     DatabaseModule,
-    DomainEventsModule,
     ObservabilityModule,
+    DomainEventsModule,
     ThrottlerModule.forRootAsync({
       inject: [RedisThrottlerStorage],
       useFactory: (storage: RedisThrottlerStorage) => ({

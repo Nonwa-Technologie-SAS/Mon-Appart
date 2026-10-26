@@ -56,6 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
     anyOf: ["partner:read", "partner:manage"],
   },
   { href: "/audit", label: "Journal d'audit", anyOf: ["audit_log:read"] },
+  { href: "/events", label: "Événements", anyOf: ["ops:events"] },
   { href: "/roles", label: "Rôles", anyOf: ["role:read"] },
   {
     href: "/settings/reasons",

@@ -15,6 +15,11 @@ export class ListingConfig {
   readonly publicationRequirements: PublicationRequirement[]
   /** Délai de grâce d'un abonnement échu, pris en compte par le quota. */
   readonly billingGraceDays: number
+  readonly expiryWorker: {
+    enabled: boolean
+    pollMs: number
+    batchSize: number
+  }
 
   constructor(config: ConfigService) {
     const grace = Number(config.get("BILLING_GRACE_DAYS") ?? 3)
@@ -26,5 +31,14 @@ export class ListingConfig {
     this.publicationRequirements = parsePublicationRequirements(
       config.get<string>("LISTING_PUBLICATION_REQUIREMENTS"),
     )
+    const poll = Number(config.get("LISTING_EXPIRY_POLL_MS") ?? 60_000)
+    const batch = Number(config.get("LISTING_EXPIRY_BATCH_SIZE") ?? 50)
+    this.expiryWorker = {
+      enabled:
+        String(config.get("LISTING_EXPIRY_WORKER_ENABLED") ?? "true") ===
+        "true",
+      pollMs: Number.isInteger(poll) && poll >= 5_000 ? poll : 60_000,
+      batchSize: Number.isInteger(batch) && batch > 0 ? batch : 50,
+    }
   }
 }

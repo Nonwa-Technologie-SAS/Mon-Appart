@@ -502,6 +502,61 @@ export class MetricsService implements OnModuleInit {
     }),
   }
 
+  readonly outbox = {
+    published: new Counter({
+      name: "outbox_events_published_total",
+      help: "Événements de domaine publiés depuis l'outbox",
+      labelNames: ["event_type"],
+      registers: [this.registry],
+    }),
+    retries: new Counter({
+      name: "outbox_events_retries_total",
+      help: "Reprises de publication Outbox",
+      labelNames: ["event_type", "reason"],
+      registers: [this.registry],
+    }),
+    dead: new Counter({
+      name: "outbox_events_dead_total",
+      help: "Événements Outbox envoyés en file morte",
+      labelNames: ["event_type"],
+      registers: [this.registry],
+    }),
+    pending: new Gauge({
+      name: "outbox_events_pending",
+      help: "Événements Outbox en attente ou en cours de publication",
+      registers: [this.registry],
+    }),
+    deadLetters: new Gauge({
+      name: "outbox_events_dead_letters",
+      help: "Événements Outbox en file morte",
+      registers: [this.registry],
+    }),
+    oldestAgeSeconds: new Gauge({
+      name: "outbox_oldest_pending_age_seconds",
+      help: "Âge du plus ancien événement Outbox non publié",
+      registers: [this.registry],
+    }),
+    publishLatency: new Histogram({
+      name: "outbox_publish_latency_ms",
+      help: "Latence de publication d'un événement Outbox",
+      labelNames: ["event_type"],
+      buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500],
+      registers: [this.registry],
+    }),
+    consumed: new Counter({
+      name: "domain_events_consumed_total",
+      help: "Événements de domaine traités par un consommateur",
+      labelNames: ["consumer", "event_type"],
+      registers: [this.registry],
+    }),
+    deduplicated: new Counter({
+      name: "domain_events_deduplicated_total",
+      help: "Livraisons ignorées car déjà traitées (inbox)",
+      labelNames: ["consumer"],
+      registers: [this.registry],
+    }),
+  }
+
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit(): void {

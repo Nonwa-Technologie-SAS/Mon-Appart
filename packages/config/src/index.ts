@@ -462,6 +462,37 @@ export const apiEnvSchema = z.object({
     .min(500)
     .max(60_000)
     .default(10_000),
+  /** Dispatcher Outbox des événements de domaine, dans le processus API. */
+  OUTBOX_WORKER_ENABLED: z.enum(["true", "false"]).default("true"),
+  OUTBOX_WORKER_POLL_MS: z.coerce
+    .number()
+    .int()
+    .min(200)
+    .max(60_000)
+    .default(2_000),
+  OUTBOX_WORKER_BATCH_SIZE: z.coerce.number().int().min(1).max(200).default(50),
+  OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(8),
+  OUTBOX_RETRY_BASE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3_600)
+    .default(5),
+  /** Purge des événements PUBLISHED plus anciens (jours). 0 : pas de purge. */
+  OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(0).max(365).default(14),
+  LISTING_EXPIRY_WORKER_ENABLED: z.enum(["true", "false"]).default("true"),
+  LISTING_EXPIRY_POLL_MS: z.coerce
+    .number()
+    .int()
+    .min(5_000)
+    .max(600_000)
+    .default(60_000),
+  LISTING_EXPIRY_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(200)
+    .default(50),
   /**
    * Replis après échec définitif, `CANAL>CANAL` séparés par des virgules
    * (ex. `EMAIL>SMS`). Le canal de repli n'est pas envoyé en parallèle du
@@ -763,6 +794,39 @@ const durationKeys = [
   "OTP_TTL",
 ] as const
 
+const DEPLOYED_APP_ENVS = new Set(["staging", "production"])
+
+/** Secrets figés dans `.env.example` / CI — interdits hors local. */
+const LOCAL_SECRET_PLACEHOLDERS = new Set([
+  "dev-only-change-me-please-32chars-min",
+  "dev-only-refresh-change-me-32chars",
+  "test-only-jwt-secret-not-for-production-use",
+  "test-only-refresh-secret-not-for-production",
+])
+
+export function isDeployedAppEnv(appEnv: string): boolean {
+  return DEPLOYED_APP_ENVS.has(appEnv)
+}
+
+export function isLoopbackHost(connectionString: string): boolean {
+  try {
+    const host = new URL(connectionString).hostname.toLowerCase()
+    return host === "localhost" || host === "127.0.0.1" || host === "::1"
+  } catch {
+    return false
+  }
+}
+
+function databaseNameFromUrl(connectionString: string): string | null {
+  try {
+    return decodeURIComponent(
+      new URL(connectionString).pathname.replace(/^\//, ""),
+    )
+  } catch {
+    return null
+  }
+}
+
 export function parseApiEnv(input: Record<string, unknown>): ApiEnv {
   const result = apiEnvSchema
     .superRefine((env, ctx) => {
@@ -775,12 +839,90 @@ export function parseApiEnv(input: Record<string, unknown>): ApiEnv {
           })
         }
       }
+      if (env.JWT_SECRET === env.JWT_REFRESH_SECRET) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["JWT_REFRESH_SECRET"],
+          message: "doit différer de JWT_SECRET",
+        })
+      }
+      if (env.NODE_ENV === "development" && isDeployedAppEnv(env.APP_ENV)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["NODE_ENV"],
+          message: "development incompatible avec staging/production",
+        })
+      }
       if (env.AUTH_DEV_PRINT_CODES === "true" && env.APP_ENV !== "local") {
         ctx.addIssue({
           code: "custom",
           path: ["AUTH_DEV_PRINT_CODES"],
           message: "réservé à APP_ENV=local",
         })
+      }
+      if (isDeployedAppEnv(env.APP_ENV)) {
+        if (!env.DATABASE_URL) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["DATABASE_URL"],
+            message: "requis en staging/production",
+          })
+        } else {
+          if (
+            !env.DATABASE_URL.startsWith("postgresql://") &&
+            !env.DATABASE_URL.startsWith("postgres://")
+          ) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["DATABASE_URL"],
+              message: "URL PostgreSQL invalide",
+            })
+          }
+          if (isLoopbackHost(env.DATABASE_URL)) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["DATABASE_URL"],
+              message: "hôte loopback interdit hors local",
+            })
+          }
+          const dbName = databaseNameFromUrl(env.DATABASE_URL)
+          if (dbName?.endsWith("_test")) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["DATABASE_URL"],
+              message: "base *_test interdite en staging/production",
+            })
+          }
+        }
+        if (!env.REDIS_URL) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["REDIS_URL"],
+            message: "requis en staging/production",
+          })
+        } else if (isLoopbackHost(env.REDIS_URL)) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["REDIS_URL"],
+            message: "hôte loopback interdit hors local",
+          })
+        }
+        if (!env.WEB_APP_URL) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["WEB_APP_URL"],
+            message: "requis en staging/production",
+          })
+        }
+        for (const key of ["JWT_SECRET", "JWT_REFRESH_SECRET"] as const) {
+          if (LOCAL_SECRET_PLACEHOLDERS.has(env[key])) {
+            ctx.addIssue({
+              code: "custom",
+              path: [key],
+              message: "placeholder local interdit hors développement",
+            })
+          }
+        }
       }
       if (
         env.METRICS_ENABLED === "true" &&
@@ -934,7 +1076,7 @@ export function parseApiEnv(input: Record<string, unknown>): ApiEnv {
     .safeParse(input)
   if (!result.success) {
     const message = result.error.issues
-      .map((issue) => `${issue.path.join(".") || "env"}: ${issue.code}`)
+      .map((issue) => `${issue.path.join(".") || "env"}: ${issue.message}`)
       .join("; ")
     throw new Error(`Configuration d'environnement invalide: ${message}`)
   }

@@ -226,6 +226,10 @@ export const PERMISSIONS = [
     code: "ai:admin",
     name: "Consulter le portefeuille et les évaluations des systèmes IA",
   },
+  {
+    code: "ops:events",
+    name: "Consulter et rejouer les événements de domaine en échec",
+  },
   { code: "conversation:create", name: "Contacter un annonceur" },
   { code: "appointment:request", name: "Demander une visite" },
   { code: "admin:access", name: "Accéder au back-office" },

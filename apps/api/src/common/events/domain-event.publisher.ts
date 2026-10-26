@@ -4,9 +4,8 @@ import { EventEmitter2 } from "@nestjs/event-emitter"
 import type { DomainEvent } from "./domain-event"
 
 /**
- * Publication en processus. Les événements critiques passeront plus tard
- * par une table outbox PostgreSQL avant d'être relayés vers Redis ou un bus.
- * La charge utile n'est pas journalisée.
+ * Publication en processus. Les événements métier durables passent par
+ * l'outbox PostgreSQL puis ce relais. La charge utile n'est pas journalisée.
  */
 @Injectable()
 export class DomainEventPublisher {
@@ -20,6 +19,10 @@ export class DomainEventPublisher {
         event: event.name,
         event_id: event.id,
         aggregate_id: event.aggregateId,
+        producer: event.producer,
+        correlation_id: event.correlationId ?? undefined,
+        causation_id: event.causationId ?? undefined,
+        trace_id: event.traceId ?? undefined,
       }),
     )
     this.events.emit(event.name, event)

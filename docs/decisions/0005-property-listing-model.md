@@ -38,6 +38,6 @@ Migration `20261008190000_property_listing` : enums `amenity_category` et `locat
 
 - Rattacher un agent au bien d'un propriétaire se fait en base tant que le flux de mandat n'existe pas.
 - Un rôle ajouté ou retiré agit sur la relation immédiatement (relue en base), sur les permissions du jeton au prochain refresh.
-- Un événement peut être perdu si le processus s'arrête entre le commit et la publication : l'outbox corrigera ce point.
-- L'expiration automatique n'est pas encore exécutée : une annonce échue reste `PUBLISHED` jusqu'au worker (documenté dans [property-listing.md](../property-listing.md)).
+- Les événements listing / property passent par `outbox_events` dans la transaction (ADR 0014) ; un crash après commit est rattrapé par le dispatcher.
+- L'expiration automatique est exécutée par `ListingExpiryRunner` (`LISTING_EXPIRY_WORKER_ENABLED`).
 - Toute nouvelle clé d'attribut passe par le code (liste blanche), pas par la saisie libre.

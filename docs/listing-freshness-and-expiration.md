@@ -6,13 +6,13 @@
 
 ## 1. Capacités produit
 
-| Mécanisme                                        | État                                      |
-| ------------------------------------------------ | ----------------------------------------- |
-| `Listing.expiresAt` + index expiry               | Code présent                              |
-| Statuts EXPIRED, PAUSED, SUSPENDED, RENTED, SOLD | Enums + transitions                       |
-| Job d’expiration automatique                     | À confirmer ops / cron env                |
-| Rappels notif reconfirmation                     | Dépend providers notifications            |
-| Badge « fraîchement vérifié »                    | Ne pas afficher sans confirmation récente |
+| Mécanisme                                        | État                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------- |
+| `Listing.expiresAt` + index expiry               | Code présent                                                  |
+| Statuts EXPIRED, PAUSED, SUSPENDED, RENTED, SOLD | Enums + transitions                                           |
+| Job d’expiration automatique                     | `ListingExpiryRunner` (SKIP LOCKED, outbox `listing.expired`) |
+| Rappels notif reconfirmation                     | Dépend providers notifications                                |
+| Badge « fraîchement vérifié »                    | Ne pas afficher sans confirmation récente                     |
 
 ---
 

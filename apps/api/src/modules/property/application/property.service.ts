@@ -152,15 +152,22 @@ export class PropertyService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: PropertyEvent.CREATED,
+        producer: "property",
+        aggregateType: PROPERTY_ENTITY,
+        aggregateId: property.publicId,
+        payload: {
+          propertyId: property.publicId,
+          propertyType: type.code,
+          commune: neighborhood.communeCode,
+          neighborhood: neighborhood.code,
+        },
+        correlationId: context.requestId,
+      })
       return property
     })
-
-    this.activity.emit(PropertyEvent.CREATED, created.publicId, {
-      propertyId: created.publicId,
-      propertyType: type.code,
-      commune: neighborhood.communeCode,
-      neighborhood: neighborhood.code,
-    })
+    await this.activity.flush()
     this.activity.metrics.catalog.propertyCreated.inc()
     this.activity.log("property.created", context, {
       user_id: actor.publicId,
@@ -273,14 +280,19 @@ export class PropertyService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: PropertyEvent.UPDATED,
+        producer: "property",
+        aggregateType: PROPERTY_ENTITY,
+        aggregateId: state.publicId,
+        payload: { propertyId: state.publicId, changedFields },
+        correlationId: context.requestId,
+      })
       return changedFields
     })
 
     if (changed.length === 0) return
-    this.activity.emit(PropertyEvent.UPDATED, publicId, {
-      propertyId: publicId,
-      changedFields: changed,
-    })
+    await this.activity.flush()
     this.activity.log("property.updated", context, {
       user_id: actor.publicId,
       property_id: publicId,
@@ -324,11 +336,17 @@ export class PropertyService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: PropertyEvent.DELETED,
+        producer: "property",
+        aggregateType: PROPERTY_ENTITY,
+        aggregateId: state.publicId,
+        payload: { propertyId: state.publicId },
+        correlationId: context.requestId,
+      })
     })
 
-    this.activity.emit(PropertyEvent.DELETED, publicId, {
-      propertyId: publicId,
-    })
+    await this.activity.flush()
     this.activity.metrics.catalog.propertyDeleted.inc()
     this.activity.log("property.deleted", context, {
       user_id: actor.publicId,
@@ -380,14 +398,19 @@ export class PropertyService {
         context,
         tx,
       )
+      await this.activity.enqueue(tx, {
+        name: PropertyEvent.UPDATED,
+        producer: "property",
+        aggregateType: PROPERTY_ENTITY,
+        aggregateId: state.publicId,
+        payload: { propertyId: state.publicId, changedFields: ["amenities"] },
+        correlationId: context.requestId,
+      })
       return diff
     })
 
     if (!changes) return
-    this.activity.emit(PropertyEvent.UPDATED, publicId, {
-      propertyId: publicId,
-      changedFields: ["amenities"],
-    })
+    await this.activity.flush()
     this.activity.log("property.amenities_updated", context, {
       user_id: actor.publicId,
       property_id: publicId,

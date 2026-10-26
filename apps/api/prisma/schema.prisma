@@ -506,6 +506,25 @@ enum DeliveryStatus {
   @@map("delivery_status")
 }
 
+/// File de publication des événements de domaine (outbox transactionnelle).
+enum OutboxEventStatus {
+  PENDING
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  DEAD
+
+  @@map("outbox_event_status")
+}
+
+/// Déduplication durable par consommateur (inbox).
+enum InboxEventStatus {
+  PROCESSED
+  FAILED
+
+  @@map("inbox_event_status")
+}
+
 enum PushPlatform {
   ANDROID
   IOS
@@ -3012,4 +3031,46 @@ model SupplyLeadInteraction {
 
   @@index([leadId, createdAt(sort: Desc)])
   @@map("supply_lead_interactions")
+}
+
+/// Événements de domaine écrits dans la même transaction que la mutation métier.
+/// Le dispatcher les publie ensuite vers le bus en processus (EventEmitter2).
+model OutboxEvent {
+  id            BigInt            @id @default(autoincrement())
+  eventId       String            @unique @map("event_id") @db.Uuid
+  eventType     String            @map("event_type") @db.VarChar(120)
+  eventVersion  Int               @default(1) @map("event_version") @db.SmallInt
+  producer      String            @db.VarChar(80)
+  aggregateType String            @map("aggregate_type") @db.VarChar(80)
+  aggregateId   String            @map("aggregate_id") @db.Uuid
+  payload       Json
+  occurredAt    DateTime          @map("occurred_at") @db.Timestamptz(6)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt   DateTime?         @map("published_at") @db.Timestamptz(6)
+  status        OutboxEventStatus @default(PENDING)
+  attemptCount  Int               @default(0) @map("attempt_count") @db.SmallInt
+  nextAttemptAt DateTime          @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError     String?           @map("last_error") @db.VarChar(200)
+  correlationId String?           @map("correlation_id") @db.Uuid
+  causationId   String?           @map("causation_id") @db.Uuid
+  traceId       String?           @map("trace_id") @db.VarChar(64)
+
+  @@index([nextAttemptAt, id], map: "outbox_events_dispatch_idx", where: raw("status = ANY (ARRAY['PENDING'::outbox_event_status, 'PUBLISHING'::outbox_event_status])"))
+  @@index([aggregateType, aggregateId, id], map: "outbox_events_aggregate_idx")
+  @@index([publishedAt], map: "outbox_events_published_idx", where: raw("status = 'PUBLISHED'::outbox_event_status"))
+  @@map("outbox_events")
+}
+
+/// Traitement déjà effectué pour un couple consommateur / événement.
+model InboxEvent {
+  id           BigInt           @id @default(autoincrement())
+  consumerName String           @map("consumer_name") @db.VarChar(80)
+  eventId      String           @map("event_id") @db.Uuid
+  processedAt  DateTime         @default(now()) @map("processed_at") @db.Timestamptz(6)
+  status       InboxEventStatus @default(PROCESSED)
+  attemptCount Int              @default(1) @map("attempt_count") @db.SmallInt
+  lastError    String?          @map("last_error") @db.VarChar(200)
+
+  @@unique([consumerName, eventId], map: "inbox_events_consumer_event_uidx")
+  @@map("inbox_events")
 }

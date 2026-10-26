@@ -114,8 +114,9 @@ export class PropertyMediaService {
         client,
         tx,
       )
+      await this.enqueueChanged(tx, property.publicId, "reordered", client)
     })
-    this.changed(propertyPublicId, "reordered", client)
+    await this.changed(propertyPublicId, "reordered", client)
     return (await this.list(actor, propertyPublicId)).items
   }
 
@@ -169,8 +170,14 @@ export class PropertyMediaService {
         client,
         tx,
       )
+      await this.enqueueChanged(
+        tx,
+        property.publicId,
+        "primary_changed",
+        client,
+      )
     })
-    this.changed(propertyPublicId, "primary_changed", client)
+    await this.changed(propertyPublicId, "primary_changed", client)
     const row = await this.media.findByPublicId(mediaPublicId)
     return this.views.media(row!, { manager: true, primaryId: row!.id })
   }
@@ -227,6 +234,9 @@ export class PropertyMediaService {
         client,
         tx,
       )
+      if (row.visibility === "PUBLIC" && row.status === "READY") {
+        await this.enqueueChanged(tx, property.publicId, "deleted", client)
+      }
       return row
     })
 
@@ -243,7 +253,7 @@ export class PropertyMediaService {
       type: removed.type,
     })
     if (removed.visibility === "PUBLIC" && removed.status === "READY") {
-      this.changed(propertyPublicId, "deleted", client)
+      await this.changed(propertyPublicId, "deleted", client)
     }
     this.activity.log("media.deleted", client, {
       media_id: removed.publicId,
@@ -349,16 +359,29 @@ export class PropertyMediaService {
     }
   }
 
-  /** Invalide la recherche du bien seulement (pas de réindexation globale). */
-  private changed(
+  private enqueueChanged(
+    tx: Tx,
     propertyPublicId: string,
     reason: string,
     client: ClientContext,
-  ): void {
-    this.activity.emit(MediaEvent.PROPERTY_MEDIA_CHANGED, propertyPublicId, {
-      propertyId: propertyPublicId,
-      reason,
+  ): Promise<string> {
+    return this.activity.enqueue(tx, {
+      name: MediaEvent.PROPERTY_MEDIA_CHANGED,
+      producer: "media",
+      aggregateType: "property",
+      aggregateId: propertyPublicId,
+      payload: { propertyId: propertyPublicId, reason },
+      correlationId: client.requestId,
     })
+  }
+
+  /** Publie l'outbox puis journalise (sans payload métier). */
+  private async changed(
+    propertyPublicId: string,
+    reason: string,
+    client: ClientContext,
+  ): Promise<void> {
+    await this.activity.flush()
     this.activity.log("property.media_changed", client, {
       property_id: propertyPublicId,
       reason,

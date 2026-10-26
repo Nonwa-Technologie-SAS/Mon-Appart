@@ -34,6 +34,11 @@ describe("permissions d'affichage", () => {
     expect(hrefs).not.toContain("/billing")
   })
 
+  it("montre les événements de domaine aux opérateurs habilités", () => {
+    const ops = me(["admin:access", "ops:events"], ["ADMIN"])
+    expect(visibleNav(ops).map((item) => item.href)).toContain("/events")
+  })
+
   it("montre la gouvernance IA aux analystes habilités", () => {
     const analyst = me(
       ["admin:access", "analytics:admin", "ai:admin"],
