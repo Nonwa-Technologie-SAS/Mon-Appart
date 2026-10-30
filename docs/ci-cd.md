@@ -2,10 +2,10 @@
 
 ## Workflows présents
 
-| Fichier                                | Déclencheur               | Rôle                                                                                                                  |
-| -------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/ci.yml`             | push `main`/`develop`, PR | Lint, typecheck, tests, build, intégration PostGIS, drift migrations, scan secrets/Gitleaks, build Docker (sans push) |
-| `.github/workflows/deploy-staging.yml` | `workflow_dispatch`       | Garde manuelle + build image ; **push/deploy à brancher** après choix Cloud                                           |
+| Fichier                                | Déclencheur               | Rôle                                                                                                                                                                     |
+| -------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.github/workflows/ci.yml`             | push `main`/`develop`, PR | Lint, typecheck, tests, build, intégration PostGIS, drift migrations, scan secrets/Gitleaks, build Docker (sans push), job Flutter (format / analyze / test / APK debug) |
+| `.github/workflows/deploy-staging.yml` | `workflow_dispatch`       | Garde manuelle + build image ; **push/deploy à brancher** après choix Cloud                                                                                              |
 
 ## Pipeline PR (obligatoire)
 
@@ -16,6 +16,7 @@
 5. Job `integration` : migrate test DB + `test:db` + `prisma migrate diff` (anti-drift)
 6. Job `recommendation` : pytest
 7. Job `docker` : build images API / workers / recommendation (cache GHA, **pas de push**)
+8. Job `flutter` : `dart format`, `flutter analyze`, `flutter test`, `flutter build apk --debug` (pas de build iOS sur Ubuntu)
 
 Une PR n’est pas verte si une étape obligatoire échoue.
 

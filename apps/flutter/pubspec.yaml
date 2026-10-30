@@ -1,0 +1,52 @@
+name: mon_appart
+description: Application mobile Mon Appart (Android et iOS).
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # État et injection : une seule solution, testable par overrides.
+  flutter_riverpod: ^3.4.3
+  # Navigation déclarative, prête pour les liens profonds.
+  go_router: ^18.1.1
+  # Client HTTP unique ; les fonctionnalités ne l'importent pas directement.
+  dio: ^5.11.1
+  # Jetons d'accès / refresh (Identity Nest) hors SharedPreferences.
+  flutter_secure_storage: ^11.2.0
+  # Photos d'annonces : cache disque/mémoire, placeholder et erreur.
+  cached_network_image: ^4.0.5
+  # Montants fr-FR. Pas de conversion de devise.
+  intl: ^0.20.3
+  # Feuille de partage native Android/iOS. Aucune URL publique n'est inventée.
+  share_plus: ^13.3.1
+  # Permission de notification OS. Pas de Firebase : le jeton push reste absent.
+  permission_handler: ^12.0.1
+  # Temps réel Nest : namespace Socket.IO `/realtime`. La source de vérité reste REST.
+  socket_io_client: ^3.1.2
+  # Sélection galerie / appareil photo. Pas d'accès photos large hors action utilisateur.
+  image_picker: ^1.2.1
+  # Carte OSM (flutter_map). Aucune clé Google/Mapbox : le dépôt n'en contient pas.
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  # Position ponctuelle « Autour de moi ». Pas de suivi arrière-plan.
+  geolocator: ^14.0.2
+  # Ouverture Google Maps / Plans. Aucune clé cartographique.
+  url_launcher: ^6.3.2
+  # Répertoire applicatif pour le cache Offline-First (pas les jetons).
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.5
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png

@@ -39,6 +39,8 @@ Minimales pour démarrer l’API en staging/production :
 
 Frontend public : uniquement `NEXT_PUBLIC_*` (jamais de JWT ni `DATABASE_URL`).
 
+Client Flutter (`apps/flutter`) : `API_BASE_URL` / `APP_ENV` / `ENABLE_NETWORK_LOGS` via `--dart-define` (voir `apps/flutter/README.md`). Aucune URL staging/production n’est versionnée.
+
 ## Compose local
 
 ```bash

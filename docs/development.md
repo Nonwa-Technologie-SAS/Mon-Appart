@@ -33,7 +33,9 @@ pnpm dev:workers
 pnpm dev:recommendation
 ```
 
-Le mobile Expo reste installable depuis `apps/mobile` (`pnpm --filter @mon-appart/mobile start` ou les scripts Expo). Ce n'est pas une application Flutter : voir la décision 0002.
+Le mobile Expo reste installable depuis `apps/mobile` (`pnpm --filter mobile-app start` ou les scripts Expo). Voir la décision 0002.
+
+Le socle Flutter (`apps/flutter`) est documenté dans [apps/flutter/README.md](../apps/flutter/README.md) et la décision 0016. Il n’est pas un workspace pnpm.
 
 ## Qualité
 

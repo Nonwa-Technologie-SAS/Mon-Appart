@@ -12,6 +12,7 @@ Le site public et l'application mobile déjà en cours sont conservés. Le socle
 | `apps/admin`              | Back-office Next.js, socle seulement                 |
 | `apps/api`                | API NestJS versionnée `/api/v1`                      |
 | `apps/mobile`             | Application Expo déjà commencée                      |
+| `apps/flutter`            | Socle Flutter Android/iOS (API Nest `/api/v1`)       |
 | `services/workers`        | Jobs BullMQ                                          |
 | `services/recommendation` | Service FastAPI, sans moteur ML                      |
 | `packages/*`              | Types, validation, configuration, ESLint, TypeScript |
