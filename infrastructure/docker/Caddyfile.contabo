@@ -1,0 +1,43 @@
+# Reverse proxy Contabo — TLS Let's Encrypt.
+# Domaine : monappart.ci
+# Par défaut : API uniquement (web/admin souvent sur Vercel).
+# Décommenter les blocs web/admin si le profil Compose `front` est actif.
+#
+# Ports hôtes : 80 + 443 uniquement.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN:api.monappart.ci} {
+	encode gzip zstd
+	reverse_proxy api:4000
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+}
+
+# --- Fronts sur le même VPS (profil --profile front) ---
+# {$WEB_DOMAIN:www.monappart.ci} {
+# 	encode gzip zstd
+# 	reverse_proxy web:3000
+# 	header {
+# 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+# 		X-Content-Type-Options nosniff
+# 		Referrer-Policy strict-origin-when-cross-origin
+# 		-Server
+# 	}
+# }
+#
+# {$ADMIN_DOMAIN:admin.monappart.ci} {
+# 	encode gzip zstd
+# 	reverse_proxy admin:3001
+# 	header {
+# 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+# 		X-Content-Type-Options nosniff
+# 		Referrer-Policy no-referrer
+# 		-Server
+# 	}
+# }
