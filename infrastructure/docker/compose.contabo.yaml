@@ -6,7 +6,7 @@
 #
 # Profils :
 #   (défaut) postgres redis api workers caddy
-#   --profile front   → web + admin (nécessite images construites)
+#   --profile front   → web (+ admin) via Dockerfiles apps/web|admin
 #   --profile minio   → MinIO S3-compatible (médias DIY)
 
 name: mon-appart-contabo
@@ -113,17 +113,22 @@ services:
     networks:
       - internal
 
-  # Fronts : activer avec --profile front après build des Dockerfiles web/admin
-  # (voir docs/deployment-contabo.md § Fronts). Sinon déployer sur Vercel.
+  # Fronts Contabo : $COMPOSE --profile front up -d --build
   web:
     profiles: ["front"]
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEST_API_URL: ${NEST_API_URL:-http://api:4000}
+        NEXT_PUBLIC_NEST_API_URL: ${NEXT_PUBLIC_NEST_API_URL:-same-origin}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://www.monappart.ci}
     image: mon-appart-web:contabo
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEST_API_URL: ${NEST_API_URL:-http://api:4000}
-      NEXT_PUBLIC_NEST_API_URL: same-origin
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
     depends_on:
       api:
         condition: service_healthy
@@ -133,11 +138,17 @@ services:
 
   admin:
     profiles: ["front"]
+    build:
+      context: ../..
+      dockerfile: apps/admin/Dockerfile
+      args:
+        ADMIN_API_URL: ${ADMIN_API_URL:-http://api:4000}
     image: mon-appart-admin:contabo
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      ADMIN_API_URL: ${ADMIN_API_URL:-http://api:4000}
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
     depends_on:
       api:
         condition: service_healthy

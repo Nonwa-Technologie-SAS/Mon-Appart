@@ -172,20 +172,35 @@ SMOKE_API_URL=https://api.monappart.ci pnpm smoke:health
 
 Parcours manuels : inscription/connexion, recherche, fiche, publication éditeur (si comptes de test).
 
-### Étape F — Fronts
+### Étape F — Fronts sur Contabo (web + admin)
 
-**Recommandé :** déployer `apps/web` et `apps/admin` sur **Vercel** avec :
+Prérequis DNS : `www.monappart.ci` et `admin.monappart.ci` → IP Contabo (en plus de `api`).
 
-- `NEST_API_URL` / rewrite vers `https://api.monappart.ci`
-- `ADMIN_API_URL=https://api.monappart.ci`
-- `NEXT_PUBLIC_SITE_URL=https://www.monappart.ci`
-- CORS API déjà aligné sur `https://www.monappart.ci`, `https://monappart.ci`, `https://admin.monappart.ci`
-
-**Alternative même VPS :** construire des images `mon-appart-web:contabo` / `mon-appart-admin:contabo` (Dockerfiles fronts pas encore dans le dépôt), décommenter les blocs web/admin du `Caddyfile.contabo`, puis :
+Dans `.env.contabo` :
 
 ```bash
-$COMPOSE --profile front up -d
+NEST_API_URL=http://api:4000
+NEXT_PUBLIC_NEST_API_URL=same-origin
+NEXT_PUBLIC_SITE_URL=https://www.monappart.ci
+ADMIN_API_URL=http://api:4000
+WEB_DOMAIN=www.monappart.ci
+ADMIN_DOMAIN=admin.monappart.ci
 ```
+
+Build + démarrage (API déjà up) :
+
+```bash
+$COMPOSE --profile front up -d --build web admin
+$COMPOSE up -d caddy
+curl -fsSI "https://www.monappart.ci"
+curl -fsSI "https://admin.monappart.ci"
+```
+
+Les rewrites Next sont figés au **build** Docker (`NEST_API_URL` / `ADMIN_API_URL` → service `api` sur le réseau Compose).
+
+**API seule (sans www/admin) :** commentez les blocs `WEB_DOMAIN` / `ADMIN_DOMAIN` dans `Caddyfile.contabo`, sinon Caddy tentera quand même le TLS pour ces hôtes.
+
+**Alternative Vercel :** Root Directory `apps/web`, `NEST_API_URL=https://api.monappart.ci`, `NEXT_PUBLIC_SITE_URL=https://www.monappart.ci`.
 
 ## 4. Médias
 
@@ -235,7 +250,7 @@ Cocher seulement après vérification réelle :
 - [ ] `pnpm smoke:health` OK
 - [ ] Backup dump + test de restauration
 - [ ] Workers up (`$COMPOSE ps`)
-- [ ] Fronts (Vercel ou profil `front`) alignés sur l’API
+- [ ] Fronts Contabo (`--profile front`) ou Vercel, alignés sur l’API
 - [ ] E-mail réel ou décision documentée (`EMAIL_PROVIDER=none`)
 - [ ] Paiements : rester sur `none` jusqu’à un prestataire implémenté
 
@@ -247,7 +262,7 @@ Référence globale : [production-readiness-checklist.md](./production-readiness
 - Pas de HA : un seul VPS = SPOF.
 - OpenSearch / reco Python : laisser désactivés (`SEARCH_ENGINE=postgres`, `RECOMMENDATION_ENGINE=rules`).
 - Monitoring (Sentry, alertes) : à brancher avant une ouverture large.
-- Les Dockerfiles `apps/web` et `apps/admin` ne sont pas fournis : Vercel reste le chemin le plus simple pour les fronts.
+- Dockerfiles `apps/web` et `apps/admin` fournis (profil Compose `front`). Vercel reste une option si vous préférez séparer les fronts.
 
 ## 9. Dépannage rapide
 
