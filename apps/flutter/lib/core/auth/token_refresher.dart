@@ -13,6 +13,7 @@ class TokenRefresher {
     required this.endpoints,
     Dio? dio,
     this.mapper = const ErrorMapper(),
+    this.onFinished,
   }) : _dio =
            dio ??
            Dio(
@@ -29,6 +30,9 @@ class TokenRefresher {
   final ApiEndpoints endpoints;
   final ErrorMapper mapper;
   final Dio _dio;
+
+  /// `succeeded`, `rejected` ou `unavailable`. Aucun jeton n'est transmis.
+  final void Function(String outcome)? onFinished;
   Future<SessionTokens?>? _inFlight;
 
   /// Un seul refresh à la fois : les appels suivants attendent le même Future.
@@ -52,16 +56,20 @@ class TokenRefresher {
         return null;
       }
       await store.save(issued.tokens);
+      onFinished?.call('succeeded');
       return issued.tokens;
     } on DioException catch (error) {
       final failure = mapper.fromDio(error);
       if (failure.statusCode == 401 || failure.statusCode == 403) {
         await store.clear();
+        onFinished?.call('rejected');
         return null;
       }
+      onFinished?.call('unavailable');
       rethrow;
     } on FormatException {
       await store.clear();
+      onFinished?.call('rejected');
       return null;
     }
   }

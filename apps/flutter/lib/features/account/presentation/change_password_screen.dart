@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/auth/auth_rules.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/security/screen_privacy.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../auth/presentation/password_field.dart';
@@ -99,49 +100,51 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mot de passe')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          PasswordField(
-            controller: _current,
-            label: 'Mot de passe actuel',
-            errorText: _currentError,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.password],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          PasswordField(
-            controller: _next,
-            label: 'Nouveau mot de passe',
-            errorText: _nextError,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.newPassword],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          PasswordField(
-            controller: _confirm,
-            label: 'Confirmation',
-            errorText: _confirmError,
-            onSubmitted: (_) => _submit(),
-            autofillHints: const [AutofillHints.newPassword],
-          ),
-          if (_formError != null) ...[
+    return SensitiveSurface(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Mot de passe')),
+        body: ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            PasswordField(
+              controller: _current,
+              label: 'Mot de passe actuel',
+              errorText: _currentError,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.password],
+            ),
             const SizedBox(height: AppSpacing.md),
-            Text(
-              _formError!,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.destructive),
+            PasswordField(
+              controller: _next,
+              label: 'Nouveau mot de passe',
+              errorText: _nextError,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PasswordField(
+              controller: _confirm,
+              label: 'Confirmation',
+              errorText: _confirmError,
+              onSubmitted: (_) => _submit(),
+              autofillHints: const [AutofillHints.newPassword],
+            ),
+            if (_formError != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _formError!,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: AppColors.destructive),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Mettre à jour',
+              loading: _submitting,
+              onPressed: _submit,
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            label: 'Mettre à jour',
-            loading: _submitting,
-            onPressed: _submit,
-          ),
-        ],
+        ),
       ),
     );
   }

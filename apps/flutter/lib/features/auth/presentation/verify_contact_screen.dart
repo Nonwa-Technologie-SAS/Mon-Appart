@@ -8,6 +8,7 @@ import '../../../core/auth/auth_repository.dart';
 import '../../../core/auth/auth_rules.dart';
 import '../../../core/auth/auth_user.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/security/screen_privacy.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading.dart';
 import 'auth_providers.dart';
@@ -22,6 +23,7 @@ class VerifyContactScreen extends ConsumerStatefulWidget {
 
 class _VerifyContactScreenState extends ConsumerState<VerifyContactScreen> {
   final _code = TextEditingController();
+  final _privacy = SensitiveScreenBinding();
   var _channel = 'EMAIL';
   String? _challengeId;
   DateTime? _resendAt;
@@ -32,7 +34,14 @@ class _VerifyContactScreenState extends ConsumerState<VerifyContactScreen> {
   var _confirming = false;
 
   @override
+  void initState() {
+    super.initState();
+    _privacy.attach(ref);
+  }
+
+  @override
   void dispose() {
+    _privacy.detach();
     _code.dispose();
     super.dispose();
   }
@@ -198,6 +207,8 @@ class _VerifyContactScreenState extends ConsumerState<VerifyContactScreen> {
             TextField(
               controller: _code,
               keyboardType: TextInputType.number,
+              enableIMEPersonalizedLearning: false,
+              autofillHints: const [AutofillHints.oneTimeCode],
               maxLength: 10,
               decoration: InputDecoration(
                 labelText: 'Code reçu',

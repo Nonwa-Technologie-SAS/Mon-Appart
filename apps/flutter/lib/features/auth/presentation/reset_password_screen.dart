@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/auth/auth_rules.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/security/screen_privacy.dart';
 import '../../../core/widgets/app_button.dart';
 import 'auth_providers.dart';
 import 'password_field.dart';
@@ -92,64 +93,66 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau mot de passe')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            Text(
-              'Collez le jeton reçu par e-mail ou SMS. '
-              'Les liens universels ne sont pas configurés dans cette application.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            TextField(
-              controller: _token,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Jeton de réinitialisation',
-                errorText: _tokenError,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            PasswordField(
-              controller: _password,
-              label: 'Nouveau mot de passe',
-              errorText: _passwordError,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.newPassword],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            PasswordField(
-              controller: _confirm,
-              label: 'Confirmer le mot de passe',
-              errorText: _confirmError,
-              autofillHints: const [AutofillHints.newPassword],
-              onSubmitted: (_) => _submit(),
-            ),
-            if (_formError != null) ...[
-              const SizedBox(height: AppSpacing.sm),
+    return SensitiveSurface(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Nouveau mot de passe')),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
               Text(
-                _formError!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                'Collez le jeton reçu par e-mail ou SMS. '
+                'Les liens universels ne sont pas configurés dans cette application.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              TextField(
+                controller: _token,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: 'Jeton de réinitialisation',
+                  errorText: _tokenError,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              PasswordField(
+                controller: _password,
+                label: 'Nouveau mot de passe',
+                errorText: _passwordError,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              PasswordField(
+                controller: _confirm,
+                label: 'Confirmer le mot de passe',
+                errorText: _confirmError,
+                autofillHints: const [AutofillHints.newPassword],
+                onSubmitted: (_) => _submit(),
+              ),
+              if (_formError != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _formError!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              if (_message != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(_message!),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Mettre à jour le mot de passe',
+                loading: _submitting,
+                onPressed: _submit,
+              ),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: const Text('Retour à la connexion'),
               ),
             ],
-            if (_message != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(_message!),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            AppButton(
-              label: 'Mettre à jour le mot de passe',
-              loading: _submitting,
-              onPressed: _submit,
-            ),
-            TextButton(
-              onPressed: () => context.go(AppRoutes.login),
-              child: const Text('Retour à la connexion'),
-            ),
-          ],
+          ),
         ),
       ),
     );

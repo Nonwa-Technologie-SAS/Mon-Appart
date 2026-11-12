@@ -138,6 +138,7 @@ void main() {
       ),
     );
     expect(report.stoppedForAuth, isTrue);
+    expect(report.conflicts, 0);
     expect(report.failedPermanent, 1);
     expect(report.skipped, 1);
   });
@@ -161,4 +162,24 @@ void main() {
     expect(remaining.single.status, PendingOpStatus.failedPermanent);
     expect(remaining.single.attempts, 5);
   });
+
+  test(
+    'un HTTP 409 est compté comme conflit sans changer l\'échec définitif',
+    () async {
+      await enqueueAdd();
+      final report = await engine.drain(
+        userId: 'u1',
+        handlers: SyncHandlers(
+          favoriteAdd: (_) async {
+            throw const HttpFailure(statusCode: 409, message: 'conflit');
+          },
+          favoriteRemove: (_) async {},
+          preferencesPut: (_) async {},
+        ),
+      );
+      expect(report.conflicts, 1);
+      expect(report.failedPermanent, 1);
+      expect(await queue.openFor('u1'), isEmpty);
+    },
+  );
 }

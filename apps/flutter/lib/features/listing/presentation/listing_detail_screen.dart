@@ -26,6 +26,9 @@ import '../../visits/domain/external_maps.dart';
 import '../../visits/domain/visit.dart';
 import '../../offline/offline_banner.dart';
 import '../../visits/presentation/visit_tour_providers.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../../support/presentation/listing_report_sheet.dart';
+import '../../support/presentation/support_providers.dart';
 import '../domain/listing_detail.dart';
 import '../domain/listing_page.dart';
 import '../domain/listing_trust.dart';
@@ -136,6 +139,61 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Le partage n\'a pas pu aboutir.')),
       );
+    }
+  }
+
+  Future<void> _onReport() async {
+    final user = ref.read(authControllerProvider).value?.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Connectez-vous pour signaler cette annonce. Rien n\'a été envoyé.',
+          ),
+        ),
+      );
+      await context.push(
+        AppRoutes.loginWithNext(AppRoutes.listing(widget.listingId)),
+      );
+      return;
+    }
+    final draft = await showListingReportSheet(context);
+    if (draft == null || !mounted) {
+      return;
+    }
+    try {
+      await ref
+          .read(reportRepositoryProvider)
+          .reportListing(
+            listingId: widget.listingId,
+            reason: draft.reason,
+            description: draft.description,
+          );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Signalement transmis. Il sera examiné. L\'annonce n\'est pas suspendue automatiquement.',
+          ),
+        ),
+      );
+    } on NeedsAuthFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+      await context.push(
+        AppRoutes.loginWithNext(AppRoutes.listing(widget.listingId)),
+      );
+    } on AppFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -315,6 +373,7 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
           onOpenDirections: page.listing.location.hasPublicMapPoint
               ? () => _openDirections(page.listing)
               : null,
+          onReport: _onReport,
           isFavoriteListing: (id) => favorites?.contains(id) ?? false,
           isFavoriteBusy: (id) => favorites?.isBusy(id) ?? false,
         ),
@@ -346,6 +405,7 @@ class _ListingBody extends StatelessWidget {
     required this.isFavoriteListing,
     required this.isFavoriteBusy,
     this.onOpenDirections,
+    required this.onReport,
   });
 
   final ListingPage page;
@@ -361,6 +421,7 @@ class _ListingBody extends StatelessWidget {
   final bool Function(String listingId) isFavoriteListing;
   final bool Function(String listingId) isFavoriteBusy;
   final VoidCallback? onOpenDirections;
+  final VoidCallback onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -498,6 +559,13 @@ class _ListingBody extends StatelessWidget {
                 'Les coordonnées personnelles ne sont pas publiées. '
                 'Utilisez Contacter pour passer par la messagerie interne.',
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: onReport,
+                  child: const Text('Signaler cette annonce'),
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
               const SectionHeader(title: 'Avant une visite ou un paiement'),

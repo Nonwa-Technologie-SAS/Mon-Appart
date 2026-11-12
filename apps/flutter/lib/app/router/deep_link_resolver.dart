@@ -56,10 +56,14 @@ class DeepLinkResolver {
       if (!_isIncomingExternal(uri)) {
         return null;
       }
-      return _fromPath(uri.path, uri.queryParameters);
+      return _fromPath(
+        uri.path,
+        uri.queryParameters,
+        trustResetToken: uri.scheme == 'https',
+      );
     }
     if (uri.scheme.isEmpty && uri.path.startsWith('/')) {
-      return _fromPath(uri.path, uri.queryParameters);
+      return _fromPath(uri.path, uri.queryParameters, trustResetToken: true);
     }
     return null;
   }
@@ -102,12 +106,17 @@ class DeepLinkResolver {
     final host = uri.host.toLowerCase();
     if (host.isNotEmpty) {
       final id = uri.pathSegments.isEmpty ? null : uri.pathSegments.first;
-      return _fromHost(host, id, uri.queryParameters);
+      return _fromHost(host, id, uri.queryParameters, trustResetToken: false);
     }
-    return _fromPath(uri.path, uri.queryParameters);
+    return _fromPath(uri.path, uri.queryParameters, trustResetToken: false);
   }
 
-  String? _fromHost(String host, String? id, Map<String, String> query) {
+  String? _fromHost(
+    String host,
+    String? id,
+    Map<String, String> query, {
+    required bool trustResetToken,
+  }) {
     return switch (host) {
       'listings' || 'biens' => _listing(id),
       'explore' || 'recherche' || 'search' => _explore(query),
@@ -116,12 +125,19 @@ class DeepLinkResolver {
       'saved-searches' => _savedSearch(id),
       'conversations' => _conversation(id),
       'appointments' || 'visites' => _appointment(id),
-      'reset-password' => _resetPassword(query),
+      'reset-password' => _resetPassword(
+        query,
+        trustResetToken: trustResetToken,
+      ),
       _ => null,
     };
   }
 
-  String? _fromPath(String path, Map<String, String> query) {
+  String? _fromPath(
+    String path,
+    Map<String, String> query, {
+    required bool trustResetToken,
+  }) {
     final segments = path
         .split('/')
         .where((segment) => segment.isNotEmpty)
@@ -164,7 +180,7 @@ class DeepLinkResolver {
       return _appointment(segments[1]);
     }
     if (segments.length == 1 && segments[0] == 'reset-password') {
-      return _resetPassword(query);
+      return _resetPassword(query, trustResetToken: trustResetToken);
     }
     return null;
   }
@@ -211,9 +227,15 @@ class DeepLinkResolver {
     return Uri(path: AppRoutes.explore, queryParameters: query).toString();
   }
 
-  String? _resetPassword(Map<String, String> query) {
+  String? _resetPassword(
+    Map<String, String> query, {
+    required bool trustResetToken,
+  }) {
     if (!_querySafe(query, allowResetToken: true)) {
       return null;
+    }
+    if (!trustResetToken) {
+      return AppRoutes.resetPassword;
     }
     return AppRoutes.resetPasswordLocation(query['token']);
   }

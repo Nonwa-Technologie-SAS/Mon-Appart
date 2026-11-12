@@ -52,6 +52,7 @@ Variables de compilation (non secrètes, extractibles du binaire) :
 | `API_BASE_URL`        | oui                  | `http://10.0.2.2:4000` (émulateur Android)                                                                                         |
 | `APP_ENV`             | non (défaut `local`) | `local` \| `staging` \| `production`                                                                                               |
 | `ENABLE_NETWORK_LOGS` | non                  | `true` en local ; **forcé à false en production**                                                                                  |
+| `TELEMETRY_ENABLED`   | non                  | `true` par défaut. `false` coupe la collecte locale sans bloquer l'application.                                                    |
 | `PUBLIC_WEB_HOST`     | non                  | Hôte public du site (`www.exemple.ci`), **sans** schéma. Vide = pas d’App Links / pas d’URL de partage. Ne pas mettre `localhost`. |
 | `MAP_TILE_URL`        | non                  | Gabarit de tuiles `{z}/{x}/{y}`. Vide = OpenStreetMap. Pas un secret.                                                              |
 
@@ -256,6 +257,49 @@ File d’attente : coalescence par `(userId, type, entityId)`, max 5 essais sur 
 
 Sonde réelle : `GET /health/live` (déjà dans le dépôt). Un Wi‑Fi sans API n’est pas affiché comme « en ligne ». Pas de tâche OS en arrière-plan : synchro au premier plan et au retour de connexion.
 
+## Observabilité
+
+Pas de Sentry, Crashlytics, Firebase Performance ni OpenTelemetry mobile : aucun DSN ni projet n'est configuré dans le dépôt. La collecte reste **locale** (`TelemetryClient`). Elle ne part pas vers un serveur.
+
+Détail, seuils, sampling et procédure de diagnostic : [docs/mobile-observability.md](../../docs/mobile-observability.md).
+
+| Signal          | Ce qui est mesuré                                   | Ce qui ne l'est pas                       |
+| --------------- | --------------------------------------------------- | ----------------------------------------- |
+| Erreurs Flutter | `FlutterError` et erreurs asynchrones Dart          | Crashs natifs (SIGSEGV) sans SDK vendor   |
+| Réseau          | Méthode, chemin, statut, durée, `X-Request-ID`      | Corps, query, jetons                      |
+| Sync            | Compteurs du drain, conflits HTTP 409, connectivité | Charges utiles des favoris ou préférences |
+| Démarrage       | Durée jusqu'au premier frame après `bootstrap`      | Démarrage natif du processus              |
+| Frames          | Résumé en profil/release seulement                  | Une trace par frame                       |
+
+`TELEMETRY_ENABLED=false` coupe la collecte. Les journaux debug (`ENABLE_NETWORK_LOGS`) restent forcés à off en production.
+
+## Sécurité mobile
+
+Le détail du modèle de menaces, des protections et de ce qui reste côté serveur est dans [docs/mobile-security.md](../../docs/mobile-security.md).
+
+Ce lot ne déclare pas l’application conforme à la loi ivoirienne n° 2013-450, ni auditée par un test d’intrusion. Les jetons restent dans `flutter_secure_storage` (Keystore / Keychain, non synchronisé iCloud). Le cache hors ligne est un JSON applicatif : sauvegarde Android désactivée, e-mail et téléphone retirés, purge à la déconnexion. Le schéma `monappart://` n’emporte pas le jeton de réinitialisation. Le pinning, Play Integrity et la détection root ne sont pas activés : aucun contrôle serveur ne les vérifie.
+
+## Centre d'aide
+
+Articles locaux, signalements Nest (`GET` et `POST /trust/reports`) et canaux téléphone ou WhatsApp seulement si `SUPPORT_PHONE` ou `SUPPORT_WHATSAPP` est défini. Détail : [docs/mobile-support.md](../../docs/mobile-support.md).
+
+## Club Mon Appart
+
+Le programme de fidélisation n'est pas ouvert. L'écran Compte le dit et ne calcule aucun point. Conception et API manquantes : [docs/mobile-club.md](../../docs/mobile-club.md).
+
+## Tests et préproduction
+
+Commandes, pyramide, matrice Android/iOS et décision Go / No-Go : [docs/mobile-preproduction.md](../../docs/mobile-preproduction.md).
+
+```bash
+cd apps/flutter
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+La CI (`.github/workflows/ci.yml`, job `flutter`) exécute déjà ces trois commandes, puis un APK debug. Elle ne compile pas iOS et ne signe pas une release de store.
+
 ## Tournée de visites
 
 Pas d’API Nest d’itinéraire, de trafic ni de géocodage. Les rendez-vous (`GET /appointments`) n’embarquent que `listing.id` + `title` : les coordonnées viennent de `GET /listings/:id`.
@@ -315,7 +359,8 @@ Règles : même devise + même périodicité pour comparer les prix ; loyer ≠ 
 - Assistant : si `AI_ASSISTANT_ENABLED=false`, Nest répond 503 — l’écran le dit et propose Explorer. OpenAI optionnel côté serveur uniquement (reformulation texte). Les tours assistant n’appellent pas `GET /recommendations`.
 - Shortlist : locale (max 4), persistée sur l’appareil par compte, **pas** d’API Nest `GET /collections`. `POST .../compare` de l’assistant n’accepte pas une shortlist arbitraire. Charges, caution et statut foncier juridique **absents** du DTO public : posés en questions, jamais calculés.
 - Tournée : pas d’OSRM / Google Directions côté Nest. Pas de trafic temps réel. Les distances client sont à vol d’oiseau. `url_launcher` ouvre Maps ; l’app ne guide pas. Perms localisation inchangées (pas d’arrière-plan).
-- Hors ligne : pas de moteur de recherche catalogue local, pas de messagerie différée, pas de publication automatique, pas de reprise d’upload à l’octet. Pas de sync incrémentale Nest. Pas de WorkManager / BGTask. Le cache n’est pas chiffré (hors jetons). Les photos hors ligne reposent sur `cached_network_image`.
+- Hors ligne : pas de moteur de recherche catalogue local, pas de messagerie différée, pas de publication automatique, pas de reprise d’upload à l’octet. Pas de sync incrémentale Nest. Pas de WorkManager / BGTask. Le cache n’est pas chiffré (hors jetons) ; l’e-mail et le téléphone n’y sont pas écrits. Les photos hors ligne reposent sur `cached_network_image`.
+- Observabilité : collecte locale uniquement. Pas de dashboard, pas d'alerte, pas d'envoi de symboles, pas de crash natif. Les seuils de la doc sont des cibles, pas des mesures de production.
 - L’app Expo `apps/mobile` pointe encore vers le prototype web (`localhost:3000`).
 - iOS non compilé sur Windows.
 - Aucune URL de staging / production réelle n’est connue du dépôt. Les liens universels ne sont pas configurés.

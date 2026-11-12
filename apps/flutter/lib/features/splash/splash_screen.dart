@@ -8,6 +8,7 @@ import '../../app/providers.dart';
 import '../../app/router/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_spacing.dart';
+import '../../core/widgets/brand_mark.dart';
 import '../auth/presentation/auth_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -47,38 +48,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image(
-                  image: AssetImage('assets/images/logo.png'),
-                  height: 96,
-                  semanticLabel: 'Mon Appart',
-                ),
-                SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Mon Appart',
-                  style: TextStyle(
-                    color: AppColors.primaryForeground,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Trouvez votre chez-vous',
-                  style: TextStyle(
-                    color: AppColors.primaryForeground,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
+            child: BrandMark(height: 180),
           ),
         ),
       ),
