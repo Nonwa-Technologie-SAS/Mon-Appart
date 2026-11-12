@@ -266,11 +266,58 @@ Référence globale : [production-readiness-checklist.md](./production-readiness
 
 ## 9. Dépannage rapide
 
-| Symptôme                                        | Piste                                                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------- |
-| API refuse de démarrer (MEDIA / JWT / loopback) | Relire les garde-fous `parseApiEnv` ; pas de `127.0.0.1` ni `local` médias |
-| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`       |
-| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                              |
-| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                     |
-| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build)    |
-| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                      |
+### `api` unhealthy → web / admin / caddy ne démarrent pas
+
+C’est le cas le plus fréquent. **Corriger l’API d’abord** ; les fronts dépendent de `service_healthy`.
+
+```bash
+$COMPOSE ps -a
+$COMPOSE logs api --tail 150
+```
+
+Causes fréquentes au boot (`parseApiEnv` / Nest) :
+
+| Log / cause                              | Correctif                                                                                           |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `MEDIA_STORAGE_PROVIDER` / `S3_*` requis | Remplir R2 **ou** activer MinIO (profil `minio`) avec clés non vides                                |
+| `JWT_SECRET` placeholder / trop court    | `openssl rand -base64 48` × 2 secrets **différents**                                                |
+| `DATABASE_URL` loopback / manquant       | Hôte = `postgres` (pas `127.0.0.1`)                                                                 |
+| Crash Prisma / tables absentes           | Relancer `$COMPOSE run --rm --no-deps --entrypoint "" --workdir /repo/apps/api api pnpm db:migrate` |
+| Healthcheck timeout au premier boot      | Attendre `start_period` (45s+) puis `$COMPOSE restart api`                                          |
+
+Après correction de `.env.contabo` :
+
+```bash
+$COMPOSE up -d api
+$COMPOSE ps
+$COMPOSE exec api node -e "fetch('http://127.0.0.1:4000/health/live').then(r=>console.log(r.status))"
+```
+
+Puis seulement :
+
+```bash
+$COMPOSE --profile front up -d web admin
+$COMPOSE up -d caddy
+```
+
+### `Could not resolve host: www.monappart.ci`
+
+DNS pas encore créé ou pas propagé. Chez le registrar, enregistrements **A** :
+
+| FQDN                 | Cible               |
+| -------------------- | ------------------- |
+| `api.monappart.ci`   | IP publique Contabo |
+| `www.monappart.ci`   | IP publique Contabo |
+| `admin.monappart.ci` | IP publique Contabo |
+
+Vérifier depuis le VPS : `getent hosts www.monappart.ci` / `dig +short www.monappart.ci`.  
+Sans DNS, Caddy ne peut pas obtenir de certificat Let’s Encrypt.
+
+| Symptôme                                        | Piste                                                                   |
+| ----------------------------------------------- | ----------------------------------------------------------------------- |
+| API refuse de démarrer (MEDIA / JWT / loopback) | Voir tableau ci-dessus + logs `api`                                     |
+| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`    |
+| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                           |
+| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                  |
+| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build) |
+| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                   |
