@@ -77,6 +77,7 @@ pnpm dev:recommendation
 ### Déploiement et opérations
 
 - [Architecture de déploiement](docs/deployment-architecture.md)
+- [Déploiement Contabo (VPS)](docs/deployment-contabo.md)
 - [Environnements](docs/environments.md)
 - [CI/CD](docs/ci-cd.md)
 - [Migrations production](docs/database-migrations-production.md)

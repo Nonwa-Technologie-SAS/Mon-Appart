@@ -40,3 +40,13 @@ docker build -f services/recommendation/Dockerfile -t mon-appart-recommendation:
 Exigences images : Node/Python versionnés, multi-stage, utilisateur non-root, `tini`, healthcheck API/reco, pas de secrets dans l’image.
 
 OpenSearch, Kafka, Prometheus, Grafana et Loki ne font pas partie du Compose de développement. Voir [docs/deployment-architecture.md](../../docs/deployment-architecture.md).
+
+## Contabo / VPS (staging DIY)
+
+Ne pas confondre avec ce Compose local. Pour un VPS Contabo :
+
+- Guide : [docs/deployment-contabo.md](../../docs/deployment-contabo.md)
+- `compose.contabo.yaml` + `Caddyfile.contabo` + `env.contabo.example`
+- Copier `env.contabo.example` → `.env.contabo` (hors Git), puis démarrer selon le guide
+
+Postgres/Redis n’y publient **aucun** port hôte ; seul Caddy expose 80/443.
