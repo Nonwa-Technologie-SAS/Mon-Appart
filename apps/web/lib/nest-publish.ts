@@ -28,6 +28,32 @@ function resolvePlace(location: string): {
   return { commune: "COCODY", neighborhood: "RIVIERA" }
 }
 
+/** Nest convertit `null` en 0. Un champ optionnel vide doit être absent. */
+function optionalInt(key: string, value: number): Record<string, number> {
+  if (!Number.isInteger(value) || value < 0) return {}
+  return { [key]: value }
+}
+
+function optionalNumber(
+  key: string,
+  value: number,
+  min: number,
+): Record<string, number> {
+  if (!Number.isFinite(value) || value < min) return {}
+  return { [key]: Math.round(value * 100) / 100 }
+}
+
+function optionalCoord(
+  key: string,
+  value: number | null,
+  maxAbs: number,
+): Record<string, number> {
+  if (value === null || !Number.isFinite(value) || Math.abs(value) > maxAbs) {
+    return {}
+  }
+  return { [key]: Math.round(value * 1_000_000) / 1_000_000 }
+}
+
 function webTypeToNest(type: string): string {
   const upper = type.toUpperCase()
   if (upper === "HOUSE") return "HOUSE"
@@ -50,6 +76,8 @@ export async function nestPublishListing(input: {
   surface?: string
   latitude?: number | null
   longitude?: number | null
+  /** `false` laisse l'annonce en brouillon le temps d'envoyer les photos. */
+  publish?: boolean
 }): Promise<{ listingId: string; propertyId: string }> {
   const place = resolvePlace(input.location)
   let latitude = input.latitude ?? null
@@ -64,11 +92,11 @@ export async function nestPublishListing(input: {
     }
   }
 
-  const bedrooms = input.beds ? Number.parseInt(input.beds, 10) : null
-  const bathrooms = input.baths ? Number.parseInt(input.baths, 10) : null
+  const bedrooms = input.beds ? Number.parseInt(input.beds, 10) : Number.NaN
+  const bathrooms = input.baths ? Number.parseInt(input.baths, 10) : Number.NaN
   const surface = input.surface
     ? Number.parseFloat(input.surface.replace(/[^\d.,]/g, "").replace(",", "."))
-    : null
+    : Number.NaN
 
   const property = await nestServerFetch<{ id: string }>("/properties", {
     method: "POST",
@@ -78,13 +106,13 @@ export async function nestPublishListing(input: {
       neighborhood: place.neighborhood,
       title: input.title,
       description: input.description,
-      surface: Number.isFinite(surface) ? surface : null,
-      bedrooms: Number.isFinite(bedrooms) ? bedrooms : null,
-      bathrooms: Number.isFinite(bathrooms) ? bathrooms : null,
-      latitude,
-      longitude,
       locationVisibility: "APPROXIMATE",
       address: input.location,
+      ...optionalNumber("surface", surface, 1),
+      ...optionalInt("bedrooms", bedrooms),
+      ...optionalInt("bathrooms", bathrooms),
+      ...optionalCoord("latitude", latitude, 90),
+      ...optionalCoord("longitude", longitude, 180),
     },
   })
 
@@ -103,10 +131,13 @@ export async function nestPublishListing(input: {
     },
   })
 
-  await nestServerFetch(`/listings/${listing.id}/publish`, {
-    method: "POST",
-    body: {},
-  })
+  if (input.publish !== false) {
+    await activateNestProperty(property.id)
+    await nestServerFetch(`/listings/${listing.id}/publish`, {
+      method: "POST",
+      body: {},
+    })
+  }
 
   return { listingId: listing.id, propertyId: property.id }
 }
@@ -141,6 +172,14 @@ export async function nestListMine(): Promise<NestMineListing[]> {
   return page.items
 }
 
+/** DRAFT → ACTIVE. Nest refuse la publication d'une annonce tant que le bien est en brouillon. */
+export async function activateNestProperty(propertyId: string): Promise<void> {
+  await nestServerFetch(`/properties/${propertyId}`, {
+    method: "PATCH",
+    body: { status: "ACTIVE" },
+  })
+}
+
 export async function nestUpdateListingVisibility(
   listingId: string,
   available: boolean,
@@ -156,4 +195,130 @@ export async function nestUpdateListingVisibility(
       body: { reason: "Pause depuis l’espace éditeur" },
     })
   }
+}
+
+/**
+ * Retrait soft : l'annonce est archivée et masquée (`deletedAt`),
+ * l'historique et les données restent côté API.
+ */
+export async function nestWithdrawListing(listingId: string): Promise<void> {
+  await nestServerFetch(`/listings/${listingId}`, { method: "DELETE" })
+}
+
+export type OwnedListingEdit = {
+  listingId: string
+  propertyId: string
+  title: string
+  description: string
+  price: number
+  location: string
+  beds: string
+  baths: string
+  surface: string
+  type: string
+}
+
+export async function nestGetOwnedListing(
+  listingId: string,
+): Promise<OwnedListingEdit> {
+  const listing = await nestServerFetch<{
+    id: string
+    title: string
+    description: string | null
+    price: { amount: string } | null
+    property: {
+      id: string
+      propertyType: { code: string }
+      bedrooms?: number | null
+      bathrooms?: number | null
+      surface?: string | number | null
+      address?: string | null
+    }
+    location: {
+      neighborhood?: { name: string }
+      commune?: { name: string }
+      city?: { name: string }
+      label?: string
+    }
+  }>(`/listings/${listingId}`)
+
+  const location =
+    listing.property.address?.trim() ||
+    listing.location.label?.trim() ||
+    [
+      listing.location.neighborhood?.name,
+      listing.location.commune?.name,
+      listing.location.city?.name,
+    ]
+      .filter(Boolean)
+      .join(", ")
+
+  return {
+    listingId: listing.id,
+    propertyId: listing.property.id,
+    title: listing.title,
+    description: listing.description ?? "",
+    price: listing.price ? Number(listing.price.amount) : 0,
+    location,
+    beds:
+      listing.property.bedrooms != null
+        ? String(listing.property.bedrooms)
+        : "",
+    baths:
+      listing.property.bathrooms != null
+        ? String(listing.property.bathrooms)
+        : "",
+    surface:
+      listing.property.surface != null ? String(listing.property.surface) : "",
+    type: listing.property.propertyType.code,
+  }
+}
+
+export async function nestUpdateOwnedListing(input: {
+  listingId: string
+  propertyId: string
+  title: string
+  description: string
+  price: number
+  location: string
+  beds?: string
+  baths?: string
+  surface?: string
+}): Promise<void> {
+  const bedrooms = input.beds ? Number.parseInt(input.beds, 10) : Number.NaN
+  const bathrooms = input.baths ? Number.parseInt(input.baths, 10) : Number.NaN
+  const surface = input.surface
+    ? Number.parseFloat(
+        input.surface.replace(/[^\d.,]/g, "").replace(",", "."),
+      )
+    : Number.NaN
+
+  await nestServerFetch(`/listings/${input.listingId}`, {
+    method: "PATCH",
+    body: {
+      title: input.title,
+      description: input.description,
+    },
+  })
+
+  await nestServerFetch(`/listings/${input.listingId}/price`, {
+    method: "PUT",
+    body: {
+      amount: Math.round(input.price),
+      period: "MONTH",
+      currency: "XOF",
+    },
+  })
+
+  await nestServerFetch(`/properties/${input.propertyId}`, {
+    method: "PATCH",
+    body: {
+      title: input.title,
+      description: input.description,
+      address: input.location,
+      ...optionalNumber("surface", surface, 1),
+      ...optionalInt("bedrooms", bedrooms),
+      ...optionalInt("bathrooms", bathrooms),
+    },
+  })
 }

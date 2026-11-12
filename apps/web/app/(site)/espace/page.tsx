@@ -5,11 +5,10 @@ import {
   CrmTopListings,
 } from "@/components/espace/crm-dashboard-cards"
 import { EspaceNav } from "@/components/espace/espace-nav"
+import { OwnedPropertiesPanel } from "@/components/espace/owned-properties-panel"
 import { listNestAppointments } from "@/lib/nest-appointments"
 import { getInquiryDashboard } from "@/lib/nest-inquiries"
 import { SignOutButton } from "@/components/espace/sign-out-button"
-import { PropertyStatusToggle } from "@/components/espace/property-status-toggle"
-import { PropertyCard } from "@/components/site/property-card"
 import { PublisherAnalytics } from "@/components/site/publisher-analytics"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,8 +20,7 @@ import {
 } from "@/components/ui/card"
 import { requirePublisherPage } from "@/lib/auth-session"
 import { formatCiDateTime, VISIT_STATUS_LABELS } from "@/lib/crm-labels"
-import { PropertyStatus, Role } from "@/lib/domain-enums"
-import { formatPropertyStatus } from "@/lib/format"
+import { Role } from "@/lib/domain-enums"
 import { listPropertiesByUserId } from "@/lib/properties"
 
 function spaceLabel(role: unknown) {
@@ -35,7 +33,7 @@ function spaceLabel(role: unknown) {
 export default async function PublisherSpacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ published?: string }>
+  searchParams: Promise<{ published?: string; updated?: string }>
 }) {
   const session = await requirePublisherPage("/espace")
   const [params, properties, nestAppointments, dashboard] = await Promise.all([
@@ -92,6 +90,11 @@ export default async function PublisherSpacePage({
           Vous pouvez le masquer à tout moment s’il est pris.
         </p>
       ) : null}
+      {params.updated === "1" ? (
+        <p className="rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
+          Annonce mise à jour. Les visiteurs verront les nouvelles informations.
+        </p>
+      ) : null}
 
       {dashboard ? (
         <section className="flex flex-col gap-4">
@@ -116,12 +119,7 @@ export default async function PublisherSpacePage({
       <PublisherAnalytics />
 
       <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-3">
-          <h2 className="text-xl font-semibold sm:text-2xl">Mes biens</h2>
-          <p className="text-sm text-muted-foreground">
-            {properties.length} annonce{properties.length > 1 ? "s" : ""}
-          </p>
-        </div>
+        <h2 className="text-xl font-semibold sm:text-2xl">Mes biens</h2>
         {properties.length === 0 ? (
           <Card>
             <CardHeader>
@@ -141,34 +139,7 @@ export default async function PublisherSpacePage({
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {properties.map((property) => {
-              const available = property.status === PropertyStatus.AVAILABLE
-
-              return (
-                <div key={property.id} className="flex min-w-0 flex-col gap-2">
-                  <div className="relative min-w-0">
-                    <div className={available ? undefined : "opacity-70"}>
-                      <PropertyCard property={property} compact />
-                    </div>
-                    <span
-                      className={
-                        available
-                          ? "absolute top-2 left-2 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-                          : "absolute top-2 left-2 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                      }
-                    >
-                      {formatPropertyStatus(property.status)}
-                    </span>
-                  </div>
-                  <PropertyStatusToggle
-                    propertyId={property.id}
-                    status={property.status}
-                  />
-                </div>
-              )
-            })}
-          </div>
+          <OwnedPropertiesPanel properties={properties} />
         )}
       </section>
 

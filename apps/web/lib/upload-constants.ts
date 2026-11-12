@@ -1,6 +1,9 @@
 export const MAX_PROPERTY_IMAGES = 10
 export const MAX_IMAGE_SIZE = 8 * 1024 * 1024
 
+/** Taille max d'une photo avant envoi Nest (MEDIA_MAX_IMAGE_BYTES). */
+export const NEST_IMAGE_PREPARE_MAX = 15 * 1024 * 1024
+
 /** Under Vercel’s 4.5 MB function payload limit, after client compression. */
 export const FUNCTION_UPLOAD_MAX = 4 * 1024 * 1024
 

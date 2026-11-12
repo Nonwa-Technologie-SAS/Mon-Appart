@@ -81,6 +81,22 @@ export const updateOwnedPropertyStatusSchema = updatePropertyStatusSchema.extend
   propertyId: z.string().trim().min(1, "Bien requis"),
 })
 
+export const updateOwnedListingSchema = z.object({
+  listingId: z.string().uuid("Annonce introuvable"),
+  propertyId: z.string().uuid("Bien introuvable"),
+  title: z.string().trim().min(3, "Le titre est trop court"),
+  description: z.string().trim().min(10, "La description est trop courte"),
+  price: z.coerce.number().int().positive("Le prix doit être positif"),
+  location: z.string().trim().min(2, "La localisation est requise"),
+  beds: z.string().trim().optional(),
+  baths: z.string().trim().optional(),
+  surface: z.string().trim().optional(),
+})
+
+export const withdrawOwnedListingSchema = z.object({
+  listingId: z.string().uuid("Annonce introuvable"),
+})
+
 const optionalEmail = z
   .string()
   .trim()

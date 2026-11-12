@@ -19,6 +19,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
+import { PasswordInput } from "@/components/auth/password-input"
 import { Input } from "@/components/ui/input"
 
 const initialState: AuthActionState = {}
@@ -65,10 +66,9 @@ export function SignInForm({
             </Field>
             <Field>
               <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 disabled={pending}
