@@ -23,6 +23,7 @@
 | [0013](./decisions/0013-billing-architecture.md)               | Billing                             |
 | [0014](./decisions/0014-event-driven-outbox.md)                | Outbox et bus d'événements          |
 | [0015](./decisions/0015-environment-and-secrets-governance.md) | Environnements, secrets, migrations |
+| [0016](./decisions/0016-flutter-mobile-foundation.md)          | Socle Flutter à côté d'Expo         |
 
 ## Quand écrire un ADR
 

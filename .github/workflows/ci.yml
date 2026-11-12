@@ -117,6 +117,30 @@ jobs:
           fi
           echo "Aucune dérive schema ↔ migrations."
 
+  flutter:
+    name: Flutter (apps/flutter)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.8"
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test
+      - name: Android debug APK
+        run: >
+          flutter build apk --debug
+          --dart-define=API_BASE_URL=http://127.0.0.1:4000
+          --dart-define=APP_ENV=local
+          --dart-define=ENABLE_NETWORK_LOGS=false
+
   recommendation:
     name: Recommendation service
     runs-on: ubuntu-latest

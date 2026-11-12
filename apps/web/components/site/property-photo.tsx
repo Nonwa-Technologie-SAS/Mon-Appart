@@ -25,6 +25,20 @@ function isLocalUpload(src: string) {
   return src.startsWith("/uploads/")
 }
 
+/** Nest renvoie souvent une URL absolue ; le rewrite Next sert déjà `/api/v1/*`. */
+function toSiteImageSrc(src: string): string {
+  try {
+    if (src.startsWith("/")) return src
+    const url = new URL(src)
+    if (url.pathname.startsWith("/api/v1/media/")) {
+      return `${url.pathname}${url.search}`
+    }
+  } catch {
+    // URL relative ou invalide : on laisse next/image gérer.
+  }
+  return src
+}
+
 export function PropertyPhoto({
   src,
   alt,
@@ -55,9 +69,11 @@ export function PropertyPhoto({
     )
   }
 
+  const imageSrc = toSiteImageSrc(src)
+
   return (
     <Image
-      src={src}
+      src={imageSrc}
       alt={alt}
       fill={fill}
       width={width}
@@ -66,7 +82,7 @@ export function PropertyPhoto({
       quality={quality}
       priority={priority}
       loading={loading}
-      unoptimized={isLocalUpload(src) || unoptimized}
+      unoptimized={isLocalUpload(imageSrc) || unoptimized}
       className={className}
       onError={() => setFailed(true)}
     />

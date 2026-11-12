@@ -226,9 +226,15 @@ export async function nestServerFetch<T>(
   }
   if (!response.ok) {
     const err = (await response.json().catch(() => null)) as {
-      message?: string
+      message?: unknown
+      details?: unknown
     } | null
-    throw new Error(err?.message ?? `HTTP ${response.status}`)
+    const details = Array.isArray(err?.details)
+      ? err.details.filter((item): item is string => typeof item === "string")
+      : []
+    const message =
+      typeof err?.message === "string" ? err.message : `HTTP ${response.status}`
+    throw new Error(details.length > 0 ? details.join(" ") : message)
   }
   if (response.status === 204) return undefined as T
   return (await response.json()) as T

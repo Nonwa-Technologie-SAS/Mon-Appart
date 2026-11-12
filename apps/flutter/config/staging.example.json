@@ -1,0 +1,7 @@
+{
+  "API_BASE_URL": "https://A_REMPLACER_URL_API_STAGING",
+  "APP_ENV": "staging",
+  "ENABLE_NETWORK_LOGS": "false",
+  "PUBLIC_WEB_HOST": "",
+  "MAP_TILE_URL": ""
+}

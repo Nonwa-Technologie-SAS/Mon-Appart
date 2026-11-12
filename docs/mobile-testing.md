@@ -21,8 +21,20 @@ Le SW n’est **pas** enregistré en `next dev` : les tests d’installation ré
 
 ```bash
 pnpm --filter mobile-app lint   # si configuré
-# flutter analyze / flutter test : N/A (pas de projet Flutter)
 ```
+
+## Flutter (`apps/flutter`)
+
+```bash
+cd apps/flutter
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+Le job CI `flutter` exécute format, analyze, tests et `flutter build apk --debug`.
+Le build iOS n’est pas lancé (runner Linux / poste Windows).
 
 ## Résilience
 

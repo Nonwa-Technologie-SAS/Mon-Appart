@@ -1,0 +1,7 @@
+{
+  "API_BASE_URL": "https://A_REMPLACER_URL_API_PRODUCTION",
+  "APP_ENV": "production",
+  "ENABLE_NETWORK_LOGS": "false",
+  "PUBLIC_WEB_HOST": "",
+  "MAP_TILE_URL": ""
+}
