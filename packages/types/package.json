@@ -19,7 +19,7 @@
   "devDependencies": {
     "@mon-appart/eslint-config": "workspace:*",
     "@mon-appart/tsconfig": "workspace:*",
-    "eslint": "^9.39.1",
+    "eslint": "^10.14.0",
     "typescript": "^5.9.3"
   }
 }
