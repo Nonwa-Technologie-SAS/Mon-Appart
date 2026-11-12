@@ -87,13 +87,13 @@ function ReportView({
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Signalement">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-500">Statut</dt>
+            <dt className="text-muted-foreground">Statut</dt>
             <dd>
               <Badge value={report.status} />
             </dd>
-            <dt className="text-stone-500">Priorité</dt>
+            <dt className="text-muted-foreground">Priorité</dt>
             <dd>{report.priority}</dd>
-            <dt className="text-stone-500">Cible</dt>
+            <dt className="text-muted-foreground">Cible</dt>
             <dd>
               {report.targetType}{" "}
               {link ? (
@@ -102,18 +102,18 @@ function ReportView({
                 </Link>
               ) : null}
             </dd>
-            <dt className="text-stone-500">Déclarants distincts</dt>
+            <dt className="text-muted-foreground">Déclarants distincts</dt>
             <dd>{report.openReportsOnTarget}</dd>
-            <dt className="text-stone-500">Déposé le</dt>
+            <dt className="text-muted-foreground">Déposé le</dt>
             <dd>{formatDateTime(report.createdAt)}</dd>
-            <dt className="text-stone-500">Mesure</dt>
+            <dt className="text-muted-foreground">Mesure</dt>
             <dd>{report.action ? ACTION_LABELS[report.action] : "—"}</dd>
           </dl>
           <h3 className="mt-4 text-sm font-medium">Description du déclarant</h3>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">
+          <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
             {report.description?.trim() || "Aucune description."}
           </p>
-          <p className="mt-3 text-xs text-stone-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             Allégation à instruire : elle ne prouve pas une fraude.
           </p>
         </Section>
@@ -122,7 +122,7 @@ function ReportView({
           {isOpen ? (
             <ReportActions report={report} reload={reload} />
           ) : (
-            <p className="text-sm text-stone-600">
+            <p className="text-sm text-muted-foreground">
               Signalement clos le {formatDateTime(report.resolvedAt)}.
             </p>
           )}
@@ -131,18 +131,18 @@ function ReportView({
         {report.listingRisk ? (
           <Section title="Évaluation de risque (annonce)">
             <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-stone-500">Version</dt>
+              <dt className="text-muted-foreground">Version</dt>
               <dd>{report.listingRisk.version}</dd>
-              <dt className="text-stone-500">Niveau</dt>
+              <dt className="text-muted-foreground">Niveau</dt>
               <dd>
                 <Badge value={report.listingRisk.level} />
               </dd>
-              <dt className="text-stone-500">Action recommandée</dt>
+              <dt className="text-muted-foreground">Action recommandée</dt>
               <dd>{report.listingRisk.recommendedAction}</dd>
-              <dt className="text-stone-500">Revue humaine</dt>
+              <dt className="text-muted-foreground">Revue humaine</dt>
               <dd>{report.listingRisk.humanReviewRequired ? "Oui" : "Non"}</dd>
             </dl>
-            <p className="mt-3 text-xs text-stone-500">
+            <p className="mt-3 text-xs text-muted-foreground">
               Recommandation d&apos;examen, distincte du statut public et de la
               décision. Un signal isolé ne suffit pas à sanctionner.
             </p>
@@ -173,9 +173,9 @@ function ReportView({
               {report.conversationExcerpt.map((message) => (
                 <li
                   key={message.id}
-                  className={`rounded p-2 ${message.reported ? "bg-amber-50 ring-1 ring-amber-300" : "bg-stone-50"}`}
+                  className={`rounded p-2 ${message.reported ? "bg-amber-50 ring-1 ring-amber-300" : "bg-muted/60"}`}
                 >
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-muted-foreground">
                     #{message.seq} · {message.authorRole} ·{" "}
                     {formatDateTime(message.createdAt)}
                     {message.reported ? " · message signalé" : ""}
@@ -195,11 +195,11 @@ function ReportView({
               <li key={`${entry.at}-${index}`}>
                 <span className="font-medium">{entry.action}</span> →{" "}
                 {statusLabel(entry.status)}{" "}
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-muted-foreground">
                   {formatDateTime(entry.at)}
                 </span>
                 {entry.internalNote ? (
-                  <p className="text-xs text-stone-600">
+                  <p className="text-xs text-muted-foreground">
                     Note interne : {entry.internalNote}
                   </p>
                 ) : null}

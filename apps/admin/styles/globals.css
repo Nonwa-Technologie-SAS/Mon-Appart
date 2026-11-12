@@ -1,7 +1,81 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-sans);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.25);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+}
+
+:root {
+  /* Aligné sur apps/web — bleu confiance + ambre action */
+  --background: #f3f6f9;
+  --foreground: #1a2332;
+  --card: #ffffff;
+  --card-foreground: #1a2332;
+  --primary: #1565c0;
+  --primary-foreground: #ffffff;
+  --primary-hover: #0d47a1;
+  --secondary: #f5b400;
+  --secondary-foreground: #1a2332;
+  --muted: #e8eef4;
+  --muted-foreground: #5a6577;
+  --accent: #e3f2fd;
+  --accent-foreground: #0d47a1;
+  --destructive: #c62828;
+  --success: #2e7d32;
+  --warning: #ed6c02;
+  --info: #0277bd;
+  --border: #d7dee8;
+  --input: #d7dee8;
+  --ring: #1565c0;
+  --radius: 0.625rem;
+  --elevation-sm: 0 1px 2px rgb(26 35 50 / 0.05);
+  --elevation-md: 0 4px 14px rgb(26 35 50 / 0.07);
+  --elevation-lg: 0 12px 32px rgb(26 35 50 / 0.1);
+  --surface-hero: linear-gradient(
+    165deg,
+    #ffffff 0%,
+    #eef4fb 48%,
+    #f3f6f9 100%
+  );
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+}
+
 body {
   margin: 0;
-  background: #f7f4ef;
-  color: #1c1917;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

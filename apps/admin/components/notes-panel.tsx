@@ -40,9 +40,9 @@ export function NotesPanel({
       ) : (
         <ul className="flex flex-col gap-3">
           {notes.map((note) => (
-            <li key={note.id} className="border-l-2 border-stone-300 pl-3">
+            <li key={note.id} className="border-l-2 border-border pl-3">
               <p className="whitespace-pre-wrap text-sm">{note.body}</p>
-              <p className="mt-1 text-xs text-stone-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {note.author?.name ?? "Auteur inconnu"} ·{" "}
                 {formatDateTime(note.createdAt)}
               </p>

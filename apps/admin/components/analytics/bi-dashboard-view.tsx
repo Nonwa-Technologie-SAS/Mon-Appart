@@ -41,9 +41,9 @@ function KpiGrid({
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-lg border border-stone-200 bg-white p-3"
+          className="rounded-lg border border-border bg-white p-3"
         >
-          <dt className="text-xs text-stone-500">{item.label}</dt>
+          <dt className="text-xs text-muted-foreground">{item.label}</dt>
           <dd className="mt-1 text-xl font-semibold tabular-nums">
             {item.value}
           </dd>
@@ -138,7 +138,7 @@ function DirectionPanel() {
           </ul>
         )}
       </Section>
-      <p className="text-xs text-stone-500">
+      <p className="text-xs text-muted-foreground">
         Période agrégats {d.range.from} → {d.range.to}. Dernier calcul agrégats
         : {d.meta.computedAt ? formatDateTime(d.meta.computedAt) : "—"}.
         Snapshot marché : {formatDateTime(d.meta.marketComputedAt)}.{" "}
@@ -166,13 +166,13 @@ function FunnelPanel() {
     return <ErrorState error={data.error} onRetry={data.reload} />
   return (
     <div>
-      <p className="mb-3 text-xs text-stone-500">
+      <p className="mb-3 text-xs text-muted-foreground">
         Unité : {data.data.unit} · cohorte consentement navigation. Un taux « —
         » signifie dénominateur nul (souvent tracker client non branché).
       </p>
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b text-xs text-stone-500">
+          <tr className="border-b text-xs text-muted-foreground">
             <th className="py-2">Étape</th>
             <th>Acteur-jours</th>
             <th>Depuis précédente</th>
@@ -241,9 +241,9 @@ function BarList({ rows }: { rows: Array<{ value: string; count: number }> }) {
             <span>{row.value}</span>
             <span className="tabular-nums">{formatNumber(row.count)}</span>
           </div>
-          <div className="h-2 rounded bg-stone-100">
+          <div className="h-2 rounded bg-muted">
             <div
-              className="h-2 rounded bg-stone-700"
+              className="h-2 rounded bg-primary"
               style={{ width: `${(row.count / max) * 100}%` }}
             />
           </div>
@@ -308,7 +308,7 @@ function MarketPanel() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b text-xs text-stone-500">
+                <tr className="border-b text-xs text-muted-foreground">
                   <th className="py-2">Commune</th>
                   <th>Offre</th>
                   <th>Type</th>
@@ -349,7 +349,7 @@ function MarketPanel() {
         )}
       </Section>
       <p className="text-xs text-amber-800">{d.disclaimer}</p>
-      <p className="text-xs text-stone-500">
+      <p className="text-xs text-muted-foreground">
         Snapshot {formatDateTime(d.meta.computedAt)} · seuil groupe ≥{" "}
         {d.meta.minGroupSize}
       </p>
@@ -384,7 +384,7 @@ function RecoPanel() {
   return (
     <table className="w-full text-left text-sm">
       <thead>
-        <tr className="border-b text-xs text-stone-500">
+        <tr className="border-b text-xs text-muted-foreground">
           <th className="py-2">Algorithme</th>
           <th>Requêtes</th>
           <th>Impressions</th>
@@ -494,14 +494,14 @@ function CatalogPanel() {
       {data.data.metrics.map((metric) => (
         <li
           key={metric.id}
-          className="rounded-lg border border-stone-200 bg-white p-3 text-sm"
+          className="rounded-lg border border-border bg-white p-3 text-sm"
         >
           <p className="font-medium">
             {metric.name}{" "}
-            <code className="text-xs text-stone-500">{metric.id}</code>
+            <code className="text-xs text-muted-foreground">{metric.id}</code>
           </p>
-          <p className="mt-1 text-stone-600">{metric.description}</p>
-          <p className="mt-1 text-xs text-stone-500">
+          <p className="mt-1 text-muted-foreground">{metric.description}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Formule : {metric.formula} · Fraîcheur : {metric.freshness} · Rôles
             : {metric.roles.join(", ")}
           </p>
@@ -550,7 +550,7 @@ export function BiDashboardView() {
             type="button"
             role="tab"
             aria-selected={tab === item.id}
-            className="rounded-md border border-stone-200 px-3 py-1.5 text-sm aria-[selected=true]:border-stone-900 aria-[selected=true]:bg-stone-900 aria-[selected=true]:text-white"
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm transition-colors aria-[selected=true]:border-primary aria-[selected=true]:bg-primary aria-[selected=true]:text-primary-foreground"
             onClick={() => setTab(item.id)}
           >
             {item.label}

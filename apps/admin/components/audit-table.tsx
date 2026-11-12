@@ -30,12 +30,12 @@ export function AuditTable({ entries }: { entries: AuditEntry[] }) {
           <td className="px-3 py-2 font-mono text-xs">
             {entry.entityType}
             <br />
-            <span className="text-stone-500">{entry.entityId}</span>
+            <span className="text-muted-foreground">{entry.entityId}</span>
           </td>
-          <td className="max-w-xs break-all px-3 py-2 font-mono text-xs text-stone-600">
+          <td className="max-w-xs break-all px-3 py-2 font-mono text-xs text-muted-foreground">
             {summarize(entry.oldValues)}
           </td>
-          <td className="max-w-xs break-all px-3 py-2 font-mono text-xs text-stone-600">
+          <td className="max-w-xs break-all px-3 py-2 font-mono text-xs text-muted-foreground">
             {summarize(entry.newValues)}
           </td>
         </tr>

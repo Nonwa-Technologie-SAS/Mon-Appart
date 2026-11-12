@@ -101,8 +101,10 @@ export function AiGovernanceView() {
 
       {overview.status === "ready" ? (
         <div className="space-y-4">
-          <p className="text-sm text-stone-600">{overview.data.disclaimer}</p>
-          <p className="text-xs text-stone-500">
+          <p className="text-sm text-muted-foreground">
+            {overview.data.disclaimer}
+          </p>
+          <p className="text-xs text-muted-foreground">
             Généré le {formatDateTime(overview.data.generatedAt)}
           </p>
 
@@ -113,7 +115,7 @@ export function AiGovernanceView() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[40rem] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
+                    <tr className="border-b border-border text-xs uppercase text-muted-foreground">
                       <th className="py-2 pr-3">Système</th>
                       <th className="py-2 pr-3">Statut</th>
                       <th className="py-2 pr-3">Risque</th>
@@ -123,10 +125,10 @@ export function AiGovernanceView() {
                   </thead>
                   <tbody>
                     {overview.data.systems.map((system) => (
-                      <tr key={system.id} className="border-b border-stone-100">
+                      <tr key={system.id} className="border-b border-border/70">
                         <td className="py-2 pr-3">
                           <p className="font-medium">{system.name}</p>
-                          <p className="text-xs text-stone-500">
+                          <p className="text-xs text-muted-foreground">
                             {system.purpose}
                           </p>
                         </td>
@@ -161,14 +163,14 @@ export function AiGovernanceView() {
           <Section title="Moteur de recommandation">
             <dl className="grid gap-3 sm:grid-cols-2">
               <div>
-                <dt className="text-xs text-stone-500">Moteur servi</dt>
+                <dt className="text-xs text-muted-foreground">Moteur servi</dt>
                 <dd className="font-mono text-sm">
                   {overview.data.recommendation.engine} ·{" "}
                   {overview.data.recommendation.algorithmVersion}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Shadow remote</dt>
+                <dt className="text-xs text-muted-foreground">Shadow remote</dt>
                 <dd className="text-sm">
                   {overview.data.recommendation.shadowRemote
                     ? "activé (non servi)"
@@ -179,7 +181,7 @@ export function AiGovernanceView() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Flag UI</dt>
+                <dt className="text-xs text-muted-foreground">Flag UI</dt>
                 <dd className="text-sm">
                   {overview.data.recommendation.uiFlag
                     ? "FF_WEB_RECOMMENDATIONS on"
@@ -187,7 +189,7 @@ export function AiGovernanceView() {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Rollback</dt>
+                <dt className="text-xs text-muted-foreground">Rollback</dt>
                 <dd className="text-sm">
                   {overview.data.recommendation.fallback}
                 </dd>
@@ -198,35 +200,35 @@ export function AiGovernanceView() {
           <Section title="Assistant conversationnel">
             <dl className="grid gap-3 sm:grid-cols-2">
               <div>
-                <dt className="text-xs text-stone-500">Provider</dt>
+                <dt className="text-xs text-muted-foreground">Provider</dt>
                 <dd className="font-mono text-sm">
                   {overview.data.assistant.provider}
                   {overview.data.assistant.openaiReady ? " (clé présente)" : ""}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Prompt</dt>
+                <dt className="text-xs text-muted-foreground">Prompt</dt>
                 <dd className="font-mono text-sm">
                   {overview.data.assistant.promptVersion}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Activation</dt>
+                <dt className="text-xs text-muted-foreground">Activation</dt>
                 <dd className="text-sm">
                   API {overview.data.assistant.enabled ? "on" : "off"} · UI{" "}
                   {overview.data.assistant.uiFlag ? "on" : "off"}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-stone-500">Repli</dt>
+                <dt className="text-xs text-muted-foreground">Repli</dt>
                 <dd className="text-sm">{overview.data.assistant.fallback}</dd>
               </div>
             </dl>
           </Section>
 
           <Section title="Coûts et incidents">
-            <p className="text-sm text-stone-700">{overview.data.cost.note}</p>
-            <p className="mt-2 text-sm text-stone-700">
+            <p className="text-sm text-foreground">{overview.data.cost.note}</p>
+            <p className="mt-2 text-sm text-foreground">
               {overview.data.incidents.note}
             </p>
           </Section>
@@ -241,7 +243,7 @@ export function AiGovernanceView() {
           ) : null}
           {evalReport.status === "ready" ? (
             <>
-              <p className="mb-3 text-sm text-stone-600">
+              <p className="mb-3 text-sm text-muted-foreground">
                 {evalReport.data.dataset.note} Version{" "}
                 <span className="font-mono text-xs">
                   {evalReport.data.dataset.version}
@@ -251,7 +253,7 @@ export function AiGovernanceView() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[36rem] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-stone-200 text-xs uppercase text-stone-500">
+                    <tr className="border-b border-border text-xs uppercase text-muted-foreground">
                       <th className="py-2 pr-3">Moteur</th>
                       <th className="py-2 pr-3">P@5</th>
                       <th className="py-2 pr-3">R@5</th>
@@ -264,7 +266,7 @@ export function AiGovernanceView() {
                     {evalReport.data.engines.map((engine) => (
                       <tr
                         key={engine.name}
-                        className="border-b border-stone-100"
+                        className="border-b border-border/70"
                       >
                         <td className="py-2 pr-3 font-medium">
                           {engine.name}
@@ -293,7 +295,7 @@ export function AiGovernanceView() {
                 </table>
               </div>
               {evalReport.data.comparedToFreshness ? (
-                <p className="mt-3 text-xs text-stone-500">
+                <p className="mt-3 text-xs text-muted-foreground">
                   Delta NDCG vs fraîcheur :{" "}
                   {evalReport.data.comparedToFreshness.ndcgDelta.toFixed(3)} ·
                   delta P@5 :{" "}

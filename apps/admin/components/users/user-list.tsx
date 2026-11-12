@@ -1,9 +1,10 @@
 "use client"
 
+import { Search } from "lucide-react"
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 
-import { formatDateTime } from "@/lib/format"
+import { formatDateTime, formatRoles, roleLabel } from "@/lib/format"
 import type { AdminUserSummary } from "@/lib/types"
 import { usePagedList } from "@/lib/use-api"
 
@@ -105,12 +106,15 @@ export function UserList({ initial }: { initial: Partial<Filters> }) {
             <option value="">Tous</option>
             {ROLES.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {roleLabel(role)}
               </option>
             ))}
           </select>
         </label>
-        <Button type="submit">Rechercher</Button>
+        <Button type="submit" className="gap-2">
+          <Search aria-hidden className="size-3.5" />
+          Rechercher
+        </Button>
       </form>
 
       {list.status === "loading" ? <Loading /> : null}
@@ -152,7 +156,7 @@ export function UserList({ initial }: { initial: Partial<Filters> }) {
                     <Badge value={user.status} />
                   </td>
                   <td className="px-3 py-2 text-xs">
-                    {user.roles.join(", ") || "—"}
+                    {formatRoles(user.roles)}
                   </td>
                   <td className="px-3 py-2 text-xs">
                     {formatDateTime(user.createdAt)}

@@ -107,6 +107,29 @@ export function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status
 }
 
+/** Libellés alignés sur le seed Nest (`ROLES.name`). */
+export const ROLE_LABELS: Record<string, string> = {
+  CUSTOMER: "Client",
+  OWNER: "Propriétaire",
+  AGENT: "Agent immobilier",
+  AGENCY: "Agence",
+  MODERATOR: "Modérateur",
+  TRUST_OFFICER: "Responsable confiance",
+  SUPPORT: "Support client",
+  ANALYST: "Analyste",
+  ADMIN: "Administrateur",
+  SUPER_ADMIN: "Super administrateur",
+}
+
+export function roleLabel(role: string): string {
+  return ROLE_LABELS[role] ?? role
+}
+
+export function formatRoles(roles: readonly string[]): string {
+  if (roles.length === 0) return "—"
+  return roles.map(roleLabel).join(" · ")
+}
+
 export const DECISION_LABELS: Record<string, string> = {
   APPROVE: "Valider et publier",
   REJECT: "Refuser",
