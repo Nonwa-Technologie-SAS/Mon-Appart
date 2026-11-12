@@ -43,6 +43,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# Override possible via Compose ; défaut Contabo = service api sur le réseau Docker.
+ENV NEST_API_URL=http://api:4000
+ENV NEXT_PUBLIC_NEST_API_URL=same-origin
 COPY --from=build --chown=monappart:monappart /repo/apps/web/public ./apps/web/public
 COPY --from=build --chown=monappart:monappart /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=monappart:monappart /repo/apps/web/.next/static ./apps/web/.next/static

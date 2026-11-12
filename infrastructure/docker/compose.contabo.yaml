@@ -130,6 +130,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      # SSR Nest (nestServerOrigin) : obligatoire au runtime, pas seulement au build.
+      NEST_API_URL: ${NEST_API_URL:-http://api:4000}
+      NEXT_PUBLIC_NEST_API_URL: ${NEXT_PUBLIC_NEST_API_URL:-same-origin}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://www.monappart.ci}
     # service_started : ne pas bloquer si le healthcheck Docker est encore jaune.
     depends_on:
       api:
@@ -151,6 +155,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       HOSTNAME: 0.0.0.0
+      ADMIN_API_URL: ${ADMIN_API_URL:-http://api:4000}
     depends_on:
       api:
         condition: service_started

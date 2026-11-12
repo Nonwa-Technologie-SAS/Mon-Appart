@@ -33,6 +33,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
+ENV ADMIN_API_URL=http://api:4000
 COPY --from=build --chown=monappart:monappart /repo/apps/admin/public ./apps/admin/public
 COPY --from=build --chown=monappart:monappart /repo/apps/admin/.next/standalone ./
 COPY --from=build --chown=monappart:monappart /repo/apps/admin/.next/static ./apps/admin/.next/static

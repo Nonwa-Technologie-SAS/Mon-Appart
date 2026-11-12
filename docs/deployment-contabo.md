@@ -196,7 +196,7 @@ curl -fsSI "https://www.monappart.ci"
 curl -fsSI "https://admin.monappart.ci"
 ```
 
-Les rewrites Next sont figés au **build** Docker (`NEST_API_URL` / `ADMIN_API_URL` → service `api` sur le réseau Compose).
+Les rewrites Next sont figés au **build** Docker. En plus, le conteneur `web` doit avoir **`NEST_API_URL=http://api:4000` au runtime** (SSR via `nestServerOrigin`) — sinon Nest est joint sur `127.0.0.1:4000` et la home renvoie 500.
 
 **API seule (sans www/admin) :** commentez les blocs `WEB_DOMAIN` / `ADMIN_DOMAIN` dans `Caddyfile.contabo`, sinon Caddy tentera quand même le TLS pour ces hôtes.
 
@@ -321,11 +321,12 @@ DNS pas encore créé ou pas propagé. Chez le registrar, enregistrements **A** 
 Vérifier depuis le VPS : `getent hosts www.monappart.ci` / `dig +short www.monappart.ci`.  
 Sans DNS, Caddy ne peut pas obtenir de certificat Let’s Encrypt.
 
-| Symptôme                                        | Piste                                                                   |
-| ----------------------------------------------- | ----------------------------------------------------------------------- |
-| API refuse de démarrer (MEDIA / JWT / loopback) | Voir tableau ci-dessus + logs `api`                                     |
-| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`    |
-| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                           |
-| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                  |
-| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build) |
-| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                   |
+| Symptôme                                        | Piste                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| API refuse de démarrer (MEDIA / JWT / loopback) | Voir tableau ci-dessus + logs `api`                                       |
+| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`      |
+| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                             |
+| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                    |
+| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build)   |
+| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                     |
+| Web 500 / `ECONNREFUSED 127.0.0.1:4000`         | `NEST_API_URL=http://api:4000` manquant au **runtime** du conteneur `web` |
