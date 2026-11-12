@@ -1,8 +1,10 @@
 "use client"
 
+import { ArrowRight, LayoutList } from "lucide-react"
 import Link from "next/link"
 
 import { formatAge, formatDateTime, formatNumber } from "@/lib/format"
+import { QUEUE_ICONS } from "@/lib/nav-icons"
 import type { AnalyticsOverview, Dashboard } from "@/lib/types"
 import { useResource } from "@/lib/use-api"
 
@@ -35,7 +37,7 @@ export function DashboardView() {
         <ErrorState error={dashboard.error} onRetry={dashboard.reload} />
       ) : null}
       {dashboard.status === "ready" ? (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           <Queues dashboard={dashboard.data} />
           {dashboard.data.analyticsAvailable ? <AnalyticsPanel /> : null}
         </div>
@@ -54,38 +56,55 @@ function Queues({ dashboard }: { dashboard: Dashboard }) {
   }
   return (
     <section aria-labelledby="queues-title">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 id="queues-title" className="text-lg font-semibold">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h2 id="queues-title" className="text-lg font-semibold text-foreground">
           Files d&apos;attente
         </h2>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-muted-foreground">
           Calculé le {formatDateTime(dashboard.computedAt)}
         </p>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {dashboard.queues.map((queue) => (
-          <li
-            key={queue.key}
-            className="flex flex-col rounded-lg border border-stone-200 bg-white p-4"
-          >
-            <p className="text-sm font-medium text-stone-700">{queue.label}</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">
-              {formatNumber(queue.value)}
-            </p>
-            <p className="mt-2 text-xs text-stone-500">{queue.definition}</p>
-            {queue.oldestAt ? (
-              <p className="mt-1 text-xs text-stone-500">
-                Plus ancien : {formatAge(queue.oldestAt)}
-              </p>
-            ) : null}
-            <Link
-              href={queue.link}
-              className="mt-3 text-sm font-medium text-stone-900 underline underline-offset-2"
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {dashboard.queues.map((queue) => {
+          const Icon = QUEUE_ICONS[queue.key] ?? LayoutList
+          return (
+            <li
+              key={queue.key}
+              className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
-              Ouvrir la file
-            </Link>
-          </li>
-        ))}
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 w-1 bg-primary transition-colors group-hover:bg-secondary"
+              />
+              <div className="flex items-start justify-between gap-3 pl-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {queue.label}
+                </p>
+                <span className="rounded-lg bg-accent p-2 text-accent-foreground">
+                  <Icon aria-hidden className="size-4" />
+                </span>
+              </div>
+              <p className="mt-2 pl-2 text-3xl font-bold tracking-tight tabular-nums text-foreground">
+                {formatNumber(queue.value)}
+              </p>
+              <p className="mt-3 pl-2 text-xs leading-relaxed text-muted-foreground">
+                {queue.definition}
+              </p>
+              {queue.oldestAt ? (
+                <p className="mt-1 pl-2 text-xs text-muted-foreground">
+                  Plus ancien : {formatAge(queue.oldestAt)}
+                </p>
+              ) : null}
+              <Link
+                href={queue.link}
+                className="mt-4 inline-flex items-center gap-1.5 pl-2 text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
+              >
+                Ouvrir la file
+                <ArrowRight aria-hidden className="size-3.5" />
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )
@@ -103,13 +122,18 @@ function AnalyticsPanel() {
       {overview.status === "ready" ? (
         overview.data.meta.computedAt ? (
           <>
-            <dl className="grid gap-3 sm:grid-cols-3">
+            <dl className="grid gap-4 sm:grid-cols-3">
               {KPI_LABELS.map((kpi) => {
                 const value = overview.data.kpis[kpi.key]
                 return (
-                  <div key={kpi.key}>
-                    <dt className="text-xs text-stone-500">{kpi.label}</dt>
-                    <dd className="text-xl font-semibold tabular-nums">
+                  <div
+                    key={kpi.key}
+                    className="rounded-lg bg-muted/50 px-3 py-3"
+                  >
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      {kpi.label}
+                    </dt>
+                    <dd className="mt-1 text-2xl font-bold tabular-nums text-foreground">
                       {value === null || value === undefined
                         ? "—"
                         : kpi.rate
@@ -120,7 +144,7 @@ function AnalyticsPanel() {
                 )
               })}
             </dl>
-            <p className="mt-3 text-xs text-stone-500">
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
               Période du {overview.data.range.from} au {overview.data.range.to}.
               Données agrégées jusqu&apos;au{" "}
               {overview.data.meta.completedDay ?? "—"} (dernier calcul :{" "}

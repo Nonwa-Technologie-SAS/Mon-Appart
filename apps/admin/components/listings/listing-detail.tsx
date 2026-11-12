@@ -77,15 +77,15 @@ function ListingView({
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Annonce">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-500">Statut</dt>
+            <dt className="text-muted-foreground">Statut</dt>
             <dd>
               <Badge value={listing.status} />
             </dd>
-            <dt className="text-stone-500">Offre</dt>
+            <dt className="text-muted-foreground">Offre</dt>
             <dd>{listing.listingType}</dd>
-            <dt className="text-stone-500">Prix</dt>
+            <dt className="text-muted-foreground">Prix</dt>
             <dd>{formatPrice(listing.price)}</dd>
-            <dt className="text-stone-500">Annonceur</dt>
+            <dt className="text-muted-foreground">Annonceur</dt>
             <dd>
               <Link
                 href={`/users/${listing.publisher.id}`}
@@ -94,7 +94,7 @@ function ListingView({
                 {listing.publisher.name ?? "Sans nom"}
               </Link>
             </dd>
-            <dt className="text-stone-500">Bien</dt>
+            <dt className="text-muted-foreground">Bien</dt>
             <dd>
               {listing.property.type.name}
               {listing.property.surface
@@ -104,25 +104,25 @@ function ListingView({
                 ? ` · ${listing.property.bedrooms} ch.`
                 : ""}
             </dd>
-            <dt className="text-stone-500">Localisation</dt>
+            <dt className="text-muted-foreground">Localisation</dt>
             <dd>
               {[listing.property.neighborhood, listing.property.commune]
                 .filter(Boolean)
                 .join(", ") || "—"}
             </dd>
-            <dt className="text-stone-500">Photos publiques</dt>
+            <dt className="text-muted-foreground">Photos publiques</dt>
             <dd>{listing.property.publicPhotos}</dd>
-            <dt className="text-stone-500">Publiée le</dt>
+            <dt className="text-muted-foreground">Publiée le</dt>
             <dd>{formatDateTime(listing.publishedAt)}</dd>
           </dl>
           <h3 className="mt-4 text-sm font-medium">Description</h3>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">
+          <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
             {listing.description?.trim() || "Aucune description."}
           </p>
         </Section>
 
         <Section title="Contrôles de cohérence">
-          <p className="mb-3 text-xs text-stone-600">
+          <p className="mb-3 text-xs text-muted-foreground">
             Aide à la décision calculée automatiquement : ce ne sont ni des
             preuves ni des sanctions.
           </p>
@@ -145,7 +145,7 @@ function ListingView({
 
         <Section title="Signalements récents">
           {listing.reports.length === 0 ? (
-            <p className="text-sm text-stone-600">Aucun signalement.</p>
+            <p className="text-sm text-muted-foreground">Aucun signalement.</p>
           ) : (
             <ul className="flex flex-col gap-2 text-sm">
               {listing.reports.map((report) => (
@@ -157,14 +157,14 @@ function ListingView({
                     {report.reason}
                   </Link>
                   <Badge value={report.status} />
-                  <span className="text-xs text-stone-500">
+                  <span className="text-xs text-muted-foreground">
                     {formatDateTime(report.createdAt)}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-stone-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             Un signalement est une allégation, pas une preuve.
           </p>
         </Section>
@@ -177,11 +177,13 @@ function ListingView({
                   {entry.from ? statusLabel(entry.from) : "Création"} →{" "}
                   {statusLabel(entry.to)}
                 </span>{" "}
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-muted-foreground">
                   {formatDateTime(entry.at)}
                 </span>
                 {entry.reason ? (
-                  <p className="text-xs text-stone-600">{entry.reason}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {entry.reason}
+                  </p>
                 ) : null}
               </li>
             ))}
@@ -212,7 +214,7 @@ function ModerationPanel({
 
   if (listing.decisions.length === 0) {
     return (
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-muted-foreground">
         {`Aucune décision possible depuis le statut « ${statusLabel(listing.status)} » avec vos droits.`}
       </p>
     )
@@ -299,7 +301,7 @@ export function ModerationForm({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-3 rounded-md border border-stone-300 bg-stone-50 p-3"
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/60 p-3"
     >
       <p className="text-sm font-medium">{DECISION_LABELS[decision]}</p>
       {needsReason ? (
@@ -321,7 +323,7 @@ export function ModerationForm({
         </Field>
       ) : null}
       {reason ? (
-        <p className="rounded bg-white p-2 text-xs text-stone-700">
+        <p className="rounded bg-white p-2 text-xs text-foreground">
           Message transmis à l&apos;annonceur : « {reason.ownerMessage} »
         </p>
       ) : null}

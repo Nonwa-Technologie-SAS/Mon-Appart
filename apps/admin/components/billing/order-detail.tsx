@@ -119,7 +119,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               {data.incidents.map((incident) => (
                 <li
                   key={incident.id}
-                  className="rounded-md border border-stone-200 p-3"
+                  className="rounded-md border border-border p-3"
                 >
                   <IncidentCard incident={incident} onDone={order.reload} />
                 </li>
@@ -135,7 +135,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
 function Item({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-stone-500">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd>{children}</dd>
     </div>
   )
@@ -155,25 +155,25 @@ function PaymentBlock({
   const refundable = refundableAmount(payment)
 
   return (
-    <div className="rounded-md border border-stone-200 p-3">
+    <div className="rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Badge value={payment.status} />
         <span className="tabular-nums">
           {formatMoney(payment.amount, payment.currency)}
         </span>
-        <span className="text-xs text-stone-600">
+        <span className="text-xs text-muted-foreground">
           {payment.provider} ·{" "}
           {payment.environment === "TEST"
             ? "test (aucun encaissement réel)"
             : "réel"}
         </span>
         {payment.failureCode ? (
-          <span className="font-mono text-xs text-stone-500">
+          <span className="font-mono text-xs text-muted-foreground">
             {payment.failureCode}
           </span>
         ) : null}
       </div>
-      <p className="mt-1 text-xs text-stone-600">
+      <p className="mt-1 text-xs text-muted-foreground">
         Créée le {formatDateTime(payment.createdAt)} · réussie le{" "}
         {formatDateTime(payment.succeededAt)} · remboursé{" "}
         {formatMoney(payment.refundedAmount, payment.currency)} ·{" "}
@@ -199,7 +199,7 @@ function PaymentBlock({
               {check.pending ? "Interrogation…" : "Interroger le prestataire"}
             </Button>
           </div>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted-foreground">
             Relit l’état chez le prestataire ; ne peut pas déclarer le paiement
             réussi.
           </p>
@@ -220,12 +220,12 @@ function PaymentBlock({
 
       {payment.refunds.length > 0 ? (
         <div className="mt-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase text-stone-600">
+          <h3 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
             Remboursements
           </h3>
           <ul className="flex flex-col gap-2">
             {payment.refunds.map((refund) => (
-              <li key={refund.id} className="rounded-md bg-stone-50 p-3">
+              <li key={refund.id} className="rounded-md bg-muted/60 p-3">
                 <RefundCard refund={refund} onDone={onDone} />
               </li>
             ))}
@@ -235,7 +235,7 @@ function PaymentBlock({
 
       {payment.events.length > 0 ? (
         <div className="mt-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase text-stone-600">
+          <h3 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
             Notifications reçues du prestataire
           </h3>
           <Table

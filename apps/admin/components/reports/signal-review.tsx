@@ -46,7 +46,7 @@ export function SignalReview({
     <form onSubmit={submit} className="mt-3 flex flex-col gap-2">
       <p className="text-sm font-medium">
         {outcome === "CONFIRMED" ? "Confirmer l'alerte" : "Écarter l'alerte"}{" "}
-        <span className="text-xs font-normal text-stone-500">
+        <span className="text-xs font-normal text-muted-foreground">
           (aucune sanction automatique)
         </span>
       </p>

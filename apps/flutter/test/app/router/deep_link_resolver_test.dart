@@ -106,6 +106,24 @@ void main() {
     );
   });
 
+  test(
+    'le schéma monappart ne transporte pas le jeton de réinitialisation',
+    () {
+      expect(
+        resolver.resolveToLocation(
+          Uri.parse('monappart://reset-password?token=abc'),
+        ),
+        '/reset-password',
+      );
+      expect(
+        resolver.resolveToLocation(
+          Uri.parse('http://www.example.test/reset-password?token=abc'),
+        ),
+        '/reset-password',
+      );
+    },
+  );
+
   test('conversation et visite exigent un UUID', () {
     expect(
       resolver.resolveToLocation(

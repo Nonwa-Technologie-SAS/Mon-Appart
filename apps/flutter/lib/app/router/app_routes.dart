@@ -25,6 +25,12 @@ abstract final class AppRoutes {
   static const accountSessions = '/account/sessions';
   static const notificationPreferences = '/account/notifications';
   static const accountPrivacy = '/account/privacy';
+  static const club = '/account/club';
+  static const help = '/help';
+  static const helpArticleParam = 'articleId';
+  static const myReports = '/account/reports';
+
+  static String helpArticle(String articleId) => '/help/article/$articleId';
   static const publish = '/publish';
   static const listingIdQuery = 'listingId';
   static const invalidLink = '/lien-invalide';

@@ -1,0 +1,198 @@
+# Stack Contabo / VPS — ne pas utiliser en développement local.
+# Prérequis : docs/deployment-contabo.md + fichier .env.contabo
+#
+# Depuis la racine du monorepo :
+#   docker compose -f infrastructure/docker/compose.contabo.yaml --env-file infrastructure/docker/.env.contabo up -d
+#
+# Profils :
+#   (défaut) postgres redis api workers caddy
+#   --profile front   → web + admin (nécessite images construites)
+#   --profile minio   → MinIO S3-compatible (médias DIY)
+
+name: mon-appart-contabo
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - contabo_postgres_data:/var/lib/postgresql/data
+      - ./init-contabo:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    # Pas de ports publiés : accessible seulement via le réseau Docker.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory",
+        "256mb",
+        "--maxmemory-policy",
+        "allkeys-lru",
+      ]
+    volumes:
+      - contabo_redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    image: mon-appart-api:contabo
+    restart: unless-stopped
+    env_file:
+      - .env.contabo
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  workers:
+    build:
+      context: ../..
+      dockerfile: services/workers/Dockerfile
+    image: mon-appart-workers:contabo
+    restart: unless-stopped
+    env_file:
+      - .env.contabo
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Fronts : activer avec --profile front après build des Dockerfiles web/admin
+  # (voir docs/deployment-contabo.md § Fronts). Sinon déployer sur Vercel.
+  web:
+    profiles: ["front"]
+    image: mon-appart-web:contabo
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEST_API_URL: ${NEST_API_URL:-http://api:4000}
+      NEXT_PUBLIC_NEST_API_URL: same-origin
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
+  admin:
+    profiles: ["front"]
+    image: mon-appart-admin:contabo
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      ADMIN_API_URL: ${ADMIN_API_URL:-http://api:4000}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile.contabo:/etc/caddy/Caddyfile:ro
+      - contabo_caddy_data:/data
+      - contabo_caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - edge
+
+  # Médias DIY (optionnel). Préférer Cloudflare R2 en prod réelle.
+  minio:
+    profiles: ["minio"]
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - contabo_minio_data:/data
+    networks:
+      - internal
+    # Console : tunnel SSH uniquement, jamais exposée publiquement.
+    # ssh -L 9001:127.0.0.1:9001 user@VPS
+
+networks:
+  # Pas de flag `internal: true` : l'API doit joindre R2/S3, SMTP, etc.
+  # La sécurité repose sur l'absence de ports publiés pour postgres/redis.
+  internal:
+    driver: bridge
+  edge:
+    driver: bridge
+
+volumes:
+  contabo_postgres_data:
+  contabo_redis_data:
+  contabo_caddy_data:
+  contabo_caddy_config:
+  contabo_minio_data:

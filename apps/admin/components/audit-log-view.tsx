@@ -1,5 +1,6 @@
 "use client"
 
+import { Filter } from "lucide-react"
 import { useState, type FormEvent } from "react"
 
 import type { AuditEntry } from "@/lib/types"
@@ -110,7 +111,10 @@ export function AuditLogView({ initial }: { initial: Partial<Filters> }) {
             className={inputClass}
           />
         </label>
-        <Button type="submit">Filtrer</Button>
+        <Button type="submit" className="gap-2">
+          <Filter aria-hidden className="size-3.5" />
+          Filtrer
+        </Button>
       </form>
       {list.status === "loading" ? <Loading /> : null}
       {list.status === "error" && list.error ? (

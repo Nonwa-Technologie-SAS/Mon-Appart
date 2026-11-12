@@ -1,5 +1,6 @@
 "use client"
 
+import { Filter } from "lucide-react"
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 
@@ -125,7 +126,10 @@ export function VerificationQueue() {
           />
           Mes dossiers
         </label>
-        <Button type="submit">Filtrer</Button>
+        <Button type="submit" className="gap-2">
+          <Filter aria-hidden className="size-3.5" />
+          Filtrer
+        </Button>
       </form>
       {list.status === "loading" ? <Loading /> : null}
       {list.status === "error" && list.error ? (
@@ -155,7 +159,7 @@ export function VerificationQueue() {
                       {item.type}
                     </Link>
                     {item.assignedTo ? (
-                      <p className="text-xs text-stone-500">Affecté</p>
+                      <p className="text-xs text-muted-foreground">Affecté</p>
                     ) : null}
                   </td>
                   <td className="px-3 py-2">

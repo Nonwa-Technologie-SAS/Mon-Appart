@@ -72,7 +72,7 @@ export function EventsOutboxView() {
         description="File Outbox : échecs persistants et rejeu contrôlé. Les charges utiles ne sont pas affichées."
       />
       {stats.status === "ready" ? (
-        <p className="mb-4 text-sm text-stone-600">
+        <p className="mb-4 text-sm text-muted-foreground">
           En attente : {stats.data.byStatus.PENDING ?? 0} · File morte :{" "}
           {stats.data.byStatus.DEAD ?? 0} · Publiés :{" "}
           {stats.data.byStatus.PUBLISHED ?? 0}
@@ -118,9 +118,9 @@ export function EventsOutboxView() {
       ) : list.items.length === 0 ? (
         <EmptyState>Aucun événement pour ces filtres.</EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-white">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-stone-50 text-xs uppercase text-stone-500">
+            <thead className="bg-muted/60 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Agrégat</th>
@@ -133,7 +133,7 @@ export function EventsOutboxView() {
             </thead>
             <tbody>
               {list.items.map((row) => (
-                <tr key={row.eventId} className="border-t border-stone-100">
+                <tr key={row.eventId} className="border-t border-border/70">
                   <td className="px-3 py-2 font-mono text-xs">
                     {row.eventType}
                   </td>
@@ -147,7 +147,7 @@ export function EventsOutboxView() {
                   <td className="px-3 py-2">
                     {formatDateTime(row.occurredAt)}
                   </td>
-                  <td className="max-w-xs truncate px-3 py-2 text-xs text-stone-600">
+                  <td className="max-w-xs truncate px-3 py-2 text-xs text-muted-foreground">
                     {row.lastError ?? "—"}
                   </td>
                   <td className="px-3 py-2">

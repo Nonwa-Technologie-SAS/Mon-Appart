@@ -13,6 +13,8 @@ import '../errors/error_mapper.dart';
 import '../logging/app_logger.dart';
 import '../network/logging_interceptor.dart';
 import '../network/request_id.dart';
+import '../observability/network_telemetry.dart';
+import '../observability/telemetry_client.dart';
 import 'api_client.dart';
 
 class DioApiClient implements ApiClient {
@@ -44,6 +46,7 @@ class DioApiClient implements ApiClient {
     AppLogger? logger,
     TokenRefresher? refresher,
     void Function()? onSessionCleared,
+    TelemetryClient? telemetry,
   }) {
     final dio = Dio(
       BaseOptions(
@@ -66,6 +69,9 @@ class DioApiClient implements ApiClient {
         logger ?? AppLogger(enabled: config.enableNetworkLogs);
     if (resolvedLogger.enabled) {
       dio.interceptors.add(LoggingInterceptor(resolvedLogger));
+    }
+    if (telemetry != null) {
+      dio.interceptors.add(NetworkTelemetryInterceptor(telemetry));
     }
     return DioApiClient(dio: dio);
   }

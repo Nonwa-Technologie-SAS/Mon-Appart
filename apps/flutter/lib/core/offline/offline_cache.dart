@@ -1,4 +1,5 @@
 import '../json/json_map.dart';
+import '../security/profile_cache_projection.dart';
 import 'cached_envelope.dart';
 import 'key_value_store.dart';
 import 'offline_json.dart';
@@ -57,11 +58,17 @@ class OfflineCache {
   Future<CachedEnvelope?> getHomeRecommendations() => getEnvelope(_homeRecos);
 
   Future<void> putProfile(Map<String, Object?> json) async {
-    await putEnvelope(_sessionProfile, json);
-    final userId = asNonEmptyString(json['id']);
+    final stored = profileForDisk(json);
+    await putEnvelope(_sessionProfile, stored);
+    final userId = asNonEmptyString(stored['id']);
     if (userId != null) {
-      await putEnvelope(_userKey(userId, 'profile'), json);
+      await putEnvelope(_userKey(userId, 'profile'), stored);
     }
+  }
+
+  Future<String?> cachedUserId() async {
+    final profile = await getProfile();
+    return asNonEmptyString(profile?.payload['id']);
   }
 
   Future<CachedEnvelope?> getProfile() => getEnvelope(_sessionProfile);

@@ -6,7 +6,34 @@ const nestApiUrl = (
   process.env.NEST_API_URL ??
   process.env.NEXT_PUBLIC_NEST_API_URL ??
   "http://localhost:4000"
-).replace(/\/+$/, "")
+)
+  .replace(/\/+$/, "")
+  .replace(/^same-origin$/i, "http://localhost:4000")
+  .replace(/^\/$/, "http://localhost:4000")
+
+function nestImageRemotePattern():
+  | {
+      protocol: "http" | "https"
+      hostname: string
+      port?: string
+      pathname: string
+    }
+  | null {
+  try {
+    const url = new URL(nestApiUrl)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    return {
+      protocol: url.protocol.replace(":", "") as "http" | "https",
+      hostname: url.hostname,
+      ...(url.port ? { port: url.port } : {}),
+      pathname: "/api/v1/media/**",
+    }
+  } catch {
+    return null
+  }
+}
+
+const nestRemotePattern = nestImageRemotePattern()
 
 /**
  * CSP adaptée à Next.js App Router (scripts/styles inline nécessaires au
@@ -21,7 +48,9 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  isProd
+    ? "img-src 'self' data: blob: https:"
+    : "img-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*",
   "font-src 'self' data:",
   isProd
     ? "connect-src 'self' https: wss:"
@@ -54,6 +83,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.blob.vercel-storage.com",
       },
+      ...(nestRemotePattern ? [nestRemotePattern] : []),
     ],
   },
   // Nest same-origin : cookies ma_* + CSRF. Blob upload reste local (Vercel).

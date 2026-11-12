@@ -300,6 +300,7 @@ export async function nestGetListing(
 export type NestOwnerListing = NestPropertyListItem & {
   status: PropertyStatus
   listingStatus: string
+  propertyId: string
 }
 
 /** Annonces de l'utilisateur connecté (Bearer via nestServerFetch côté caller). */
@@ -307,7 +308,13 @@ export function mapOwnerListingSummary(raw: {
   id: string
   title: string
   price: { amount: string } | null
-  property: { propertyType: { code: string }; bedrooms?: number | null; bathrooms?: number | null; surface?: string | null }
+  property: {
+    id: string
+    propertyType: { code: string }
+    bedrooms?: number | null
+    bathrooms?: number | null
+    surface?: string | null
+  }
   location: {
     neighborhood?: { name: string }
     commune?: { name: string }
@@ -346,5 +353,6 @@ export function mapOwnerListingSummary(raw: {
     distanceKm: null,
     status,
     listingStatus: raw.status ?? "PUBLISHED",
+    propertyId: raw.property.id,
   }
 }

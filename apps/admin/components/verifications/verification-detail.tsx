@@ -170,13 +170,13 @@ function VerificationView({
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Dossier">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-500">Statut</dt>
+            <dt className="text-muted-foreground">Statut</dt>
             <dd>
               <Badge value={verification.status} />
             </dd>
-            <dt className="text-stone-500">Priorité</dt>
+            <dt className="text-muted-foreground">Priorité</dt>
             <dd>{verification.priority}</dd>
-            <dt className="text-stone-500">Titulaire</dt>
+            <dt className="text-muted-foreground">Titulaire</dt>
             <dd>
               <Link
                 href={`/users/${subject.userId}`}
@@ -184,20 +184,20 @@ function VerificationView({
               >
                 {subjectName}
               </Link>{" "}
-              <span className="text-xs text-stone-500">
+              <span className="text-xs text-muted-foreground">
                 (tél. {subject.phoneVerified ? "vérifié" : "non vérifié"},
                 e-mail {subject.emailVerified ? "vérifié" : "non vérifié"})
               </span>
             </dd>
             {verification.property ? (
               <>
-                <dt className="text-stone-500">Bien</dt>
+                <dt className="text-muted-foreground">Bien</dt>
                 <dd>{verification.property.title}</dd>
               </>
             ) : null}
             {verification.listing ? (
               <>
-                <dt className="text-stone-500">Annonce</dt>
+                <dt className="text-muted-foreground">Annonce</dt>
                 <dd>
                   <Link
                     href={`/listings/${verification.listing.id}`}
@@ -208,9 +208,9 @@ function VerificationView({
                 </dd>
               </>
             ) : null}
-            <dt className="text-stone-500">Rattachement déclaré</dt>
+            <dt className="text-muted-foreground">Rattachement déclaré</dt>
             <dd>{verification.claimedRelation ?? "—"}</dd>
-            <dt className="text-stone-500">Soumis le</dt>
+            <dt className="text-muted-foreground">Soumis le</dt>
             <dd>{formatDateTime(verification.submittedAt)}</dd>
           </dl>
           {verification.requirements?.missing.length ? (
@@ -232,10 +232,10 @@ function VerificationView({
         </Section>
 
         <Section title="Précontrôles automatiques">
-          <p className="mb-2 text-xs text-stone-600">
+          <p className="mb-2 text-xs text-muted-foreground">
             Aide à l&apos;instruction, jamais une preuve.
           </p>
-          <pre className="overflow-x-auto rounded bg-stone-50 p-2 text-xs">
+          <pre className="overflow-x-auto rounded bg-muted/60 p-2 text-xs">
             {JSON.stringify(verification.prechecks, null, 2)}
           </pre>
           {verification.signals.length > 0 ? (
@@ -261,7 +261,7 @@ function VerificationView({
               <li key={`${entry.at}-${index}`}>
                 <span className="font-medium">{entry.action}</span> →{" "}
                 {statusLabel(entry.status)}{" "}
-                <span className="text-xs text-stone-500">
+                <span className="text-xs text-muted-foreground">
                   {formatDateTime(entry.at)} · {entry.actorKind}
                 </span>
                 {entry.reason ? (
@@ -273,7 +273,7 @@ function VerificationView({
                   </p>
                 ) : null}
                 {entry.internalNote ? (
-                  <p className="text-xs text-stone-600">
+                  <p className="text-xs text-muted-foreground">
                     Note interne : {entry.internalNote}
                   </p>
                 ) : null}
@@ -298,7 +298,7 @@ function DocumentList({
   const canOpen = can(me, "verification:documents")
 
   if (verification.documents.length === 0) {
-    return <p className="text-sm text-stone-600">Aucune pièce.</p>
+    return <p className="text-sm text-muted-foreground">Aucune pièce.</p>
   }
 
   async function open(documentId: string) {
@@ -328,7 +328,7 @@ function DocumentList({
           <li key={document.id} className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{document.documentType}</span>
             <Badge value={document.status} />
-            <span className="text-xs text-stone-500">
+            <span className="text-xs text-muted-foreground">
               {document.mimeType} ·{" "}
               {formatNumber(Math.round(document.fileSize / 1024))} Ko · analyse
               : {document.scan ?? "—"}
@@ -346,11 +346,11 @@ function DocumentList({
         ))}
       </ul>
       {!canOpen ? (
-        <p className="mt-2 text-xs text-stone-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           La consultation des pièces exige une habilitation dédiée.
         </p>
       ) : (
-        <p className="mt-2 text-xs text-stone-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           Chaque consultation est journalisée ; le lien expire rapidement.
         </p>
       )}
@@ -373,7 +373,7 @@ function VerificationActions({
 
   if (actions.length === 0) {
     return (
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-muted-foreground">
         {`Aucune action possible depuis le statut « ${statusLabel(verification.status)} » avec vos droits.`}
       </p>
     )
@@ -445,7 +445,7 @@ function VerificationActionForm({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-3 rounded-md border border-stone-300 bg-stone-50 p-3"
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/60 p-3"
     >
       <p className="text-sm font-medium">{spec.label}</p>
       {spec.reasons ? (

@@ -52,6 +52,15 @@ void main() {
       );
     });
 
+    test('retire un identifiant embarqué dans l\'URL', () {
+      final uri = AppConfig.parseApiBaseUrl(
+        'https://user:secret@api.example.com/v1',
+        environment: AppEnvironment.production,
+      );
+      expect(uri, Uri.parse('https://api.example.com/v1'));
+      expect(uri?.userInfo, isEmpty);
+    });
+
     test('accepte HTTPS en production', () {
       final uri = AppConfig.parseApiBaseUrl(
         'https://api.example.com/v1/',
@@ -103,6 +112,16 @@ void main() {
       expect(AppConfig.parseMapTileUrl(''), isNull);
       expect(
         AppConfig.parseMapTileUrl('https://tiles.example/z/x/y.png'),
+        isNull,
+      );
+    });
+
+    test('refuse le HTTP hors environnement local', () {
+      expect(
+        AppConfig.parseMapTileUrl(
+          'http://tiles.example/{z}/{x}/{y}.png',
+          environment: AppEnvironment.production,
+        ),
         isNull,
       );
     });

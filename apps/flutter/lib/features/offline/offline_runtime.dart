@@ -73,9 +73,20 @@ class OfflineCoordinator {
     if (!monitor.snapshot.isOnline) {
       final pending = await _ref.read(pendingQueueProvider).openFor(userId);
       monitor.setPendingCount(pending.length);
+      if (pending.isNotEmpty) {
+        _ref
+            .read(telemetryProvider)
+            .recordSync(
+              report: const SyncReport(),
+              elapsed: Duration.zero,
+              pending: pending.length,
+              connectivity: monitor.snapshot.kind.name,
+            );
+      }
       return;
     }
     _draining = true;
+    final started = DateTime.now();
     try {
       final engine = _ref.read(syncEngineProvider);
       final endpoints = _ref.read(apiEndpointsProvider);
@@ -102,6 +113,15 @@ class OfflineCoordinator {
       if (report.synced > 0) {
         _ref.read(syncEpochProvider.notifier).bump();
       }
+      final pendingAfter = pending.length;
+      _ref
+          .read(telemetryProvider)
+          .recordSync(
+            report: report,
+            elapsed: DateTime.now().difference(started),
+            pending: pendingAfter,
+            connectivity: monitor.snapshot.kind.name,
+          );
     } finally {
       _draining = false;
     }

@@ -22,6 +22,7 @@ class SyncReport {
     this.failedTemporary = 0,
     this.failedPermanent = 0,
     this.skipped = 0,
+    this.conflicts = 0,
     this.stoppedForAuth = false,
   });
 
@@ -29,6 +30,7 @@ class SyncReport {
   final int failedTemporary;
   final int failedPermanent;
   final int skipped;
+  final int conflicts;
   final bool stoppedForAuth;
 }
 
@@ -50,6 +52,7 @@ class SyncEngine {
     var failedTemporary = 0;
     var failedPermanent = 0;
     var skipped = 0;
+    var conflicts = 0;
     var stoppedForAuth = false;
     final ops = await queue.openFor(userId);
     for (final op in ops) {
@@ -101,6 +104,9 @@ class SyncEngine {
             lastError: error.message,
           ),
         );
+        if (error is HttpFailure && error.statusCode == 409) {
+          conflicts += 1;
+        }
         failedPermanent += 1;
       }
     }
@@ -109,6 +115,7 @@ class SyncEngine {
       failedTemporary: failedTemporary,
       failedPermanent: failedPermanent,
       skipped: skipped,
+      conflicts: conflicts,
       stoppedForAuth: stoppedForAuth,
     );
   }

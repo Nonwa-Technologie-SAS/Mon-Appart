@@ -9,7 +9,7 @@ Légende : `[ ]` à faire · `[x]` vérifié dans le dépôt / local · `[~]` pa
 - [x] Migrations versionnées + `migrate deploy`
 - [x] CI lint/types/tests/build/intégration/docker build
 - [ ] Domaine + HTTPS Cloudflare/Vercel configurés
-- [ ] Staging déployé et smoke OK
+- [ ] Staging déployé et smoke OK (Contabo DIY : [deployment-contabo.md](./deployment-contabo.md))
 - [ ] Production déployée
 - [ ] Sauvegardes Postgres activées + **restauration testée**
 - [ ] Médias R2/S3 + CORS + URLs publiques
