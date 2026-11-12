@@ -108,25 +108,23 @@ Attendre `healthy` sur postgres et redis.
 
 Jamais `prisma db push` ni `migrate reset` sur ce serveur.
 
-Option 1 — depuis une machine de confiance avec Node/pnpm (tunnel ou IP privée) :
+Prérequis : postgres déjà `healthy` (étape A). `--no-deps` ne démarre pas Postgres ; le conteneur doit quand même joindre l’hôte Docker `postgres` via le réseau Compose.
 
-```bash
-# DATABASE_URL pointant vers un tunnel SSH, ex. :
-# ssh -L 5433:postgres:5432 user@VPS  (adapté selon accès)
-# En pratique : lancer migrate dans un conteneur one-shot sur le VPS :
-```
-
-Option 2 — one-shot avec l’image API (recommandé après le premier build) :
+One-shot avec l’image API (recommandé) :
 
 ```bash
 $COMPOSE build api
-$COMPOSE run --rm --no-deps --workdir /repo/apps/api api \
+$COMPOSE run --rm --no-deps --entrypoint "" \
+  --workdir /repo/apps/api \
+  api \
   pnpm db:migrate
 ```
 
-(`pnpm db:migrate` = `prisma migrate deploy` — jamais `db push` / `migrate reset`.)
+- `--entrypoint ""` : évite que `tini` + le `CMD` Nest interfèrent avec Prisma.
+- `pnpm db:migrate` = `prisma migrate deploy` (jamais `db push` / `migrate reset`).
+- `DATABASE_URL` vient de `.env.contabo` (hôte = `postgres`, pas `127.0.0.1`).
 
-Si Prisma / le client manquent dans l’image, repli depuis la racine montée :
+Si la commande échoue (`pnpm: not found`, Prisma absent), repli depuis la racine montée :
 
 ```bash
 docker run --rm --network mon-appart-contabo_internal \
