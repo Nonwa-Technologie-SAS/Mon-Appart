@@ -13,6 +13,7 @@ import 'providers.dart';
 
 Future<void> bootstrap({AppConfig? config}) async {
   WidgetsFlutterBinding.ensureInitialized();
+  final launchStartedAt = DateTime.now();
 
   AppConfig resolved;
   try {
@@ -38,6 +39,7 @@ Future<void> bootstrap({AppConfig? config}) async {
       overrides: [
         appConfigProvider.overrideWithValue(resolved),
         keyValueStoreProvider.overrideWithValue(store),
+        launchStartedAtProvider.overrideWithValue(launchStartedAt),
       ],
       child: const MonAppartApp(),
     ),

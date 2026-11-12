@@ -6,6 +6,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/auth/auth_rules.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/security/screen_privacy.dart';
 import '../../../core/widgets/app_button.dart';
 import 'auth_navigation.dart';
 import 'auth_providers.dart';
@@ -78,80 +79,84 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
-      body: SafeArea(
-        child: AutofillGroup(
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            children: [
-              Text(
-                'Connectez-vous pour enregistrer des favoris, contacter un annonceur ou demander une visite.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              TextField(
-                controller: _identifier,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [
-                  AutofillHints.username,
-                  AutofillHints.email,
-                  AutofillHints.telephoneNumber,
-                ],
-                decoration: InputDecoration(
-                  labelText: 'E-mail ou téléphone',
-                  errorText: _identifierError,
-                ),
-                onChanged: (_) {
-                  if (_identifierError != null) {
-                    setState(() => _identifierError = null);
-                  }
-                },
-              ),
-              const SizedBox(height: AppSpacing.md),
-              PasswordField(
-                controller: _password,
-                errorText: _passwordError,
-                onSubmitted: (_) => _submit(),
-              ),
-              if (_formError != null) ...[
-                const SizedBox(height: AppSpacing.sm),
+    return SensitiveSurface(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Connexion')),
+        body: SafeArea(
+          child: AutofillGroup(
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              children: [
                 Text(
-                  _formError!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  'Connectez-vous pour enregistrer des favoris, contacter un annonceur ou demander une visite.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                TextField(
+                  controller: _identifier,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                    AutofillHints.telephoneNumber,
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'E-mail ou téléphone',
+                    errorText: _identifierError,
+                  ),
+                  onChanged: (_) {
+                    if (_identifierError != null) {
+                      setState(() => _identifierError = null);
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                PasswordField(
+                  controller: _password,
+                  errorText: _passwordError,
+                  onSubmitted: (_) => _submit(),
+                ),
+                if (_formError != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    _formError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Se connecter',
+                  loading: _submitting,
+                  onPressed: _submit,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => context.push(AppRoutes.forgotPassword),
+                  child: const Text('Mot de passe oublié'),
+                ),
+                TextButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => context.push(
+                          AppRoutes.sanitizeNext(widget.next) == null
+                              ? AppRoutes.register
+                              : Uri(
+                                  path: AppRoutes.register,
+                                  queryParameters: {
+                                    AppRoutes.nextQuery: widget.next,
+                                  },
+                                ).toString(),
+                        ),
+                  child: const Text('Créer un compte'),
                 ),
               ],
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Se connecter',
-                loading: _submitting,
-                onPressed: _submit,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: _submitting
-                    ? null
-                    : () => context.push(AppRoutes.forgotPassword),
-                child: const Text('Mot de passe oublié'),
-              ),
-              TextButton(
-                onPressed: _submitting
-                    ? null
-                    : () => context.push(
-                        AppRoutes.sanitizeNext(widget.next) == null
-                            ? AppRoutes.register
-                            : Uri(
-                                path: AppRoutes.register,
-                                queryParameters: {
-                                  AppRoutes.nextQuery: widget.next,
-                                },
-                              ).toString(),
-                      ),
-                child: const Text('Créer un compte'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

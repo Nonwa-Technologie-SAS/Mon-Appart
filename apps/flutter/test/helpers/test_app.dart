@@ -26,6 +26,8 @@ AppConfig testConfig({
   AppEnvironment environment = AppEnvironment.local,
   bool logs = false,
   String? publicWebHost,
+  String? supportPhone,
+  String? supportWhatsapp,
 }) {
   return AppConfig(
     environment: environment,
@@ -33,6 +35,8 @@ AppConfig testConfig({
     enableNetworkLogs: logs,
     publicWebHost: publicWebHost,
     mapTileUrl: null,
+    supportPhone: supportPhone,
+    supportWhatsapp: supportWhatsapp,
   );
 }
 

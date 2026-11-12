@@ -75,6 +75,10 @@ class ApiEndpoints {
   Uri listingBadges(String listingId) =>
       api('trust/listings/$listingId/badges');
 
+  Uri trustReports() => api('trust/reports');
+
+  Uri trustReport(String reportId) => api('trust/reports/$reportId');
+
   Uri similarListings(String listingId) =>
       api('recommendations/similar/$listingId');
 

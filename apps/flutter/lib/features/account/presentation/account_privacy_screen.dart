@@ -49,6 +49,17 @@ class AccountPrivacyScreen extends StatelessWidget {
             style: body,
           ),
           const SizedBox(height: AppSpacing.lg),
+          const SectionHeader(title: 'Données sur l\'appareil'),
+          Text(
+            'Les jetons de session restent dans le trousseau Android ou le '
+            'Keychain iOS. Le fichier de cache hors ligne ne conserve ni '
+            'e-mail, ni téléphone, ni mot de passe. Il est effacé à la '
+            'déconnexion, à la révocation de session et lors d\'un changement '
+            'de compte. La sauvegarde cloud Android de l\'application est '
+            'désactivée. Les conversations ne sont pas écrites sur le disque.',
+            style: body,
+          ),
+          const SizedBox(height: AppSpacing.lg),
           const SectionHeader(title: 'Suppression du compte'),
           Text(
             'Aucun endpoint utilisateur de suppression n\'est exposé. La purge '

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mon_appart/core/widgets/brand_mark.dart';
 import 'package:mon_appart/features/splash/splash_screen.dart';
 
 import '../helpers/fake_api_client.dart';
@@ -12,8 +13,9 @@ void main() {
       pumpMonAppart(config: testConfig(), apiClient: client),
     );
 
-    expect(find.text('Mon Appart'), findsWidgets);
-    expect(find.text('Trouvez votre chez-vous'), findsOneWidget);
+    expect(find.byType(BrandMark), findsOneWidget);
+    expect(find.bySemanticsLabel('Mon Appart'), findsOneWidget);
+    expect(find.text('Mon Appart'), findsNothing);
 
     await tester.pump(SplashScreen.delay);
     await tester.pump();

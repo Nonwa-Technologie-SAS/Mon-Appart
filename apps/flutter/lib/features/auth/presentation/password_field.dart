@@ -32,6 +32,7 @@ class _PasswordFieldState extends State<PasswordField> {
       obscureText: _obscure,
       enableSuggestions: false,
       autocorrect: false,
+      enableIMEPersonalizedLearning: false,
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
       onSubmitted: widget.onSubmitted,

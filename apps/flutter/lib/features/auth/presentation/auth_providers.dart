@@ -5,8 +5,11 @@ import '../../../core/auth/auth_repository.dart';
 import '../../../core/auth/auth_session.dart';
 import '../../../core/auth/auth_user.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/observability/telemetry_event.dart';
 import '../../../core/offline/offline_providers.dart';
 import '../../../core/offline/sync_rules.dart';
+import '../../../core/security/auth_failure_signal.dart';
+import '../../../core/security/private_session_cleaner.dart';
 import '../../notifications/presentation/push_providers.dart';
 import '../../offline/offline_runtime.dart';
 
@@ -21,12 +24,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 class AuthController extends AsyncNotifier<AuthSession> {
+  final _loginFailures = AuthFailureSignal();
+
   @override
   Future<AuthSession> build() async {
     ref.watch(sessionEpochProvider);
     final store = ref.watch(sessionStoreProvider);
     final token = await store.readAccessToken();
     if (token == null || token.isEmpty) {
+      await _forgetPrivate(discardIncidents: false);
       return AuthSession.signedOut();
     }
     try {
@@ -34,7 +40,7 @@ class AuthController extends AsyncNotifier<AuthSession> {
       return AuthSession.authenticated(user);
     } on HttpFailure catch (error) {
       if (error.isUnauthenticated) {
-        await ref.read(offlineCacheProvider).clearSessionProfile();
+        await _forgetPrivate(discardIncidents: true);
         return AuthSession.signedOut();
       }
       if (SyncRules.isTransient(error)) {
@@ -52,13 +58,32 @@ class AuthController extends AsyncNotifier<AuthSession> {
   Future<AuthUser> login({
     required String identifier,
     required String password,
-  }) {
-    return _run(
-      () => ref
-          .read(authRepositoryProvider)
-          .login(identifier: identifier, password: password)
-          .then((issued) => issued.user),
-    );
+  }) async {
+    final previousId = await _knownUserId();
+    try {
+      final user = await _run(
+        () => ref
+            .read(authRepositoryProvider)
+            .login(identifier: identifier, password: password)
+            .then((issued) => issued.user),
+      );
+      _loginFailures.success();
+      await _dropOtherAccount(previousId, user.id);
+      return user;
+    } catch (error) {
+      if (_loginFailures.failure()) {
+        ref
+            .read(telemetryProvider)
+            .record(
+              severity: TelemetrySeverity.high,
+              kind: TelemetryKind.auth,
+              operation: 'auth.repeated_failure',
+              message: 'Plusieurs échecs de connexion sur cet appareil.',
+              attributes: {'count': _loginFailures.count},
+            );
+      }
+      rethrow;
+    }
   }
 
   Future<AuthUser> register({
@@ -67,8 +92,9 @@ class AuthController extends AsyncNotifier<AuthSession> {
     String? phone,
     String? firstName,
     String? lastName,
-  }) {
-    return _run(
+  }) async {
+    final previousId = await _knownUserId();
+    final user = await _run(
       () => ref
           .read(authRepositoryProvider)
           .register(
@@ -80,6 +106,8 @@ class AuthController extends AsyncNotifier<AuthSession> {
           )
           .then((issued) => issued.user),
     );
+    await _dropOtherAccount(previousId, user.id);
+    return user;
   }
 
   Future<AuthSession> _restoreCached(AppFailure error) async {
@@ -97,12 +125,11 @@ class AuthController extends AsyncNotifier<AuthSession> {
 
   Future<void> logout() async {
     final previous = state.value ?? AuthSession.signedOut();
-    final userId = previous.user?.id;
     state = AsyncData(
       previous.copyWith(submitting: true, clearActionError: true),
     );
     await ref.read(pushCoordinatorProvider).unregisterQuietly();
-    await ref.read(offlineCoordinatorProvider).clearUser(userId);
+    await _forgetPrivate(discardIncidents: true);
     await ref.read(authRepositoryProvider).logout();
     state = AsyncData(AuthSession.signedOut());
   }
@@ -136,7 +163,7 @@ class AuthController extends AsyncNotifier<AuthSession> {
       previous.copyWith(submitting: true, clearActionError: true),
     );
     await ref.read(pushCoordinatorProvider).unregisterQuietly();
-    await ref.read(offlineCoordinatorProvider).clearUser(previous.user?.id);
+    await _forgetPrivate(discardIncidents: true);
     await ref.read(authRepositoryProvider).logoutAll();
     state = AsyncData(AuthSession.signedOut());
   }
@@ -155,6 +182,31 @@ class AuthController extends AsyncNotifier<AuthSession> {
           .read(authRepositoryProvider)
           .confirmPhone(code: code, challengeId: challengeId),
     );
+  }
+
+  Future<String?> _knownUserId() async {
+    final current = state.value?.user?.id;
+    if (current != null && current.isNotEmpty) {
+      return current;
+    }
+    return ref.read(offlineCacheProvider).cachedUserId();
+  }
+
+  Future<void> _dropOtherAccount(String? previousId, String nextId) async {
+    if (previousId == null || previousId == nextId) {
+      return;
+    }
+    await ref.read(offlineCoordinatorProvider).clearUser(previousId);
+    await ref.read(telemetryProvider).discardIncidents();
+  }
+
+  Future<void> _forgetPrivate({required bool discardIncidents}) async {
+    await PrivateSessionCleaner().forget(
+      cache: ref.read(offlineCacheProvider),
+      queue: ref.read(pendingQueueProvider),
+      telemetry: discardIncidents ? ref.read(telemetryProvider) : null,
+    );
+    ref.read(connectivityMonitorProvider).setPendingCount(0);
   }
 
   Future<AuthUser> _run(Future<AuthUser> Function() action) async {
