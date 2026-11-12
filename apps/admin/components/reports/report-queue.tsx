@@ -1,5 +1,6 @@
 "use client"
 
+import { Filter } from "lucide-react"
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 
@@ -119,7 +120,10 @@ function ReportList({ initialStatus }: { initialStatus?: string }) {
           value={filters.priority}
           options={PRIORITIES}
         />
-        <Button type="submit">Filtrer</Button>
+        <Button type="submit" className="gap-2">
+          <Filter aria-hidden className="size-3.5" />
+          Filtrer
+        </Button>
       </form>
       {list.status === "loading" ? <Loading /> : null}
       {list.status === "error" && list.error ? (
@@ -210,7 +214,10 @@ function SignalList() {
           value={filters.severity}
           options={["HIGH", "MEDIUM", "LOW"]}
         />
-        <Button type="submit">Filtrer</Button>
+        <Button type="submit" className="gap-2">
+          <Filter aria-hidden className="size-3.5" />
+          Filtrer
+        </Button>
       </form>
       {list.status === "loading" ? <Loading /> : null}
       {list.status === "error" && list.error ? (
@@ -225,7 +232,7 @@ function SignalList() {
               {list.items.map((signal) => (
                 <li
                   key={signal.id}
-                  className="rounded-lg border border-stone-200 bg-white p-4"
+                  className="rounded-lg border border-border bg-white p-4"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-medium">
@@ -233,7 +240,7 @@ function SignalList() {
                     </span>
                     <Badge value={signal.severity} label={signal.severity} />
                     <Badge value={signal.status} />
-                    <span className="text-xs text-stone-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatDateTime(signal.createdAt)}
                     </span>
                   </div>
@@ -263,13 +270,13 @@ function SignalList() {
                       </Link>
                     ) : null}
                   </p>
-                  <pre className="mt-2 overflow-x-auto rounded bg-stone-50 p-2 text-xs">
+                  <pre className="mt-2 overflow-x-auto rounded bg-muted/60 p-2 text-xs">
                     {JSON.stringify(signal.details, null, 2)}
                   </pre>
                   {signal.status === "OPEN" ? (
                     <SignalReview signalId={signal.id} onDone={list.reload} />
                   ) : (
-                    <p className="mt-2 text-xs text-stone-600">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {statusLabel(signal.status)} le{" "}
                       {formatDateTime(signal.reviewedAt)}
                       {signal.reviewNote ? ` — ${signal.reviewNote}` : ""}

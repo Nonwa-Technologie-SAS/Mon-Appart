@@ -1,5 +1,6 @@
 "use client"
 
+import { AlertCircle, Inbox, LoaderCircle, RefreshCw } from "lucide-react"
 import type { ButtonHTMLAttributes, ReactNode } from "react"
 
 import type { ApiError } from "@/lib/api"
@@ -15,11 +16,18 @@ export function PageHeader({
   children?: ReactNode
 }) {
   return (
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+    <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="max-w-3xl">
+        <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">
+          Mon Appart
+        </p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">
+          {title}
+        </h1>
         {description ? (
-          <p className="mt-1 max-w-3xl text-sm text-stone-600">{description}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {children}
@@ -29,7 +37,11 @@ export function PageHeader({
 
 export function Loading({ label = "Chargement…" }: { label?: string }) {
   return (
-    <p role="status" className="py-10 text-center text-sm text-stone-500">
+    <p
+      role="status"
+      className="flex flex-col items-center justify-center gap-3 py-12 text-sm text-muted-foreground"
+    >
+      <LoaderCircle aria-hidden className="size-5 animate-spin text-primary" />
       {label}
     </p>
   )
@@ -37,9 +49,16 @@ export function Loading({ label = "Chargement…" }: { label?: string }) {
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-lg border border-dashed border-stone-300 bg-white/60 px-4 py-10 text-center text-sm text-stone-600">
-      {children}
-    </p>
+    <div className="rounded-xl border border-dashed border-border bg-card/70 px-6 py-14 text-center shadow-sm">
+      <Inbox
+        aria-hidden
+        className="mx-auto mb-3 size-8 text-muted-foreground/70"
+        strokeWidth={1.5}
+      />
+      <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </p>
+    </div>
   )
 }
 
@@ -54,22 +73,28 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900"
+      className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900 shadow-sm"
     >
-      <p className="font-medium">
-        {forbidden
-          ? "Vous n'avez pas la permission d'accéder à cette ressource."
-          : error.status === 404
-            ? "Élément introuvable."
-            : error.message}
-      </p>
-      {error.requestId ? (
-        <p className="mt-1 text-xs text-red-700">
-          Référence : {error.requestId}
-        </p>
-      ) : null}
+      <div className="flex items-start gap-2.5">
+        <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <div>
+          <p className="font-medium">
+            {forbidden
+              ? "Vous n'avez pas la permission d'accéder à cette ressource."
+              : error.status === 404
+                ? "Élément introuvable."
+                : error.message}
+          </p>
+          {error.requestId ? (
+            <p className="mt-1 text-xs text-red-700">
+              Référence : {error.requestId}
+            </p>
+          ) : null}
+        </div>
+      </div>
       {onRetry && !forbidden && error.status !== 404 ? (
-        <Button variant="secondary" className="mt-3" onClick={onRetry}>
+        <Button variant="secondary" className="mt-3 gap-2" onClick={onRetry}>
+          <RefreshCw aria-hidden className="size-3.5" />
           Réessayer
         </Button>
       ) : null}
@@ -82,7 +107,7 @@ export function ActionError({ error }: { error: ApiError | null }) {
   if (!error) return null
   const conflict = error.status === 409
   return (
-    <p role="alert" className="mt-2 text-sm text-red-700">
+    <p role="alert" className="mt-2 text-sm text-destructive">
       {conflict
         ? `${error.message} Rechargez la page pour voir l'état actuel.`
         : error.status === 429
@@ -93,10 +118,10 @@ export function ActionError({ error }: { error: ApiError | null }) {
 }
 
 const BUTTON_VARIANTS = {
-  primary: "bg-stone-900 text-white hover:bg-stone-700",
-  secondary:
-    "border border-stone-300 bg-white text-stone-900 hover:bg-stone-100",
-  danger: "bg-red-700 text-white hover:bg-red-600",
+  primary:
+    "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover",
+  secondary: "border border-border bg-card text-foreground hover:bg-muted",
+  danger: "bg-destructive text-white hover:bg-red-700",
 } as const
 
 export function Button({
@@ -110,7 +135,7 @@ export function Button({
     <button
       type="button"
       {...props}
-      className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${className}`}
     />
   )
 }
@@ -121,11 +146,11 @@ const TONES: Record<string, string> = {
   APPROVED: "bg-emerald-100 text-emerald-900",
   VERIFIED: "bg-emerald-100 text-emerald-900",
   PASS: "bg-emerald-100 text-emerald-900",
-  SUSPENDED: "bg-amber-100 text-amber-900",
-  PENDING_REVIEW: "bg-sky-100 text-sky-900",
-  IN_REVIEW: "bg-sky-100 text-sky-900",
-  OPEN: "bg-sky-100 text-sky-900",
-  WARN: "bg-amber-100 text-amber-900",
+  SUSPENDED: "bg-amber-100 text-amber-950",
+  PENDING_REVIEW: "bg-accent text-accent-foreground",
+  IN_REVIEW: "bg-accent text-accent-foreground",
+  OPEN: "bg-accent text-accent-foreground",
+  WARN: "bg-amber-100 text-amber-950",
   HIGH: "bg-red-100 text-red-900",
   CRITICAL: "bg-red-100 text-red-900",
   BANNED: "bg-red-100 text-red-900",
@@ -133,15 +158,15 @@ const TONES: Record<string, string> = {
   PAID: "bg-emerald-100 text-emerald-900",
   SUCCEEDED: "bg-emerald-100 text-emerald-900",
   FAILED: "bg-red-100 text-red-900",
-  PAST_DUE: "bg-amber-100 text-amber-900",
-  PROCESSING: "bg-sky-100 text-sky-900",
-  REQUESTED: "bg-sky-100 text-sky-900",
+  PAST_DUE: "bg-amber-100 text-amber-950",
+  PROCESSING: "bg-accent text-accent-foreground",
+  REQUESTED: "bg-accent text-accent-foreground",
 }
 
 export function Badge({ value, label }: { value: string; label?: string }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TONES[value] ?? "bg-stone-200 text-stone-800"}`}
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONES[value] ?? "bg-muted text-muted-foreground"}`}
     >
       {label ?? statusLabel(value)}
     </span>
@@ -156,8 +181,8 @@ export function Section({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-600">
+    <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <h2 className="mb-4 text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
         {title}
       </h2>
       {children}
@@ -199,18 +224,18 @@ export function Field({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={htmlFor} className="text-sm font-medium">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-xs text-stone-500">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }
 
 export const inputClass =
-  "rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-sm focus:outline-2 focus:outline-stone-900"
+  "rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30"
 
 /** Tableau responsive avec en-têtes accessibles. */
 export function Table({
@@ -221,18 +246,22 @@ export function Table({
   children: ReactNode
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase text-stone-600">
+        <thead className="border-b border-border bg-muted/60 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           <tr>
             {headers.map((header) => (
-              <th key={header} scope="col" className="px-3 py-2 font-medium">
+              <th
+                key={header}
+                scope="col"
+                className="px-3.5 py-2.5 font-semibold"
+              >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-100">{children}</tbody>
+        <tbody className="divide-y divide-border/70">{children}</tbody>
       </table>
     </div>
   )

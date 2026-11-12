@@ -164,7 +164,7 @@ function ProductCard({
         {product.isDefault ? (
           <span className="text-xs">Plan par défaut (gratuit)</span>
         ) : null}
-        <span className="text-xs text-stone-600">
+        <span className="text-xs text-muted-foreground">
           Annonces actives max. : {product.maxActiveListings ?? "illimité"}
         </span>
       </div>
@@ -194,7 +194,7 @@ function ProductCard({
                 {price.intervalMonths} mois
               </span>
               <Badge value={price.status} />
-              <span className="text-stone-500">
+              <span className="text-muted-foreground">
                 dès le {formatDateTime(price.validFrom)}
                 {price.validUntil
                   ? ` jusqu'au ${formatDateTime(price.validUntil)}`

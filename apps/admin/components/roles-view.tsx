@@ -26,20 +26,22 @@ export function RolesView() {
             {roles.data.map((role) => (
               <Section key={role.code} title={`${role.name} (${role.code})`}>
                 {role.description ? (
-                  <p className="mb-2 text-sm text-stone-600">
+                  <p className="mb-2 text-sm text-muted-foreground">
                     {role.description}
                   </p>
                 ) : null}
                 {role.code === "SUPER_ADMIN" ? (
                   <p className="text-sm">Toutes les permissions.</p>
                 ) : role.permissions.length === 0 ? (
-                  <p className="text-sm text-stone-600">Aucune permission.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Aucune permission.
+                  </p>
                 ) : (
                   <ul className="flex flex-wrap gap-1">
                     {role.permissions.map((permission) => (
                       <li
                         key={permission}
-                        className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-xs"
+                        className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
                       >
                         {permission}
                       </li>

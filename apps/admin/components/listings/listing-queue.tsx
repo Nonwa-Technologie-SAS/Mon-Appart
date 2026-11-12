@@ -1,5 +1,6 @@
 "use client"
 
+import { Filter } from "lucide-react"
 import Link from "next/link"
 import { useState, type FormEvent } from "react"
 
@@ -65,10 +66,10 @@ export function ListingQueue({ initial }: { initial: Partial<Filters> }) {
       />
       <form
         onSubmit={onSubmit}
-        className="mb-4 flex flex-wrap items-end gap-3"
+        className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-sm"
         role="search"
       >
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex min-w-[10rem] flex-1 flex-col gap-1.5 text-sm font-medium text-foreground">
           Statut
           <select
             name="status"
@@ -82,7 +83,7 @@ export function ListingQueue({ initial }: { initial: Partial<Filters> }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex min-w-[10rem] flex-1 flex-col gap-1.5 text-sm font-medium text-foreground">
           Offre
           <select
             name="listingType"
@@ -97,7 +98,7 @@ export function ListingQueue({ initial }: { initial: Partial<Filters> }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex min-w-[12rem] flex-[2] flex-col gap-1.5 text-sm font-medium text-foreground">
           Titre ou identifiant
           <input
             name="q"
@@ -106,7 +107,10 @@ export function ListingQueue({ initial }: { initial: Partial<Filters> }) {
             className={inputClass}
           />
         </label>
-        <Button type="submit">Filtrer</Button>
+        <Button type="submit" className="gap-2">
+          <Filter aria-hidden className="size-3.5" />
+          Filtrer
+        </Button>
       </form>
 
       {list.status === "loading" ? <Loading /> : null}
@@ -135,11 +139,11 @@ export function ListingQueue({ initial }: { initial: Partial<Filters> }) {
                   <td className="px-3 py-2">
                     <Link
                       href={`/listings/${listing.id}`}
-                      className="font-medium underline underline-offset-2"
+                      className="font-semibold text-primary hover:text-primary-hover"
                     >
                       {listing.title}
                     </Link>
-                    <p className="text-xs text-stone-500">
+                    <p className="text-xs text-muted-foreground">
                       {listing.property.type.name} · {listing.listingType} ·{" "}
                       {listing.publisher.name ?? "Annonceur sans nom"}
                     </p>

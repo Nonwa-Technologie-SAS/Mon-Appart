@@ -1,5 +1,6 @@
 "use client"
 
+import { Filter } from "lucide-react"
 import Link from "next/link"
 import { useState, type FormEvent, type ReactNode } from "react"
 
@@ -55,7 +56,10 @@ function StatusFilter({
           ))}
         </select>
       </label>
-      <Button type="submit">Filtrer</Button>
+      <Button type="submit" className="gap-2">
+        <Filter aria-hidden className="size-3.5" />
+        Filtrer
+      </Button>
     </form>
   )
 }
@@ -211,7 +215,7 @@ export function PaymentList() {
               <td className={cell}>
                 <Badge value={payment.status} />
                 {payment.failureCode ? (
-                  <span className="ml-1 font-mono text-xs text-stone-500">
+                  <span className="ml-1 font-mono text-xs text-muted-foreground">
                     {payment.failureCode}
                   </span>
                 ) : null}
@@ -275,7 +279,7 @@ export function SubscriptionList() {
               <td className={cell}>
                 <Badge value={subscription.status} />
                 {subscription.cancelAtPeriodEnd ? (
-                  <span className="ml-1 text-xs text-stone-600">
+                  <span className="ml-1 text-xs text-muted-foreground">
                     résiliation à l’échéance
                   </span>
                 ) : null}
@@ -321,7 +325,7 @@ export function RefundList() {
           {list.items.map((refund) => (
             <li
               key={refund.id}
-              className="rounded-lg border border-stone-200 bg-white p-4"
+              className="rounded-lg border border-border bg-white p-4"
             >
               <RefundCard refund={refund} onDone={list.reload} />
             </li>
@@ -352,7 +356,7 @@ export function RefundCard({
           {formatMoney(refund.amount, refund.currency)}
         </span>
         <Badge value={refund.status} />
-        <span className="text-xs text-stone-500">
+        <span className="text-xs text-muted-foreground">
           {refund.requestedByCustomer
             ? "Demande du client"
             : "Demande de l'équipe"}{" "}
@@ -367,7 +371,7 @@ export function RefundCard({
       </div>
       <p className="mt-2 text-sm">{refund.reason}</p>
       {refund.decisionNote ? (
-        <p className="mt-1 text-xs text-stone-600">
+        <p className="mt-1 text-xs text-muted-foreground">
           Décision : {refund.decisionNote}
         </p>
       ) : null}
@@ -377,7 +381,7 @@ export function RefundCard({
         </p>
       ) : null}
       {refund.status === "PROCESSING" ? (
-        <p className="mt-1 text-xs text-stone-600">
+        <p className="mt-1 text-xs text-muted-foreground">
           En attente de confirmation du prestataire : rien n’est considéré comme
           remboursé avant.
         </p>
@@ -433,7 +437,7 @@ export function IncidentList() {
           {list.items.map((incident) => (
             <li
               key={incident.id}
-              className="rounded-lg border border-stone-200 bg-white p-4"
+              className="rounded-lg border border-border bg-white p-4"
             >
               <IncidentCard incident={incident} onDone={list.reload} />
             </li>
@@ -460,7 +464,7 @@ export function IncidentCard({
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{statusLabel(incident.kind)}</span>
         <Badge value={incident.status} />
-        <span className="text-xs text-stone-500">
+        <span className="text-xs text-muted-foreground">
           {formatDateTime(incident.createdAt)}
         </span>
         {incident.orderId ? (
@@ -472,7 +476,7 @@ export function IncidentCard({
           </Link>
         ) : null}
       </div>
-      <pre className="mt-2 overflow-x-auto rounded bg-stone-50 p-2 text-xs">
+      <pre className="mt-2 overflow-x-auto rounded bg-muted/60 p-2 text-xs">
         {JSON.stringify(incident.detail, null, 2)}
       </pre>
       {incident.status === "OPEN" && can(me, "billing:reconcile") ? (
@@ -496,7 +500,7 @@ export function IncidentCard({
           />
         </div>
       ) : incident.resolution ? (
-        <p className="mt-2 text-xs text-stone-600">
+        <p className="mt-2 text-xs text-muted-foreground">
           Clos le {formatDateTime(incident.resolvedAt)}
           {incident.resolvedBy?.name
             ? ` par ${incident.resolvedBy.name}`

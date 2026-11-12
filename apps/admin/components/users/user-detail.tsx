@@ -7,6 +7,7 @@ import { ApiError, api } from "@/lib/api"
 import {
   ACCOUNT_DECISION_LABELS,
   formatDateTime,
+  formatRoles,
   statusLabel,
 } from "@/lib/format"
 import { can } from "@/lib/permissions"
@@ -63,26 +64,26 @@ function UserDetailView({
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Compte">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-500">Statut</dt>
+            <dt className="text-muted-foreground">Statut</dt>
             <dd>
               <Badge value={user.status} />
             </dd>
-            <dt className="text-stone-500">Rôles</dt>
-            <dd>{user.roles.join(", ") || "—"}</dd>
-            <dt className="text-stone-500">E-mail</dt>
+            <dt className="text-muted-foreground">Rôles</dt>
+            <dd>{formatRoles(user.roles)}</dd>
+            <dt className="text-muted-foreground">E-mail</dt>
             <dd className="font-mono text-xs">
               {user.email ?? "—"} {user.emailVerified ? "(vérifié)" : ""}
             </dd>
-            <dt className="text-stone-500">Téléphone</dt>
+            <dt className="text-muted-foreground">Téléphone</dt>
             <dd className="font-mono text-xs">
               {user.phone ?? "—"} {user.phoneVerified ? "(vérifié)" : ""}
             </dd>
-            <dt className="text-stone-500">Inscription</dt>
+            <dt className="text-muted-foreground">Inscription</dt>
             <dd>{formatDateTime(user.createdAt)}</dd>
-            <dt className="text-stone-500">Dernière connexion</dt>
+            <dt className="text-muted-foreground">Dernière connexion</dt>
             <dd>{formatDateTime(user.lastLoginAt)}</dd>
           </dl>
-          <p className="mt-3 text-xs text-stone-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             {user.contactRevealed
               ? "Coordonnées complètes : cette consultation est enregistrée dans le journal d'audit."
               : "Coordonnées masquées : l'habilitation aux données personnelles est nécessaire pour les voir."}
@@ -91,11 +92,11 @@ function UserDetailView({
 
         <Section title="Activité">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-stone-500">Sessions actives</dt>
+            <dt className="text-muted-foreground">Sessions actives</dt>
             <dd>{user.activity.activeSessions}</dd>
-            <dt className="text-stone-500">Biens gérés</dt>
+            <dt className="text-muted-foreground">Biens gérés</dt>
             <dd>{user.activity.managedProperties}</dd>
-            <dt className="text-stone-500">Annonces</dt>
+            <dt className="text-muted-foreground">Annonces</dt>
             <dd>
               {Object.keys(user.activity.listingsByStatus).length === 0
                 ? "Aucune"
@@ -105,14 +106,18 @@ function UserDetailView({
                     )
                     .join(" · ")}
             </dd>
-            <dt className="text-stone-500">Signalements déposés</dt>
+            <dt className="text-muted-foreground">Signalements déposés</dt>
             <dd>{user.activity.reportsFiled}</dd>
-            <dt className="text-stone-500">Signalements ouverts le visant</dt>
+            <dt className="text-muted-foreground">
+              Signalements ouverts le visant
+            </dt>
             <dd>{user.activity.openReportsAgainst}</dd>
-            <dt className="text-stone-500">Alertes de risque ouvertes</dt>
+            <dt className="text-muted-foreground">
+              Alertes de risque ouvertes
+            </dt>
             <dd>{user.activity.openSignals}</dd>
           </dl>
-          <p className="mt-3 text-xs text-stone-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             Un signalement est une allégation, pas une preuve.
           </p>
         </Section>
@@ -125,7 +130,7 @@ function UserDetailView({
 
         <Section title="Vérifications">
           {user.verifications.length === 0 ? (
-            <p className="text-sm text-stone-600">Aucun dossier.</p>
+            <p className="text-sm text-muted-foreground">Aucun dossier.</p>
           ) : (
             <ul className="flex flex-col gap-2 text-sm">
               {user.verifications.map((verification) => (
@@ -140,7 +145,7 @@ function UserDetailView({
                     {verification.type}
                   </Link>
                   <Badge value={verification.status} />
-                  <span className="text-xs text-stone-500">
+                  <span className="text-xs text-muted-foreground">
                     soumis {formatDateTime(verification.submittedAt)}
                   </span>
                 </li>
@@ -186,7 +191,7 @@ function AccountActions({
     manageableRoles.length === 0
   ) {
     return (
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-muted-foreground">
         Aucune action n&apos;est permise sur ce compte avec vos droits.
       </p>
     )
@@ -329,7 +334,7 @@ function TrustScorePanel({ userId }: { userId: string }) {
 
   return (
     <Section title="Score de confiance interne">
-      <p className="mb-3 text-xs text-stone-600">
+      <p className="mb-3 text-xs text-muted-foreground">
         Aide à la décision, jamais une preuve ni un motif de sanction à lui
         seul. Chaque consultation est journalisée.
       </p>
@@ -345,7 +350,7 @@ function TrustScorePanel({ userId }: { userId: string }) {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-stone-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             Version {score.algorithmVersion} · calculé{" "}
             {formatDateTime(score.computedAt)}
           </p>

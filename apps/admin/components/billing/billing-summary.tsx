@@ -39,7 +39,7 @@ export function BillingSummaryPanel() {
               ))}
             </ul>
           )}
-          <p className="mt-2 text-xs text-stone-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             {data.definitions.collected}
           </p>
         </Section>
@@ -58,7 +58,7 @@ export function BillingSummaryPanel() {
               ))}
             </ul>
           )}
-          <p className="mt-2 text-xs text-stone-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             {data.definitions.refunded}
           </p>
         </Section>
@@ -77,7 +77,7 @@ export function BillingSummaryPanel() {
           </p>
         </Section>
       </div>
-      <p className="text-xs text-stone-500">
+      <p className="text-xs text-muted-foreground">
         Calculé le {formatDateTime(data.computedAt)}.
       </p>
     </div>
@@ -112,7 +112,7 @@ function ProviderNotice({
     )
   }
   return (
-    <p className="text-sm text-stone-700">
+    <p className="text-sm text-foreground">
       Prestataire : {provider.code} · environnement {provider.environment}
     </p>
   )
@@ -121,7 +121,7 @@ function ProviderNotice({
 function Counts({ values }: { values: Record<string, number> }) {
   const entries = Object.entries(values)
   if (entries.length === 0)
-    return <p className="text-sm text-stone-500">Aucune donnée.</p>
+    return <p className="text-sm text-muted-foreground">Aucune donnée.</p>
   return (
     <ul className="flex flex-col gap-1 text-sm">
       {entries.map(([status, count]) => (
