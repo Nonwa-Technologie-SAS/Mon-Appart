@@ -268,7 +268,15 @@ Référence globale : [production-readiness-checklist.md](./production-readiness
 
 ### `api` unhealthy → web / admin / caddy ne démarrent pas
 
-C’est le cas le plus fréquent. **Corriger l’API d’abord** ; les fronts dépendent de `service_healthy`.
+Si les logs montrent `Nest application successfully started`, l’API tourne : le healthcheck Docker peut être en retard. Contourner :
+
+```bash
+$COMPOSE exec api node -e "fetch('http://127.0.0.1:4000/health/live').then(async r=>console.log(r.status, await r.text()))"
+$COMPOSE up -d --no-deps caddy
+$COMPOSE --profile front up -d --no-deps web admin
+```
+
+Sinon diagnostiquer un vrai crash :
 
 ```bash
 $COMPOSE ps -a
