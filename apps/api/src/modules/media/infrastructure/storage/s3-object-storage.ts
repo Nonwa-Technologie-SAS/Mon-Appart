@@ -79,6 +79,21 @@ export class S3ObjectStorage implements ObjectStorage {
     return this.options.bucket
   }
 
+  /**
+   * Présignature S3/R2. `as never` contourne les doublons `@smithy/*` /
+   * `@aws-sdk/*` que pnpm peut installer (Docker filter) : Client et Command
+   * ne partagent alors plus le même type `handlers` / middlewareStack.
+   */
+  private presign(
+    command: PutObjectCommand | GetObjectCommand,
+    options: {
+      expiresIn: number
+      signableHeaders?: Set<string>
+    },
+  ): Promise<string> {
+    return getSignedUrl(this.client as never, command as never, options)
+  }
+
   async createUploadTarget(
     key: string,
     options: {
@@ -96,7 +111,7 @@ export class S3ObjectStorage implements ObjectStorage {
       IfNoneMatch: "*",
     })
     const url = await this.call(() =>
-      getSignedUrl(this.client, command, {
+      this.presign(command, {
         expiresIn: options.expiresInSeconds,
         signableHeaders: new Set([
           "content-type",
@@ -242,7 +257,7 @@ export class S3ObjectStorage implements ObjectStorage {
       ResponseContentType: options.contentType,
     })
     return this.call(() =>
-      getSignedUrl(this.client, command, {
+      this.presign(command, {
         expiresIn: options.expiresInSeconds,
       }),
     )

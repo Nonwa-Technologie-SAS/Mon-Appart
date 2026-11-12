@@ -37,8 +37,8 @@
     "pretypecheck": "prisma generate"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1149.0",
-    "@aws-sdk/s3-request-presigner": "^3.1149.0",
+    "@aws-sdk/client-s3": "3.1149.0",
+    "@aws-sdk/s3-request-presigner": "3.1149.0",
     "@mon-appart/analytics": "workspace:*",
     "@mon-appart/config": "workspace:*",
     "@mon-appart/types": "workspace:*",
