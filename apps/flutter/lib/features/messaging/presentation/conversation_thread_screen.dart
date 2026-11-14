@@ -8,6 +8,7 @@ import '../../../app/theme/app_radii.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/listing/public_ids.dart';
+import '../../../core/security/screen_privacy.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_loading.dart';
@@ -38,16 +39,19 @@ class _ConversationThreadScreenState
   final _composer = TextEditingController();
   final _scroll = ScrollController();
   var _showJump = false;
+  final _privacy = SensitiveScreenBinding();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scroll.addListener(_onScroll);
+    _privacy.attach(ref);
   }
 
   @override
   void dispose() {
+    _privacy.detach();
     WidgetsBinding.instance.removeObserver(this);
     _scroll.removeListener(_onScroll);
     _scroll.dispose();

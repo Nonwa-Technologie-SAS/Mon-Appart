@@ -159,6 +159,18 @@ class AccountScreen extends ConsumerWidget {
                 subtitle: 'Données utilisées par le compte',
                 onTap: () => context.push(AppRoutes.accountPrivacy),
               ),
+              _AccountTile(
+                icon: Icons.diversity_3_outlined,
+                title: 'Club Mon Appart',
+                subtitle: 'Programme non ouvert : aucun point ni avantage',
+                onTap: () => context.push(AppRoutes.club),
+              ),
+              _AccountTile(
+                icon: Icons.support_agent_outlined,
+                title: 'Centre d\'aide',
+                subtitle: 'Questions, signalements et canaux configurés',
+                onTap: () => context.push(AppRoutes.help),
+              ),
               const SizedBox(height: AppSpacing.lg),
               AppButton(
                 label: 'Se déconnecter',

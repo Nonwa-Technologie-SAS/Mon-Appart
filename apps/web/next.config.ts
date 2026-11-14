@@ -41,7 +41,9 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  isProd
+    ? "img-src 'self' data: blob: https:"
+    : "img-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*",
   "font-src 'self' data:",
   isProd
     ? "connect-src 'self' https: wss:"

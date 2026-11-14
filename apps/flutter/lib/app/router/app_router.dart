@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/search/explore_query.dart';
 import '../../core/widgets/app_empty_state.dart';
 import '../../features/account/presentation/account_privacy_screen.dart';
+import '../../features/account/presentation/club_screen.dart';
+import '../../features/support/presentation/help_article_screen.dart';
+import '../../features/support/presentation/help_screen.dart';
+import '../../features/support/presentation/my_reports_screen.dart';
 import '../../features/account/presentation/account_screen.dart';
 import '../../features/account/presentation/account_security_screen.dart';
 import '../../features/account/presentation/account_sessions_screen.dart';
@@ -48,6 +52,7 @@ GoRouter createRouter(
   AppConfig config, {
   String initialLocation = AppRoutes.splash,
   GlobalKey<NavigatorState>? navigatorKey,
+  List<NavigatorObserver> observers = const [],
 }) {
   final rootKey = navigatorKey ?? GlobalKey<NavigatorState>();
   final deepLinks = DeepLinkResolver(
@@ -59,6 +64,7 @@ GoRouter createRouter(
   return GoRouter(
     navigatorKey: rootKey,
     initialLocation: initialLocation,
+    observers: observers,
     redirect: (context, state) {
       final location = state.matchedLocation;
       if (!config.isConfigured) {
@@ -169,6 +175,28 @@ GoRouter createRouter(
         path: AppRoutes.accountPrivacy,
         parentNavigatorKey: rootKey,
         builder: (context, state) => const AccountPrivacyScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.club,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => const ClubScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/help/article/:${AppRoutes.helpArticleParam}',
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => HelpArticleScreen(
+          articleId: state.pathParameters[AppRoutes.helpArticleParam] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.myReports,
+        parentNavigatorKey: rootKey,
+        builder: (context, state) => const MyReportsScreen(),
       ),
       GoRoute(
         path: AppRoutes.messages,

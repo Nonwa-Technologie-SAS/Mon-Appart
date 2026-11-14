@@ -11,6 +11,7 @@ import '../../../core/listing/search_page.dart';
 import '../../../core/offline/cached_envelope.dart';
 import '../../offline/offline_banner.dart';
 import '../../../core/search/explore_query.dart';
+import '../../../core/widgets/brand_mark.dart';
 import '../../../core/widgets/inline_async_section.dart';
 import '../../../core/widgets/property_card.dart';
 import '../../../core/widgets/search_field.dart';
@@ -73,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Appart'),
+        title: const BrandMark(height: 44),
         actions: [
           IconButton(
             tooltip: 'Notifications',

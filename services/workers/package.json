@@ -14,13 +14,13 @@
     "@mon-appart/types": "workspace:*",
     "bullmq": "^5.61.0",
     "dotenv": "^17.2.3",
-    "ioredis": "^5.8.2"
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@mon-appart/eslint-config": "workspace:*",
     "@mon-appart/tsconfig": "workspace:*",
     "@types/node": "^22.18.8",
-    "eslint": "^9.39.1",
+    "eslint": "^10.14.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

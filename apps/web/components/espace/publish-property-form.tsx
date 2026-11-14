@@ -27,7 +27,7 @@ import {
   writePublishDraft,
   type PublishDraftFields,
 } from "@/lib/publish-draft"
-import { uploadPropertyImages } from "@/lib/upload-property-images"
+import { preparePropertyImages } from "@/lib/upload-property-images"
 
 export function PublishPropertyForm() {
   const [error, setError] = useState<string | null>(null)
@@ -73,16 +73,14 @@ export function PublishPropertyForm() {
     startTransition(async () => {
       try {
         const currentDrafts = draftsRef.current
-        const imageUrls =
-          currentDrafts.length > 0
-            ? await uploadPropertyImages(currentDrafts.map((draft) => draft.file))
-            : []
-        const imageLayout = imageUrls.map((url, index) => ({
-          url,
-          room: currentDrafts[index]?.room ?? "OTHER",
-          sortOrder: index,
-        }))
-        formData.set("imageLayout", JSON.stringify(imageLayout))
+        if (currentDrafts.length > 0) {
+          const photos = await preparePropertyImages(
+            currentDrafts.map((draft) => draft.file),
+          )
+          for (const photo of photos) {
+            formData.append("photos", photo)
+          }
+        }
 
         const result = await publishProperty({}, formData)
         if (result?.error) {

@@ -165,7 +165,7 @@ function ReasonCard({
               label={reason.isActive ? "Actif" : "Inactif"}
             />
           </div>
-          <p className="text-stone-700">« {reason.ownerMessage} »</p>
+          <p className="text-foreground">« {reason.ownerMessage} »</p>
           {canManage ? (
             <div>
               <Button variant="secondary" onClick={() => setEditing(true)}>

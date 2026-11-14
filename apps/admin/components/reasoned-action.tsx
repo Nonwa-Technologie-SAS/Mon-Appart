@@ -56,11 +56,11 @@ export function ReasonedAction({
   return (
     <form
       onSubmit={submit}
-      className="flex w-full flex-col gap-3 rounded-md border border-stone-300 bg-stone-50 p-3"
+      className="flex w-full flex-col gap-3 rounded-md border border-border bg-muted/60 p-3"
     >
       <p className="text-sm font-medium">{label}</p>
       {description ? (
-        <p className="text-xs text-stone-600">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       ) : null}
       {children}
       <Field label={reasonLabel} htmlFor={`${id}-reason`}>

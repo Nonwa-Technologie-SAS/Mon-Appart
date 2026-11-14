@@ -41,6 +41,8 @@ export type PropertySearchParams = {
 
 export type OwnerPropertyListItem = PropertyListItem & {
   status: PropertyStatus
+  propertyId: string
+  listingStatus: string
 }
 
 export const searchAvailableProperties = cache(
