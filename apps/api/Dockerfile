@@ -44,7 +44,7 @@ COPY --from=build --chown=monappart:monappart /repo /repo
 USER monappart
 WORKDIR /repo/apps/api
 EXPOSE 4000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:4000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=10 \
+  CMD node -e "const port=process.env.APP_PORT||4000;const paths=['/health/live','/api/health/live'];(async()=>{for(const p of paths){try{const r=await fetch('http://127.0.0.1:'+port+p);if(r.ok)process.exit(0)}catch{}}process.exit(1)})()"
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "dist/main.js"]

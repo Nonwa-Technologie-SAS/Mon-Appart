@@ -172,20 +172,35 @@ SMOKE_API_URL=https://api.monappart.ci pnpm smoke:health
 
 Parcours manuels : inscription/connexion, recherche, fiche, publication éditeur (si comptes de test).
 
-### Étape F — Fronts
+### Étape F — Fronts sur Contabo (web + admin)
 
-**Recommandé :** déployer `apps/web` et `apps/admin` sur **Vercel** avec :
+Prérequis DNS : `www.monappart.ci` et `admin.monappart.ci` → IP Contabo (en plus de `api`).
 
-- `NEST_API_URL` / rewrite vers `https://api.monappart.ci`
-- `ADMIN_API_URL=https://api.monappart.ci`
-- `NEXT_PUBLIC_SITE_URL=https://www.monappart.ci`
-- CORS API déjà aligné sur `https://www.monappart.ci`, `https://monappart.ci`, `https://admin.monappart.ci`
-
-**Alternative même VPS :** construire des images `mon-appart-web:contabo` / `mon-appart-admin:contabo` (Dockerfiles fronts pas encore dans le dépôt), décommenter les blocs web/admin du `Caddyfile.contabo`, puis :
+Dans `.env.contabo` :
 
 ```bash
-$COMPOSE --profile front up -d
+NEST_API_URL=http://api:4000
+NEXT_PUBLIC_NEST_API_URL=same-origin
+NEXT_PUBLIC_SITE_URL=https://www.monappart.ci
+ADMIN_API_URL=http://api:4000
+WEB_DOMAIN=www.monappart.ci
+ADMIN_DOMAIN=admin.monappart.ci
 ```
+
+Build + démarrage (API déjà up) :
+
+```bash
+$COMPOSE --profile front up -d --build web admin
+$COMPOSE up -d caddy
+curl -fsSI "https://www.monappart.ci"
+curl -fsSI "https://admin.monappart.ci"
+```
+
+Les rewrites Next sont figés au **build** Docker. En plus, le conteneur `web` doit avoir **`NEST_API_URL=http://api:4000` au runtime** (SSR via `nestServerOrigin`) — sinon Nest est joint sur `127.0.0.1:4000` et la home renvoie 500.
+
+**API seule (sans www/admin) :** commentez les blocs `WEB_DOMAIN` / `ADMIN_DOMAIN` dans `Caddyfile.contabo`, sinon Caddy tentera quand même le TLS pour ces hôtes.
+
+**Alternative Vercel :** Root Directory `apps/web`, `NEST_API_URL=https://api.monappart.ci`, `NEXT_PUBLIC_SITE_URL=https://www.monappart.ci`.
 
 ## 4. Médias
 
@@ -235,7 +250,7 @@ Cocher seulement après vérification réelle :
 - [ ] `pnpm smoke:health` OK
 - [ ] Backup dump + test de restauration
 - [ ] Workers up (`$COMPOSE ps`)
-- [ ] Fronts (Vercel ou profil `front`) alignés sur l’API
+- [ ] Fronts Contabo (`--profile front`) ou Vercel, alignés sur l’API
 - [ ] E-mail réel ou décision documentée (`EMAIL_PROVIDER=none`)
 - [ ] Paiements : rester sur `none` jusqu’à un prestataire implémenté
 
@@ -247,15 +262,71 @@ Référence globale : [production-readiness-checklist.md](./production-readiness
 - Pas de HA : un seul VPS = SPOF.
 - OpenSearch / reco Python : laisser désactivés (`SEARCH_ENGINE=postgres`, `RECOMMENDATION_ENGINE=rules`).
 - Monitoring (Sentry, alertes) : à brancher avant une ouverture large.
-- Les Dockerfiles `apps/web` et `apps/admin` ne sont pas fournis : Vercel reste le chemin le plus simple pour les fronts.
+- Dockerfiles `apps/web` et `apps/admin` fournis (profil Compose `front`). Vercel reste une option si vous préférez séparer les fronts.
 
 ## 9. Dépannage rapide
 
-| Symptôme                                        | Piste                                                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------- |
-| API refuse de démarrer (MEDIA / JWT / loopback) | Relire les garde-fous `parseApiEnv` ; pas de `127.0.0.1` ni `local` médias |
-| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`       |
-| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                              |
-| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                     |
-| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build)    |
-| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                      |
+### `api` unhealthy → web / admin / caddy ne démarrent pas
+
+Si les logs montrent `Nest application successfully started`, l’API tourne : le healthcheck Docker peut être en retard. Contourner :
+
+```bash
+$COMPOSE exec api node -e "fetch('http://127.0.0.1:4000/health/live').then(async r=>console.log(r.status, await r.text()))"
+$COMPOSE up -d --no-deps caddy
+$COMPOSE --profile front up -d --no-deps web admin
+```
+
+Sinon diagnostiquer un vrai crash :
+
+```bash
+$COMPOSE ps -a
+$COMPOSE logs api --tail 150
+```
+
+Causes fréquentes au boot (`parseApiEnv` / Nest) :
+
+| Log / cause                              | Correctif                                                                                           |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `MEDIA_STORAGE_PROVIDER` / `S3_*` requis | Remplir R2 **ou** activer MinIO (profil `minio`) avec clés non vides                                |
+| `JWT_SECRET` placeholder / trop court    | `openssl rand -base64 48` × 2 secrets **différents**                                                |
+| `DATABASE_URL` loopback / manquant       | Hôte = `postgres` (pas `127.0.0.1`)                                                                 |
+| Crash Prisma / tables absentes           | Relancer `$COMPOSE run --rm --no-deps --entrypoint "" --workdir /repo/apps/api api pnpm db:migrate` |
+| Healthcheck timeout au premier boot      | Attendre `start_period` (45s+) puis `$COMPOSE restart api`                                          |
+
+Après correction de `.env.contabo` :
+
+```bash
+$COMPOSE up -d api
+$COMPOSE ps
+$COMPOSE exec api node -e "fetch('http://127.0.0.1:4000/health/live').then(r=>console.log(r.status))"
+```
+
+Puis seulement :
+
+```bash
+$COMPOSE --profile front up -d web admin
+$COMPOSE up -d caddy
+```
+
+### `Could not resolve host: www.monappart.ci`
+
+DNS pas encore créé ou pas propagé. Chez le registrar, enregistrements **A** :
+
+| FQDN                 | Cible               |
+| -------------------- | ------------------- |
+| `api.monappart.ci`   | IP publique Contabo |
+| `www.monappart.ci`   | IP publique Contabo |
+| `admin.monappart.ci` | IP publique Contabo |
+
+Vérifier depuis le VPS : `getent hosts www.monappart.ci` / `dig +short www.monappart.ci`.  
+Sans DNS, Caddy ne peut pas obtenir de certificat Let’s Encrypt.
+
+| Symptôme                                        | Piste                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| API refuse de démarrer (MEDIA / JWT / loopback) | Voir tableau ci-dessus + logs `api`                                       |
+| `/health/ready` 503                             | Postgres ou Redis pas healthy ; mauvais `DATABASE_URL` / `REDIS_URL`      |
+| Let’s Encrypt fail                              | DNS, UFW, ou Caddy pas sur 80                                             |
+| Uploads KO                                      | Bucket R2/MinIO + clés ; CORS bucket si URLs publiques                    |
+| Cookies / CSRF admin                            | Admin doit être same-site rewrite vers l’API (`ADMIN_API_URL` au build)   |
+| Rate-limit IP = 127.0.0.1                       | `TRUST_PROXY` manquant derrière Caddy                                     |
+| Web 500 / `ECONNREFUSED 127.0.0.1:4000`         | `NEST_API_URL=http://api:4000` manquant au **runtime** du conteneur `web` |

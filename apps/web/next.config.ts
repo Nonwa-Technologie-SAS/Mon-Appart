@@ -1,3 +1,4 @@
+import path from "node:path"
 import type { NextConfig } from "next"
 
 const isProd = process.env.NODE_ENV === "production"
@@ -9,31 +10,23 @@ const nestApiUrl = (
 )
   .replace(/\/+$/, "")
   .replace(/^same-origin$/i, "http://localhost:4000")
-  .replace(/^\/$/, "http://localhost:4000")
 
-function nestImageRemotePattern():
-  | {
-      protocol: "http" | "https"
-      hostname: string
-      port?: string
-      pathname: string
-    }
-  | null {
+const nestImageRemotePattern = (() => {
   try {
-    const url = new URL(nestApiUrl)
+    const url = new URL(
+      nestApiUrl === "/" ? "http://localhost:4000" : nestApiUrl,
+    )
     if (url.protocol !== "http:" && url.protocol !== "https:") return null
     return {
       protocol: url.protocol.replace(":", "") as "http" | "https",
       hostname: url.hostname,
       ...(url.port ? { port: url.port } : {}),
-      pathname: "/api/v1/media/**",
+      pathname: "/api/v1/media/**" as const,
     }
   } catch {
     return null
   }
-}
-
-const nestRemotePattern = nestImageRemotePattern()
+})()
 
 /**
  * CSP adaptée à Next.js App Router (scripts/styles inline nécessaires au
@@ -60,6 +53,9 @@ const contentSecurityPolicy = [
 ].join("; ")
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  // Trace monorepo (pnpm) pour l'image Docker Contabo.
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
   experimental: {
     serverActions: {
@@ -83,7 +79,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.blob.vercel-storage.com",
       },
-      ...(nestRemotePattern ? [nestRemotePattern] : []),
+      ...(nestImageRemotePattern ? [nestImageRemotePattern] : []),
     ],
   },
   // Nest same-origin : cookies ma_* + CSRF. Blob upload reste local (Vercel).

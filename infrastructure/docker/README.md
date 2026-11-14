@@ -48,5 +48,6 @@ Ne pas confondre avec ce Compose local. Pour un VPS Contabo :
 - Guide : [docs/deployment-contabo.md](../../docs/deployment-contabo.md)
 - `compose.contabo.yaml` + `Caddyfile.contabo` + `env.contabo.example`
 - Copier `env.contabo.example` → `.env.contabo` (hors Git), puis démarrer selon le guide
+- Fronts : `docker compose … --profile front up -d --build` (`apps/web/Dockerfile`, `apps/admin/Dockerfile`)
 
 Postgres/Redis n’y publient **aucun** port hôte ; seul Caddy expose 80/443.
